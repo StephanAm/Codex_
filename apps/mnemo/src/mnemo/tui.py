@@ -334,7 +334,7 @@ class _App:
 
     def _draw_status(self, y: int, w: int) -> None:
         bars: dict[_Mode, str] = {
-            _Mode.BROWSE:      "  up/down navigate   a add   e edit   d delete   / search   q quit",
+            _Mode.BROWSE:      "  up/down navigate   Enter/e edit   a add   d delete   / search   q quit",
             _Mode.CONFIRM_DEL: "  Delete this note?   y yes   n / Esc no",
             _Mode.SEARCH:      f"  Search: {self.query}▌   Enter keep   Esc clear",
             _Mode.EDIT:        "  Ctrl+S save   Esc cancel",
