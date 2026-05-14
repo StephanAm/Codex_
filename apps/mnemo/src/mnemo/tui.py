@@ -201,6 +201,10 @@ class _App:
 
         self._draw_status(h - 1, w)
 
+        # Must be last — status bar drawing moves the cursor away from the caret
+        if self.mode in (_Mode.EDIT, _Mode.ADD):
+            self._place_cursor(h, lw + 1, dw)
+
     # ── header ────────────────────────────────────────────────────────────────
 
     def _draw_header(self, w: int) -> None:
