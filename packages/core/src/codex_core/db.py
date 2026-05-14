@@ -46,5 +46,9 @@ def _migrate(conn: sqlite3.Connection) -> None:
             entity_id INTEGER NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
             PRIMARY KEY (note_id, entity_id)
         );
+        CREATE TABLE IF NOT EXISTS config (
+            key   TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        );
     """)
     conn.commit()
