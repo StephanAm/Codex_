@@ -421,6 +421,8 @@ class _App:
             return self._search_input(key)
         if self.mode == _Mode.CONFIRM_DEL:
             return self._confirm_del(key)
+        if self.mode == _Mode.CONFIG_TAGS:
+            return self._config_tags_input(key)
         return True
 
     # ── browse ────────────────────────────────────────────────────────────────
