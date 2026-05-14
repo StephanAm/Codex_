@@ -135,6 +135,8 @@ class _App:
     def run(self) -> None:
         self._init_colors()
         self.scr.keypad(True)
+        curses.raw()          # disable flow control so Ctrl+S reaches the app
+        curses.set_escdelay(25)  # don't wait 1s after ESC before dispatching it
         try:
             curses.curs_set(0)
         except curses.error:
