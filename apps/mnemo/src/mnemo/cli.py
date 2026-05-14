@@ -41,6 +41,13 @@ def add(text: str | None) -> None:
             text = click.prompt("Note")
     if not text:
         raise click.ClickException("Note text cannot be empty.")
+    defaults = get_default_tags()
+    if defaults:
+        from .parser import parse as _parse
+        existing = _parse(text).tags
+        missing = [t for t in defaults if t not in existing]
+        if missing:
+            text = text + " " + " ".join(f"#{t}" for t in missing)
     note = add_note(text)
     click.echo(f"Added note #{note.id}")
 
