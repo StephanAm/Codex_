@@ -118,3 +118,33 @@ def entities_set_type(name: str, entity_type: str) -> None:
         raise click.ClickException(
             f"Entity @{name} not found. Mention @{name} in a note first."
         )
+
+
+@cli.group()
+def config() -> None:
+    """Manage note-taker configuration."""
+
+
+@config.command("default-tags")
+@click.argument("tags", nargs=-1)
+@click.option("--clear", is_flag=True, help="Remove all default tags.")
+def config_default_tags(tags: tuple[str, ...], clear: bool) -> None:
+    """View or set default tags added to every new note.
+
+    With no arguments, shows the current default tags.
+    Pass TAG names (without #) to replace the current list.
+    Use --clear to remove all default tags.
+    """
+    if clear:
+        set_default_tags([])
+        click.echo("Default tags cleared.")
+    elif tags:
+        set_default_tags(list(tags))
+        formatted = "  ".join(f"#{t}" for t in get_default_tags())
+        click.echo(f"Default tags set: {formatted}")
+    else:
+        current = get_default_tags()
+        if current:
+            click.echo("Default tags: " + "  ".join(f"#{t}" for t in current))
+        else:
+            click.echo("No default tags configured.")
