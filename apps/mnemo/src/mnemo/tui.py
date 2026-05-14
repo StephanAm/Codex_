@@ -25,6 +25,7 @@ class _Mode(Enum):
     EDIT        = auto()
     SEARCH      = auto()
     CONFIRM_DEL = auto()
+    CONFIG_TAGS = auto()
 
 
 # ── editor buffer ─────────────────────────────────────────────────────────────
