@@ -372,7 +372,7 @@ class _App:
             return False
 
         if key == curses.KEY_UP and self.sel == 0:
-            self.ed = _Editor()
+            self.ed = self._new_editor()
             self._edit_id = None
             self.mode = _Mode.ADD
         elif key == curses.KEY_UP and self.sel > 0:
@@ -385,7 +385,7 @@ class _App:
             self.sel = min(max(0, len(self.notes) - 1), self.sel + 10)
 
         elif key == ord("a"):
-            self.ed = _Editor()
+            self.ed = self._new_editor()
             self._edit_id = None
             self.mode = _Mode.ADD
 
