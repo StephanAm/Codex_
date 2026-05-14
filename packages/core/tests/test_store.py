@@ -129,3 +129,29 @@ def test_update_note_replaces_tags(db: Path) -> None:
 
 def test_update_note_nonexistent(db: Path) -> None:
     assert update_note(9999, "anything", db_path=db) is None
+
+
+def test_default_tags_empty_by_default(db: Path) -> None:
+    assert get_default_tags(db_path=db) == []
+
+
+def test_set_and_get_default_tags(db: Path) -> None:
+    set_default_tags(["work", "daily"], db_path=db)
+    assert get_default_tags(db_path=db) == ["work", "daily"]
+
+
+def test_set_default_tags_overwrites(db: Path) -> None:
+    set_default_tags(["alpha"], db_path=db)
+    set_default_tags(["beta", "gamma"], db_path=db)
+    assert get_default_tags(db_path=db) == ["beta", "gamma"]
+
+
+def test_set_default_tags_lowercases(db: Path) -> None:
+    set_default_tags(["Work", "DAILY"], db_path=db)
+    assert get_default_tags(db_path=db) == ["work", "daily"]
+
+
+def test_set_default_tags_clear(db: Path) -> None:
+    set_default_tags(["work"], db_path=db)
+    set_default_tags([], db_path=db)
+    assert get_default_tags(db_path=db) == []
