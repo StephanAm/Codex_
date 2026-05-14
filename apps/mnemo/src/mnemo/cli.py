@@ -6,9 +6,11 @@ from .models import Note
 from .store import (
     add_note,
     delete_note,
+    get_default_tags,
     list_entities,
     list_notes,
     search_notes,
+    set_default_tags,
     set_entity_type,
 )
 
