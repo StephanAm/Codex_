@@ -463,6 +463,12 @@ class _App:
             self._reload()
             self.mode = _Mode.SEARCH
 
+        elif key == ord("t"):
+            current = get_default_tags()
+            self._tag_buf = " ".join(current)
+            self._tag_cur = len(self._tag_buf)
+            self.mode = _Mode.CONFIG_TAGS
+
         elif key == 27:  # Esc — clear active search
             if self.query:
                 self.query = ""
