@@ -173,3 +173,24 @@ def set_entity_type(name: str, entity_type: str, db_path: Path | None = None) ->
     )
     conn.commit()
     return cur.rowcount > 0
+
+
+def get_default_tags(db_path: Path | None = None) -> list[str]:
+    conn = connect(db_path)
+    row = conn.execute(
+        "SELECT value FROM config WHERE key = 'default_tags'"
+    ).fetchone()
+    if row is None or not row["value"]:
+        return []
+    return [t for t in row["value"].split(",") if t]
+
+
+def set_default_tags(tags: list[str], db_path: Path | None = None) -> None:
+    conn = connect(db_path)
+    value = ",".join(t.lower().strip() for t in tags if t.strip())
+    conn.execute(
+        "INSERT INTO config (key, value) VALUES ('default_tags', ?)"
+        " ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        (value,),
+    )
+    conn.commit()
