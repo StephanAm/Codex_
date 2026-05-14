@@ -1,6 +1,6 @@
 # note_taker
 
-A Python project template using `uv`, `ruff`, `mypy`, and `pytest`.
+A command-line tool for creating, organizing, and searching notes.
 
 ## Setup
 

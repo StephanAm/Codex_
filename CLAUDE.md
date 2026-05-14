@@ -2,6 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Project purpose
+
+A note-taking tool built in three layers:
+1. **CLI** — type notes and persist them to local storage (current focus)
+2. **REST API** — expose notes over HTTP once CLI is stable
+3. **Web UI** — browser interface on top of the REST API
+
 ## Commands
 
 ```bash

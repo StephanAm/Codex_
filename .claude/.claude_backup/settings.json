@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(new_python_project note_taker)"
+    ]
+  }
+}

@@ -9,8 +9,13 @@ description = ""
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "click>=8.0",
     "tqdm>=4.0",
 ]
+
+[project.scripts]
+note     = "note_taker.cli:cli"
+note-tui = "note_taker.tui:launch"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/note_taker"]
