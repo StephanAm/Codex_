@@ -376,7 +376,7 @@ class _App:
             self._edit_id = None
             self.mode = _Mode.ADD
 
-        elif key == ord("e") and self._current:
+        elif key in (ord("e"), 10, 13) and self._current:
             self.ed = _Editor(self._current.body)
             self._edit_id = self._current.id
             self.mode = _Mode.EDIT
