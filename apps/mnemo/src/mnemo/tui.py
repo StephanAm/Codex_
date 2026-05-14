@@ -528,6 +528,47 @@ class _App:
         except curses.error:
             pass
 
+    # ── config tags ───────────────────────────────────────────────────────────
+
+    def _config_tags_input(self, key: int) -> bool:
+        if key in (10, 13):  # Enter — save
+            tags = [t for t in self._tag_buf.split() if t]
+            set_default_tags(tags)
+            self._exit_config_tags()
+        elif key == 27:  # Esc — cancel
+            self._exit_config_tags()
+        elif key in (curses.KEY_LEFT,):
+            self._tag_cur = max(0, self._tag_cur - 1)
+        elif key == curses.KEY_RIGHT:
+            self._tag_cur = min(len(self._tag_buf), self._tag_cur + 1)
+        elif key == curses.KEY_HOME:
+            self._tag_cur = 0
+        elif key == curses.KEY_END:
+            self._tag_cur = len(self._tag_buf)
+        elif key in (curses.KEY_BACKSPACE, 127, 8):
+            if self._tag_cur > 0:
+                self._tag_buf = self._tag_buf[: self._tag_cur - 1] + self._tag_buf[self._tag_cur :]
+                self._tag_cur -= 1
+        elif key == curses.KEY_DC:
+            if self._tag_cur < len(self._tag_buf):
+                self._tag_buf = self._tag_buf[: self._tag_cur] + self._tag_buf[self._tag_cur + 1 :]
+        elif 32 <= key <= 126:
+            ch = chr(key)
+            # strip # if the user types it — we add it in rendering
+            if ch == "#":
+                ch = ""
+            if ch:
+                self._tag_buf = self._tag_buf[: self._tag_cur] + ch + self._tag_buf[self._tag_cur :]
+                self._tag_cur += 1
+        return True
+
+    def _exit_config_tags(self) -> None:
+        self.mode = _Mode.BROWSE
+        try:
+            curses.curs_set(0)
+        except curses.error:
+            pass
+
     # ── search ────────────────────────────────────────────────────────────────
 
     def _search_input(self, key: int) -> bool:
