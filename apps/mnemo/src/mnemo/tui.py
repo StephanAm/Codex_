@@ -364,7 +364,11 @@ class _App:
         if key in (ord("q"), ord("Q"), 3):  # 3 = Ctrl+C (raw mode disables SIGINT)
             return False
 
-        if key == curses.KEY_UP and self.sel > 0:
+        if key == curses.KEY_UP and self.sel == 0:
+            self.ed = _Editor()
+            self._edit_id = None
+            self.mode = _Mode.ADD
+        elif key == curses.KEY_UP and self.sel > 0:
             self.sel -= 1
         elif key == curses.KEY_DOWN and self.sel < len(self.notes) - 1:
             self.sel += 1
