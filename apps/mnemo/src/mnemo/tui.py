@@ -361,7 +361,7 @@ class _App:
     # ── browse ────────────────────────────────────────────────────────────────
 
     def _browse(self, key: int) -> bool:
-        if key in (ord("q"), ord("Q")):
+        if key in (ord("q"), ord("Q"), 3):  # 3 = Ctrl+C (raw mode disables SIGINT)
             return False
 
         if key == curses.KEY_UP and self.sel > 0:
