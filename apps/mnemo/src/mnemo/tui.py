@@ -402,46 +402,32 @@ class _App:
 
     # ── editor ────────────────────────────────────────────────────────────────
 
+    def _commit_editor(self) -> None:
+        assert self.ed is not None
+        text = self.ed.text.strip()
+        if text:
+            if self.mode == _Mode.ADD:
+                note = add_note(text)
+                self._reload()
+                try:
+                    self.sel = next(
+                        i for i, n in enumerate(self.notes) if n.id == note.id
+                    )
+                except StopIteration:
+                    self.sel = 0
+            else:
+                assert self._edit_id is not None
+                update_note(self._edit_id, text)
+                self._reload()
+        self._exit_editor()
+
     def _editor(self, key: int) -> bool:
         assert self.ed is not None
 
-        if key == 19:  # Ctrl+S — save
-            text = self.ed.text.strip()
-            if text:
-                if self.mode == _Mode.ADD:
-                    note = add_note(text)
-                    self._reload()
-                    try:
-                        self.sel = next(
-                            i for i, n in enumerate(self.notes) if n.id == note.id
-                        )
-                    except StopIteration:
-                        self.sel = 0
-                else:
-                    assert self._edit_id is not None
-                    update_note(self._edit_id, text)
-                    self._reload()
-            self._exit_editor()
+        if key in (19, curses.KEY_LEFT):  # Ctrl+S or Left arrow — save
+            self._commit_editor()
 
         elif key == 27:  # Esc — cancel
-            self._exit_editor()
-
-        elif key == curses.KEY_LEFT:
-            text = self.ed.text.strip()
-            if text:
-                if self.mode == _Mode.ADD:
-                    note = add_note(text)
-                    self._reload()
-                    try:
-                        self.sel = next(
-                            i for i, n in enumerate(self.notes) if n.id == note.id
-                        )
-                    except StopIteration:
-                        self.sel = 0
-                else:
-                    assert self._edit_id is not None
-                    update_note(self._edit_id, text)
-                    self._reload()
             self._exit_editor()
 
         elif key == curses.KEY_UP:       self.ed.up()
