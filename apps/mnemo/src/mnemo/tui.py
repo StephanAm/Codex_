@@ -400,11 +400,12 @@ class _App:
 
     def _draw_status(self, y: int, w: int) -> None:
         bars: dict[_Mode, str] = {
-            _Mode.BROWSE:      "  up/down navigate   Enter/e edit   a add   d delete   / search   q quit",
+            _Mode.BROWSE:      "  up/down navigate   Enter/e edit   a add   d delete   / search   t tags   q quit",
             _Mode.CONFIRM_DEL: "  Delete this note?   y yes   n / Esc no",
             _Mode.SEARCH:      f"  Search: {self.query}▌   Enter keep   Esc clear",
             _Mode.EDIT:        "  Ctrl+S save   Esc cancel",
             _Mode.ADD:         "  Ctrl+S save   Esc cancel",
+            _Mode.CONFIG_TAGS: "  Enter save   Esc cancel",
         }
         bar = bars.get(self.mode, "")
         self._put(y, 0, bar.ljust(w)[: w], curses.color_pair(_C_STATUS))
