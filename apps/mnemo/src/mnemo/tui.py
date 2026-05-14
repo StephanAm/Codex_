@@ -356,6 +356,46 @@ class _App:
             except curses.error:
                 pass
 
+    # ── config tags pane ─────────────────────────────────────────────────────
+
+    def _draw_config_tags_pane(self, h: int, x: int, w: int) -> None:
+        self._put(1, x + 2, "── default tags ──  Enter save   Esc cancel", curses.A_BOLD)
+        self._put(3, x + 2, "Space-separated tag names (without #):", curses.A_DIM)
+
+        # render buffer with # colouring
+        field_y = 5
+        cx = x + 2
+        tokens = self._tag_buf.split(" ")
+        for i, tok in enumerate(tokens):
+            if tok:
+                display = f"#{tok}"
+                self._put(field_y, cx, display, curses.color_pair(_C_TAG) | curses.A_BOLD)
+                cx += len(display)
+            if i < len(tokens) - 1:
+                self._put(field_y, cx, " ")
+                cx += 1
+
+    def _place_tag_cursor(self, h: int, x: int, w: int) -> None:
+        try:
+            curses.curs_set(1)
+        except curses.error:
+            pass
+        # compute screen column matching _tag_cur in the buffer
+        prefix = self._tag_buf[: self._tag_cur]
+        # each non-space char gets a # prepended when rendered
+        col = x + 2
+        tokens_before = prefix.split(" ")
+        for i, tok in enumerate(tokens_before):
+            if tok:
+                col += len(tok) + 1  # +1 for the '#'
+            if i < len(tokens_before) - 1:
+                col += 1  # space separator
+        if 0 < 5 < h - 1 and col < x + w:
+            try:
+                self.scr.move(5, col)
+            except curses.error:
+                pass
+
     # ── status bar ────────────────────────────────────────────────────────────
 
     def _draw_status(self, y: int, w: int) -> None:
