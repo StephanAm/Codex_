@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv sync *)",
+      "Bash(uv run *)",
+      "Bash(python pack.py)",
+      "Skill(update-config)",
+      "Skill(update-config:*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"\nimport sys, json, subprocess\nd = json.load(sys.stdin)\nf = d.get('tool_input', {}).get('file_path') or d.get('tool_response', {}).get('filePath', '')\nif f and f.startswith('/home/stephan/Code/python_starter'):\n    result = subprocess.run(['uv', 'run', 'pytest'], cwd='/home/stephan/Code/python_starter')\n    sys.exit(result.returncode)\n\"",
+            "statusMessage": "Running tests..."
+          }
+        ]
+      }
+    ]
+  }
+}
