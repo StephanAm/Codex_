@@ -162,6 +162,16 @@ class _App:
         self.notes = search_notes(self.query) if self.query else list_notes(limit=500)
         self.sel = min(self.sel, max(0, len(self.notes) - 1))
 
+    def _new_editor(self) -> _Editor:
+        defaults = get_default_tags()
+        if defaults:
+            tag_line = " ".join(f"#{t}" for t in defaults)
+            ed = _Editor("\n" + tag_line)
+            ed.row = 0
+            ed.col = 0
+            return ed
+        return _Editor()
+
     @property
     def _current(self) -> Note | None:
         return self.notes[self.sel] if self.notes else None
