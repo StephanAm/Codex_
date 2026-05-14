@@ -209,6 +209,8 @@ class _App:
 
         if self.mode in (_Mode.EDIT, _Mode.ADD):
             self._draw_editor_pane(h, lw + 1, dw)
+        elif self.mode == _Mode.CONFIG_TAGS:
+            self._draw_config_tags_pane(h, lw + 1, dw)
         else:
             self._draw_detail_pane(h, lw + 1, dw)
 
@@ -217,6 +219,8 @@ class _App:
         # Must be last — status bar drawing moves the cursor away from the caret
         if self.mode in (_Mode.EDIT, _Mode.ADD):
             self._place_cursor(h, lw + 1, dw)
+        elif self.mode == _Mode.CONFIG_TAGS:
+            self._place_tag_cursor(h, lw + 1, dw)
 
     # ── header ────────────────────────────────────────────────────────────────
 
