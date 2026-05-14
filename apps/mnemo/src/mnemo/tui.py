@@ -312,11 +312,6 @@ class _App:
         action = "edit" if self.mode == _Mode.EDIT else "new note"
         self._put(1, x + 2, f"── {action} ──  Ctrl+S save   Esc cancel", curses.A_BOLD)
 
-        try:
-            curses.curs_set(1)
-        except curses.error:
-            pass
-
         ed_top = 3
         for i, line in enumerate(self.ed.lines):
             y = ed_top + i
@@ -324,6 +319,14 @@ class _App:
                 break
             self._put(y, x + 2, line[: w - 3])
 
+    def _place_cursor(self, h: int, x: int, w: int) -> None:
+        """Move the terminal cursor to the editor caret. Called after all drawing."""
+        assert self.ed is not None
+        try:
+            curses.curs_set(1)
+        except curses.error:
+            pass
+        ed_top = 3
         cursor_y = ed_top + self.ed.row
         cursor_x = x + 2 + self.ed.col
         if 0 < cursor_y < h - 1 and cursor_x < x + w:
