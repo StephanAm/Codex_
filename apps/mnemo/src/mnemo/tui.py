@@ -7,7 +7,7 @@ import re
 from enum import Enum, auto
 
 from .models import Note
-from .store import add_note, delete_note, get_default_tags, list_notes, search_notes, update_note
+from .store import add_note, delete_note, get_default_tags, list_notes, search_notes, set_default_tags, update_note
 
 # ── colour pair indices ───────────────────────────────────────────────────────
 _C_HEADER = 1  # white on blue
