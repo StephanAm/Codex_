@@ -119,6 +119,8 @@ class _App:
         self.query  = ""  # live search filter
         self.ed: _Editor | None = None
         self._edit_id: int | None = None
+        self._tag_buf = ""   # input buffer for CONFIG_TAGS mode
+        self._tag_cur = 0    # cursor position within _tag_buf
 
     # ── setup ─────────────────────────────────────────────────────────────────
 
