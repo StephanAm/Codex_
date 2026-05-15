@@ -267,7 +267,7 @@ class _App:
             is_sel = idx == self.sel
             attr   = curses.color_pair(_C_SEL) | curses.A_BOLD if is_sel else curses.A_NORMAL
             prefix = "> " if is_sel else "  "
-            ts     = note.created_at.strftime("%m-%d %H:%M")
+            ts     = note.created_at.astimezone().strftime("%m-%d %H:%M")
             first  = note.body.splitlines()[0] if note.body else ""
             meta   = f"#{note.id:<3} {ts}"
             gap    = w - len(prefix) - len(meta) - 2
@@ -283,7 +283,7 @@ class _App:
             self._put(2, x + 2, "No notes.  Press 'a' to add one.")
             return
 
-        ts = note.created_at.strftime("%Y-%m-%d %H:%M")
+        ts = note.created_at.astimezone().strftime("%Y-%m-%d %H:%M")
         self._put(1, x + 2, f"#{note.id}  {ts}", curses.A_BOLD)
 
         y = self._draw_body(3, x, w, h, note.body)
