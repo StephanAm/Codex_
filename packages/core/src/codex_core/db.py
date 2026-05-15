@@ -1,6 +1,7 @@
 import os
 import sqlite3
 from pathlib import Path
+from uuid import uuid4
 
 _DEFAULT_DB = Path.home() / ".note_taker" / "notes.db"
 
@@ -50,5 +51,26 @@ def _migrate(conn: sqlite3.Connection) -> None:
             key   TEXT PRIMARY KEY,
             value TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS deleted_notes (
+            uuid       TEXT PRIMARY KEY,
+            deleted_at TEXT NOT NULL
+        );
     """)
+
+    # Add uuid and updated_at to notes if this is an existing DB
+    existing = {row[1] for row in conn.execute("PRAGMA table_info(notes)")}
+    if "uuid" not in existing:
+        conn.execute("ALTER TABLE notes ADD COLUMN uuid TEXT")
+    if "updated_at" not in existing:
+        conn.execute("ALTER TABLE notes ADD COLUMN updated_at TEXT")
+
+    conn.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_uuid ON notes(uuid)"
+    )
+
+    # Backfill any rows that predate this migration
+    for row in conn.execute("SELECT id FROM notes WHERE uuid IS NULL").fetchall():
+        conn.execute("UPDATE notes SET uuid = ? WHERE id = ?", (str(uuid4()), row[0]))
+    conn.execute("UPDATE notes SET updated_at = created_at WHERE updated_at IS NULL")
+
     conn.commit()

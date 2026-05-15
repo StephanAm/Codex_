@@ -1,0 +1,9 @@
+from pathlib import Path
+from typing import Protocol, runtime_checkable
+
+
+@runtime_checkable
+class StorageAdapter(Protocol):
+    def upload(self, device_id: str, local_db: Path) -> None: ...
+    def list_devices(self) -> list[str]: ...
+    def download(self, device_id: str) -> bytes: ...

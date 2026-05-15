@@ -13,6 +13,13 @@ dependencies = [
     "tqdm>=4.0",
 ]
 
+[project.optional-dependencies]
+google-drive = [
+    "google-api-python-client>=2.0",
+    "google-auth-httplib2>=0.1",
+    "google-auth-oauthlib>=1.0",
+]
+
 [project.scripts]
 note     = "note_taker.cli:cli"
 note-tui = "note_taker.tui:launch"
@@ -45,3 +52,7 @@ select = ["E", "F", "I", "UP"]
 [tool.mypy]
 strict = true
 files = ["src"]
+
+[[tool.mypy.overrides]]
+module = ["google.*", "google_auth_oauthlib.*", "googleapiclient.*"]
+ignore_missing_imports = true

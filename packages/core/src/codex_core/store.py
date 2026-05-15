@@ -1,6 +1,7 @@
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
+from uuid import uuid4
 
 from .db import connect
 from .models import Entity, Note
@@ -29,8 +30,10 @@ def _load_note(conn: sqlite3.Connection, row: sqlite3.Row) -> Note:
     ]
     return Note(
         id=note_id,
+        uuid=row["uuid"],
         body=row["body"],
         created_at=datetime.fromisoformat(row["created_at"]),
+        updated_at=datetime.fromisoformat(row["updated_at"]),
         tags=tags,
         entities=entities,
     )
@@ -42,7 +45,8 @@ def add_note(body: str, db_path: Path | None = None) -> Note:
     now = datetime.now(timezone.utc).isoformat()
 
     cur = conn.execute(
-        "INSERT INTO notes (body, created_at) VALUES (?, ?)", (body, now)
+        "INSERT INTO notes (uuid, body, created_at, updated_at) VALUES (?, ?, ?, ?)",
+        (str(uuid4()), body, now, now),
     )
     note_id = cur.lastrowid
 
@@ -116,7 +120,10 @@ def search_notes(query: str, db_path: Path | None = None) -> list[Note]:
 
 def update_note(note_id: int, body: str, db_path: Path | None = None) -> Note | None:
     conn = connect(db_path)
-    cur = conn.execute("UPDATE notes SET body = ? WHERE id = ?", (body, note_id))
+    now = datetime.now(timezone.utc).isoformat()
+    cur = conn.execute(
+        "UPDATE notes SET body = ?, updated_at = ? WHERE id = ?", (body, now, note_id)
+    )
     if cur.rowcount == 0:
         conn.commit()
         return None
@@ -152,9 +159,17 @@ def update_note(note_id: int, body: str, db_path: Path | None = None) -> Note | 
 
 def delete_note(note_id: int, db_path: Path | None = None) -> bool:
     conn = connect(db_path)
-    cur = conn.execute("DELETE FROM notes WHERE id = ?", (note_id,))
+    row = conn.execute("SELECT uuid FROM notes WHERE id = ?", (note_id,)).fetchone()
+    if row is None:
+        return False
+    now = datetime.now(timezone.utc).isoformat()
+    conn.execute("DELETE FROM notes WHERE id = ?", (note_id,))
+    conn.execute(
+        "INSERT OR IGNORE INTO deleted_notes (uuid, deleted_at) VALUES (?, ?)",
+        (row["uuid"], now),
+    )
     conn.commit()
-    return cur.rowcount > 0
+    return True
 
 
 def list_entities(db_path: Path | None = None) -> list[Entity]:

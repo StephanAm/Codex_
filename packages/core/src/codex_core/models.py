@@ -5,8 +5,10 @@ from datetime import datetime
 @dataclass
 class Note:
     id: int
+    uuid: str
     body: str
     created_at: datetime
+    updated_at: datetime
     tags: list[str] = field(default_factory=list)
     entities: list[str] = field(default_factory=list)
 

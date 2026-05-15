@@ -5,7 +5,9 @@
       "Bash(uv run *)",
       "Bash(python pack.py)",
       "Skill(update-config)",
-      "Skill(update-config:*)"
+      "Skill(update-config:*)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   },
   "hooks": {
@@ -26,8 +28,8 @@
           {
             "type": "command",
             "command": "jq -r '.tool_input.file_path // .tool_response.filePath // \"\"' | { read -r f; if echo \"$f\" | grep -q \"^/home/stephan/Code/note-taker\"; then cd /home/stephan/Code/note-taker && uv run pytest -q 2>&1; fi; }",
-            "statusMessage": "Running tests...",
-            "timeout": 60
+            "timeout": 60,
+            "statusMessage": "Running tests..."
           }
         ]
       }
