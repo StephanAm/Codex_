@@ -40,6 +40,7 @@ class _Mode(Enum):
     CONFIRM_DEL = auto()
     CONFIG      = auto()
     SESSION     = auto()
+    SYNC_RESULT = auto()
 
 
 _CFG_LABEL_W = 16  # fixed label column width in the config pane
@@ -147,6 +148,7 @@ class _App:
         self._edit_id: int | None = None
         self._cfg_fields: list[_CfgField] = []
         self._cfg_sel = 0
+        self._sync_msg = ""
         self._session_buf = ""  # input buffer for SESSION mode (free text with #/@)
         self._session_cur = 0
 
@@ -243,6 +245,8 @@ class _App:
             self._draw_config_pane(h, lw + 1, dw)
         elif self.mode == _Mode.SESSION:
             self._draw_session_pane(h, lw + 1, dw)
+        elif self.mode == _Mode.SYNC_RESULT:
+            self._draw_sync_result_pane(h, lw + 1, dw)
         else:
             self._draw_detail_pane(h, lw + 1, dw)
 
@@ -497,7 +501,8 @@ class _App:
 
     def _draw_status(self, y: int, w: int) -> None:
         bars: dict[_Mode, str] = {
-            _Mode.BROWSE:      "  up/down navigate   Enter/e edit   a add   d delete   / search   c config   s session   q quit",
+            _Mode.BROWSE:      "  up/down navigate   Enter/e edit   a add   d delete   / search   c config   s session   S sync   q quit",
+            _Mode.SYNC_RESULT: "  Press any key to continue",
             _Mode.CONFIRM_DEL: "  Delete this note?   y yes   n / Esc no",
             _Mode.SEARCH:      f"  Search: {self.query}▌   Enter keep   Esc clear",
             _Mode.EDIT:        "  Ctrl+S save   Esc cancel",
@@ -523,6 +528,9 @@ class _App:
             return self._config_input(key)
         if self.mode == _Mode.SESSION:
             return self._session_input(key)
+        if self.mode == _Mode.SYNC_RESULT:
+            self.mode = _Mode.BROWSE
+            return True
         return True
 
     # ── browse ────────────────────────────────────────────────────────────────
@@ -566,12 +574,15 @@ class _App:
         elif key in (ord("c"), ord("C")):
             self._enter_config()
 
-        elif key in (ord("s"), ord("S")):
+        elif key == ord("s"):
             s_tags, s_entities = get_session_context()
             parts = [f"#{t}" for t in s_tags] + [f"@{e}" for e in s_entities]
             self._session_buf = " ".join(parts)
             self._session_cur = len(self._session_buf)
             self.mode = _Mode.SESSION
+
+        elif key == ord("S"):
+            self._run_sync()
 
         elif key == 27:  # Esc — clear active search
             if self.query:
@@ -632,6 +643,52 @@ class _App:
             curses.curs_set(0)
         except curses.error:
             pass
+
+    # ── sync ──────────────────────────────────────────────────────────────────
+
+    def _run_sync(self) -> None:
+        h, w = self.scr.getmaxyx()
+        lw = max(w // 3, 22)
+        self._put(2, lw + 3, "Syncing…", curses.A_BOLD)
+        self.scr.refresh()
+        self._sync_msg = self._do_sync()
+        self._reload()
+        self.mode = _Mode.SYNC_RESULT
+
+    def _do_sync(self) -> str:
+        from pathlib import Path
+        from .db import connect, get_db_path
+        from .sync.device import get_device_id
+        from .sync.merge import merge_remote
+        config_dir = Path.home() / ".note_taker"
+        creds = config_dir / "credentials.json"
+        if not creds.exists():
+            return "Sync failed: credentials.json not found in ~/.note_taker/"
+        try:
+            from .sync.google_drive import GoogleDriveAdapter
+            adapter = GoogleDriveAdapter(
+                creds, config_dir / "token.json", folder_name=get_sync_folder()
+            )
+            device_id = get_device_id()
+            db_path = get_db_path()
+            adapter.upload(device_id, db_path)
+            devices = [d for d in adapter.list_devices() if d != device_id]
+            if not devices:
+                return "Push complete — no other devices to pull from."
+            local_conn = connect(db_path)
+            added = updated = deleted = 0
+            for d in devices:
+                result = merge_remote(local_conn, adapter.download(d))
+                added += result.added
+                updated += result.updated
+                deleted += result.deleted
+            return f"Sync complete — {added} added, {updated} updated, {deleted} deleted."
+        except Exception as exc:
+            return f"Sync failed: {exc}"
+
+    def _draw_sync_result_pane(self, h: int, x: int, w: int) -> None:
+        self._put(1, x + 2, "── sync ──", curses.A_BOLD)
+        self._put(3, x + 2, self._sync_msg)
 
     # ── session context ───────────────────────────────────────────────────────
 
