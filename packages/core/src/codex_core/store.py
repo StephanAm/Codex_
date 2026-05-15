@@ -190,6 +190,24 @@ def set_entity_type(name: str, entity_type: str, db_path: Path | None = None) ->
     return cur.rowcount > 0
 
 
+def get_sync_folder(db_path: Path | None = None) -> str:
+    conn = connect(db_path)
+    row = conn.execute(
+        "SELECT value FROM config WHERE key = 'sync_google_drive_folder'"
+    ).fetchone()
+    return str(row["value"]) if row else "note-taker-sync"
+
+
+def set_sync_folder(name: str, db_path: Path | None = None) -> None:
+    conn = connect(db_path)
+    conn.execute(
+        "INSERT INTO config (key, value) VALUES ('sync_google_drive_folder', ?)"
+        " ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        (name.strip(),),
+    )
+    conn.commit()
+
+
 def get_default_tags(db_path: Path | None = None) -> list[str]:
     conn = connect(db_path)
     row = conn.execute(

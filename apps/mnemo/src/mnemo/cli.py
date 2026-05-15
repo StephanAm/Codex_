@@ -9,11 +9,13 @@ from .store import (
     add_note,
     delete_note,
     get_default_tags,
+    get_sync_folder,
     list_entities,
     list_notes,
     search_notes,
     set_default_tags,
     set_entity_type,
+    set_sync_folder,
 )
 
 
@@ -210,7 +212,7 @@ def _get_adapter() -> object:
             f"Google Drive credentials not found at {creds}.\n"
             "Download credentials.json from the Google Cloud Console and place it there."
         )
-    return GoogleDriveAdapter(creds, token)
+    return GoogleDriveAdapter(creds, token, folder_name=get_sync_folder())
 
 
 @cli.group()
@@ -259,6 +261,31 @@ def sync_pull() -> None:
 
 @sync.command("status")
 def sync_status() -> None:
-    """Show this device's ID."""
+    """Show this device's ID and sync configuration."""
     from .sync.device import get_device_id
-    click.echo(f"Device ID: {get_device_id()}")
+    click.echo(f"Device ID:     {get_device_id()}")
+    click.echo(f"Drive folder:  {get_sync_folder()}")
+
+
+@sync.group("config")
+def sync_config() -> None:
+    """View or update sync configuration."""
+
+
+@sync_config.command("folder")
+@click.argument("name", required=False)
+@click.option("--clear", is_flag=True, help="Reset to the default folder name.")
+def sync_config_folder(name: str | None, clear: bool) -> None:
+    """View or set the Google Drive folder used for sync.
+
+    With no arguments, shows the current folder name.
+    Pass NAME to change it. Use --clear to reset to 'note-taker-sync'.
+    """
+    if clear:
+        set_sync_folder("note-taker-sync")
+        click.echo("Drive folder reset to: note-taker-sync")
+    elif name:
+        set_sync_folder(name)
+        click.echo(f"Drive folder set to: {name}")
+    else:
+        click.echo(f"Drive folder: {get_sync_folder()}")

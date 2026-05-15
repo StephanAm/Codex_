@@ -15,13 +15,19 @@ except ImportError as exc:  # pragma: no cover
     ) from exc
 
 _SCOPES = ["https://www.googleapis.com/auth/drive.file"]
-_FOLDER_NAME = "note-taker-sync"
+_DEFAULT_FOLDER = "note-taker-sync"
 
 
 class GoogleDriveAdapter:
-    def __init__(self, credentials_path: Path, token_path: Path) -> None:
+    def __init__(
+        self,
+        credentials_path: Path,
+        token_path: Path,
+        folder_name: str = _DEFAULT_FOLDER,
+    ) -> None:
         self._credentials_path = credentials_path
         self._token_path = token_path
+        self._folder_name = folder_name
         self._service: Any = None
         self._folder_id: str | None = None
 
@@ -50,7 +56,7 @@ class GoogleDriveAdapter:
             return self._folder_id
         svc = self._get_service()
         results = svc.files().list(
-            q=f"name='{_FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false",
+            q=f"name='{self._folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false",
             fields="files(id)",
         ).execute()
         files = results.get("files", [])
@@ -58,7 +64,7 @@ class GoogleDriveAdapter:
             self._folder_id = files[0]["id"]
         else:
             meta = {
-                "name": _FOLDER_NAME,
+                "name": self._folder_name,
                 "mimeType": "application/vnd.google-apps.folder",
             }
             created = svc.files().create(body=meta, fields="id").execute()
