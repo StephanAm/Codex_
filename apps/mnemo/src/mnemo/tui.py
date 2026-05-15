@@ -7,6 +7,7 @@ import re
 from enum import Enum, auto
 
 from .models import Note
+from .session import clear_session_context, get_session_context, set_session_context
 from .store import add_note, delete_note, get_default_tags, list_notes, search_notes, set_default_tags, update_note
 
 # ── colour pair indices ───────────────────────────────────────────────────────
@@ -26,6 +27,7 @@ class _Mode(Enum):
     SEARCH      = auto()
     CONFIRM_DEL = auto()
     CONFIG_TAGS = auto()
+    SESSION     = auto()
 
 
 # ── editor buffer ─────────────────────────────────────────────────────────────
@@ -121,6 +123,8 @@ class _App:
         self._edit_id: int | None = None
         self._tag_buf = ""   # input buffer for CONFIG_TAGS mode
         self._tag_cur = 0    # cursor position within _tag_buf
+        self._session_buf = ""  # input buffer for SESSION mode (free text with #/@)
+        self._session_cur = 0
 
     # ── setup ─────────────────────────────────────────────────────────────────
 
@@ -167,9 +171,11 @@ class _App:
 
     def _new_editor(self) -> _Editor:
         defaults = get_default_tags()
-        if defaults:
-            tag_line = " ".join(f"#{t}" for t in defaults)
-            ed = _Editor("\n" + tag_line)
+        s_tags, s_entities = get_session_context()
+        all_tags = list(dict.fromkeys(defaults + s_tags))
+        context_parts = [f"#{t}" for t in all_tags] + [f"@{e}" for e in s_entities]
+        if context_parts:
+            ed = _Editor("\n" + " ".join(context_parts))
             ed.row = 0
             ed.col = 0
             return ed
@@ -211,6 +217,8 @@ class _App:
             self._draw_editor_pane(h, lw + 1, dw)
         elif self.mode == _Mode.CONFIG_TAGS:
             self._draw_config_tags_pane(h, lw + 1, dw)
+        elif self.mode == _Mode.SESSION:
+            self._draw_session_pane(h, lw + 1, dw)
         else:
             self._draw_detail_pane(h, lw + 1, dw)
 
@@ -221,6 +229,8 @@ class _App:
             self._place_cursor(h, lw + 1, dw)
         elif self.mode == _Mode.CONFIG_TAGS:
             self._place_tag_cursor(h, lw + 1, dw)
+        elif self.mode == _Mode.SESSION:
+            self._place_session_cursor(h, lw + 1, dw)
 
     # ── header ────────────────────────────────────────────────────────────────
 
@@ -230,6 +240,10 @@ class _App:
         right = f" {n} note{'s' if n != 1 else ''} "
         if self.query:
             right = f"  search: {self.query!r}" + right
+        s_tags, s_entities = get_session_context()
+        if s_tags or s_entities:
+            parts = [f"#{t}" for t in s_tags] + [f"@{e}" for e in s_entities]
+            right = f"  [{' '.join(parts)}]" + right
         bar = (title + right.rjust(w - len(title)))[:w]
         self._put(0, 0, bar.ljust(w), curses.color_pair(_C_HEADER) | curses.A_BOLD)
 
@@ -400,12 +414,13 @@ class _App:
 
     def _draw_status(self, y: int, w: int) -> None:
         bars: dict[_Mode, str] = {
-            _Mode.BROWSE:      "  up/down navigate   Enter/e edit   a add   d delete   / search   t tags   q quit",
+            _Mode.BROWSE:      "  up/down navigate   Enter/e edit   a add   d delete   / search   t tags   s session   q quit",
             _Mode.CONFIRM_DEL: "  Delete this note?   y yes   n / Esc no",
             _Mode.SEARCH:      f"  Search: {self.query}▌   Enter keep   Esc clear",
             _Mode.EDIT:        "  Ctrl+S save   Esc cancel",
             _Mode.ADD:         "  Ctrl+S save   Esc cancel",
             _Mode.CONFIG_TAGS: "  Enter save   Esc cancel",
+            _Mode.SESSION:     "  Enter save   Esc cancel   Ctrl+X clear session",
         }
         bar = bars.get(self.mode, "")
         self._put(y, 0, bar.ljust(w)[: w], curses.color_pair(_C_STATUS))
@@ -423,6 +438,8 @@ class _App:
             return self._confirm_del(key)
         if self.mode == _Mode.CONFIG_TAGS:
             return self._config_tags_input(key)
+        if self.mode == _Mode.SESSION:
+            return self._session_input(key)
         return True
 
     # ── browse ────────────────────────────────────────────────────────────────
@@ -469,6 +486,13 @@ class _App:
             self._tag_cur = len(self._tag_buf)
             self.mode = _Mode.CONFIG_TAGS
 
+        elif key in (ord("s"), ord("S")):
+            s_tags, s_entities = get_session_context()
+            parts = [f"#{t}" for t in s_tags] + [f"@{e}" for e in s_entities]
+            self._session_buf = " ".join(parts)
+            self._session_cur = len(self._session_buf)
+            self.mode = _Mode.SESSION
+
         elif key == 27:  # Esc — clear active search
             if self.query:
                 self.query = ""
@@ -501,7 +525,7 @@ class _App:
     def _editor(self, key: int) -> bool:
         assert self.ed is not None
 
-        if key in (19, curses.KEY_LEFT):  # Ctrl+S or Left arrow — save
+        if key == 19:  # Ctrl+S — save
             self._commit_editor()
 
         elif key == 27:  # Esc — cancel
@@ -509,6 +533,7 @@ class _App:
 
         elif key == curses.KEY_UP:       self.ed.up()
         elif key == curses.KEY_DOWN:     self.ed.down()
+        elif key == curses.KEY_LEFT:     self.ed.left()
         elif key == curses.KEY_RIGHT:    self.ed.right()
         elif key == curses.KEY_HOME:     self.ed.home()
         elif key == curses.KEY_END:      self.ed.end()
@@ -563,6 +588,81 @@ class _App:
         return True
 
     def _exit_config_tags(self) -> None:
+        self.mode = _Mode.BROWSE
+        try:
+            curses.curs_set(0)
+        except curses.error:
+            pass
+
+    # ── session context ───────────────────────────────────────────────────────
+
+    def _draw_session_pane(self, h: int, x: int, w: int) -> None:
+        self._put(1, x + 2, "── session context ──  Enter save   Esc cancel   Ctrl+X clear", curses.A_BOLD)
+        self._put(3, x + 2, "Type #tags and @mentions (applies to all new notes this session):", curses.A_DIM)
+
+        field_y = 5
+        cx = x + 2
+        for token in self._session_buf.split():
+            if token.startswith("#"):
+                attr: int = curses.color_pair(_C_TAG) | curses.A_BOLD
+            elif token.startswith("@"):
+                attr = curses.color_pair(_C_ENTITY) | curses.A_BOLD
+            else:
+                attr = curses.A_NORMAL
+            self._put(field_y, cx, token, attr)
+            cx += len(token) + 1
+
+    def _place_session_cursor(self, h: int, x: int, w: int) -> None:
+        try:
+            curses.curs_set(1)
+        except curses.error:
+            pass
+        col = x + 2 + self._session_cur
+        # Adjust for spaces between tokens (each space is 1 char in the buffer)
+        if 0 < 5 < h - 1 and col < x + w:
+            try:
+                self.scr.move(5, col)
+            except curses.error:
+                pass
+
+    def _session_input(self, key: int) -> bool:
+        if key in (10, 13):  # Enter — save
+            from .parser import parse as _parse
+            parsed = _parse(self._session_buf)
+            if parsed.tags or parsed.entities:
+                set_session_context(parsed.tags, parsed.entities)
+            else:
+                clear_session_context()
+            self._exit_session()
+        elif key == 24:  # Ctrl+X — clear
+            clear_session_context()
+            self._session_buf = ""
+            self._session_cur = 0
+            self._exit_session()
+        elif key == 27:  # Esc — cancel
+            self._exit_session()
+        elif key == curses.KEY_LEFT:
+            self._session_cur = max(0, self._session_cur - 1)
+        elif key == curses.KEY_RIGHT:
+            self._session_cur = min(len(self._session_buf), self._session_cur + 1)
+        elif key == curses.KEY_HOME:
+            self._session_cur = 0
+        elif key == curses.KEY_END:
+            self._session_cur = len(self._session_buf)
+        elif key in (curses.KEY_BACKSPACE, 127, 8):
+            if self._session_cur > 0:
+                self._session_buf = self._session_buf[: self._session_cur - 1] + self._session_buf[self._session_cur :]
+                self._session_cur -= 1
+        elif key == curses.KEY_DC:
+            if self._session_cur < len(self._session_buf):
+                self._session_buf = self._session_buf[: self._session_cur] + self._session_buf[self._session_cur + 1 :]
+        elif 32 <= key <= 126:
+            ch = chr(key)
+            self._session_buf = self._session_buf[: self._session_cur] + ch + self._session_buf[self._session_cur :]
+            self._session_cur += 1
+        return True
+
+    def _exit_session(self) -> None:
         self.mode = _Mode.BROWSE
         try:
             curses.curs_set(0)

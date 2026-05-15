@@ -3,6 +3,7 @@ import sys
 import click
 
 from .models import Note
+from .session import clear_session_context, get_session_context, set_session_context
 from .store import (
     add_note,
     delete_note,
@@ -42,12 +43,16 @@ def add(text: str | None) -> None:
     if not text:
         raise click.ClickException("Note text cannot be empty.")
     defaults = get_default_tags()
-    if defaults:
+    session_tags, session_entities = get_session_context()
+    all_extra_tags = list(dict.fromkeys(defaults + session_tags))
+    if all_extra_tags or session_entities:
         from .parser import parse as _parse
-        existing = _parse(text).tags
-        missing = [t for t in defaults if t not in existing]
-        if missing:
-            text = text + " " + " ".join(f"#{t}" for t in missing)
+        parsed = _parse(text)
+        missing_tags = [t for t in all_extra_tags if t not in parsed.tags]
+        missing_entities = [e for e in session_entities if e not in parsed.entities]
+        suffix = [f"#{t}" for t in missing_tags] + [f"@{e}" for e in missing_entities]
+        if suffix:
+            text = text + " " + " ".join(suffix)
     note = add_note(text)
     click.echo(f"Added note #{note.id}")
 
@@ -148,3 +153,45 @@ def config_default_tags(tags: tuple[str, ...], clear: bool) -> None:
             click.echo("Default tags: " + "  ".join(f"#{t}" for t in current))
         else:
             click.echo("No default tags configured.")
+
+
+@cli.group()
+def session() -> None:
+    """Manage the current session context (not persisted to the database)."""
+
+
+@session.command("set")
+@click.option("--tag", "tags", multiple=True, help="Tag to apply to all new notes (omit #).")
+@click.option("--mention", "mentions", multiple=True, help="Entity to apply to all new notes (omit @).")
+def session_set(tags: tuple[str, ...], mentions: tuple[str, ...]) -> None:
+    """Set session-wide #tags and @mentions applied to every new note.
+
+    Replaces any previously active session context.
+    """
+    if not tags and not mentions:
+        raise click.ClickException("Provide at least one --tag or --mention.")
+    norm_tags = [t.lstrip("#").lower() for t in tags if t.strip()]
+    norm_mentions = [m.lstrip("@").lower() for m in mentions if m.strip()]
+    set_session_context(norm_tags, norm_mentions)
+    parts = ["  ".join(f"#{t}" for t in norm_tags), "  ".join(f"@{e}" for e in norm_mentions)]
+    click.echo("Session context: " + "  ".join(p for p in parts if p))
+
+
+@session.command("show")
+def session_show() -> None:
+    """Show the active session context."""
+    tags, entities = get_session_context()
+    if not tags and not entities:
+        click.echo("No session context active.")
+        return
+    if tags:
+        click.echo("tags:    " + "  ".join(f"#{t}" for t in tags))
+    if entities:
+        click.echo("mentions: " + "  ".join(f"@{e}" for e in entities))
+
+
+@session.command("clear")
+def session_clear() -> None:
+    """Clear the active session context."""
+    clear_session_context()
+    click.echo("Session context cleared.")
