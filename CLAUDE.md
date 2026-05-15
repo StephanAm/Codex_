@@ -63,12 +63,22 @@ All tool configuration (pytest, ruff, mypy, coverage) is in `pyproject.toml`. My
 | `sync/device.py` | Generates and persists a stable per-device ID |
 | `sync/merge.py` | 3-way merge logic for reconciling remote DBs into the local DB |
 
+### Tag and reference syntax
+
+Notes use two inline annotation types, parsed from the body text by `parser.py`:
+
+- **Tags** — `#ThisIsATag` — categorise a note (topic, project, type of entry, etc.)
+- **References** — `@ThisIsAReference` — refer to a person, team, or named entity
+
+Both use CamelCase with no spaces. They are stored lowercase in the DB regardless of how they are written.
+
 ### Key conventions
 
 - New UI layers (GUI, etc.) should import from `store.py` directly — not from `cli.py` or `tui.py`.
 - `store.py` functions accept an optional `db_path` parameter for test isolation.
-- Tags and entities are always stored lowercase; `parser.py` normalises them.
+- Tags and references are always stored lowercase; `parser.py` normalises them.
 - The `session.py` context is process-local (env-var backed) and is not persisted to the DB.
+- The codebase uses "entities" internally for what the user calls "references" — treat the terms as synonymous.
 
 ## Renaming the package
 
