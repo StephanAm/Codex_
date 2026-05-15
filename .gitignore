@@ -34,6 +34,11 @@ new_python_project.py
 # Ruff
 .ruff_cache/
 
+# GUI (Tauri + React)
+gui/node_modules/
+gui/dist/
+gui/src-tauri/target/
+
 # Editors
 .vscode/
 .idea/

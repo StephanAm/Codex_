@@ -1,37 +1,100 @@
-# note_taker
+# note-taker
 
-A command-line tool for creating, organizing, and searching notes.
+A command-line tool for capturing, tagging, and searching plain-text notes, with Google Drive sync across devices.
 
 ## Setup
 
 ```bash
-uv sync
+uv sync                                    # core dependencies
+uv sync --extra google-drive              # + Google Drive sync support
 ```
 
 ## Usage
 
+### TUI (interactive)
+
 ```bash
-# Run tests
-uv run pytest
+note-tui
+```
 
-# Lint
-uv run ruff check
+Key bindings: `a` add · `e`/Enter edit · `d` delete · `/` search · `s` session · `S` sync · `c` config · `q` quit
 
-# Format
-uv run ruff format
+### CLI
 
-# Type check
-uv run mypy
+```bash
+# Add a note (inline, prompted, or piped)
+note add "Discussed roadmap with @alice #planning"
+echo "Quick thought" | note add
+
+# List and search
+note list
+note list --tag planning --limit 50
+note search "roadmap"
+
+# Delete
+note delete 42
+```
+
+### Tags and entities
+
+Notes are parsed for `#tags` and `@entities` automatically. Use them inline in any note body.
+
+```bash
+note add "Reviewed PR with @bob #code-review"
+note list --tag code-review
+note list --entity bob
+```
+
+### Session context
+
+Apply tags/entities to all new notes in a shell session without typing them each time.
+
+```bash
+note session set --tag standup --mention alice
+note session show
+note session clear
+```
+
+### Sync (Google Drive)
+
+Place `credentials.json` from the Google Cloud Console in `~/.note_taker/`.
+
+```bash
+note sync push          # upload this device's DB
+note sync pull          # merge all other devices' DBs locally
+note sync status        # show device ID and folder config
+note sync config folder my-notes-folder
 ```
 
 ## Project structure
 
 ```
-├── src/
-│   └── note_taker/      # package source
-├── tests/              # pytest tests
-├── pyproject.toml      # project config, tool config, dependencies
+├── src/note_taker/
+│   ├── cli.py          # Click entry point  (`note` command)
+│   ├── tui.py          # Curses TUI         (`note-tui` command)
+│   ├── store.py        # All DB reads/writes (primary API layer)
+│   ├── models.py       # Note and Entity dataclasses
+│   ├── parser.py       # Extracts #tags and @entities from text
+│   ├── session.py      # In-process session context (env-var backed)
+│   ├── db.py           # SQLite connection and schema setup
+│   └── sync/
+│       ├── adapter.py       # Abstract sync adapter interface
+│       ├── google_drive.py  # Google Drive implementation
+│       ├── device.py        # Stable per-device ID
+│       └── merge.py         # 3-way merge logic
+├── tests/
+├── pyproject.toml
 └── .github/workflows/  # CI
+```
+
+## Dev commands
+
+```bash
+uv run pytest                              # run all tests with coverage
+uv run pytest tests/test_foo.py::test_bar  # run a single test
+uv run ruff check                          # lint
+uv run ruff format                         # format
+uv run mypy                                # type check
 ```
 
 ## Logging
@@ -46,9 +109,3 @@ log.info("started")
 ```
 
 Console output shows a level icon, a colour-coded logger name, and the message. All logs are also written in ISO 8601 format to `app.log`.
-
-## Renaming the package
-
-1. Rename `src/note_taker/` to `src/<yourpackage>/`
-2. Update `name` and `packages` in `pyproject.toml`
-3. Update imports in `tests/`

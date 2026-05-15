@@ -4,21 +4,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project purpose
 
-A note-taking tool built in three layers:
-1. **CLI** — type notes and persist them to local storage (current focus)
-2. **REST API** — expose notes over HTTP once CLI is stable
-3. **Web UI** — browser interface on top of the REST API
+A note-taking tool built in layers:
+
+1. **CLI** (`note`) — done. Click-based commands: add, list, search, delete, entities, config, session, sync.
+2. **TUI** (`note-tui`) — done. Interactive curses UI with browse/add/edit/delete/search/config/session/sync.
+3. **GUI** — planned next. A desktop or web UI that calls `store.py` directly (no REST API intermediary).
 
 ## Commands
 
 ```bash
-uv sync                        # install all dependencies
+uv sync --extra google-drive   # install all dependencies (incl. Google Drive)
 uv run pytest                  # run all tests with coverage
 uv run pytest tests/test_foo.py::test_bar  # run a single test
 uv run ruff check              # lint
 uv run ruff format             # format
 uv run mypy                    # type check
-python pack.py                 # regenerate new_python_project.py after changing template files
+```
+
+### Running the GUI (two terminals)
+
+```bash
+# Terminal 1 — Python API server
+uv run note-api                # starts FastAPI on http://localhost:8765
+
+# Terminal 2 — Tauri desktop window
+cd gui && npm run tauri dev    # requires Rust/Cargo installed
+```
+
+Rust installation (one-time, if not already installed):
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+# Also needed on Linux: libwebkit2gtk-4.1-dev librsvg2-dev
 ```
 
 ## Architecture
@@ -26,6 +42,30 @@ python pack.py                 # regenerate new_python_project.py after changing
 This is a `src/` layout package. Source lives under `src/note_taker/`; tests live under `tests/`. The package is installed in editable mode by `uv sync`, so imports resolve to the `src/` tree.
 
 All tool configuration (pytest, ruff, mypy, coverage) is in `pyproject.toml`. Mypy runs in strict mode against `src/` only.
+
+### Module overview
+
+| Module | Role |
+|---|---|
+| `cli.py` | Click entry point for the `note` command |
+| `tui.py` | Curses TUI entry point for `note-tui`; all UI state lives here |
+| `store.py` | All DB reads/writes — the primary API layer used by both CLI and TUI |
+| `models.py` | `Note` and `Entity` dataclasses |
+| `parser.py` | Extracts `#tags` and `@entities` from free-form note text |
+| `session.py` | In-process session context backed by env vars; auto-applies tags/entities to new notes |
+| `db.py` | SQLite connection factory and schema migrations |
+| `logger.py` | Structured logger (`get_logger`); use instead of `print` everywhere |
+| `sync/adapter.py` | Abstract sync adapter interface |
+| `sync/google_drive.py` | Google Drive implementation of the adapter |
+| `sync/device.py` | Generates and persists a stable per-device ID |
+| `sync/merge.py` | 3-way merge logic for reconciling remote DBs into the local DB |
+
+### Key conventions
+
+- New UI layers (GUI, etc.) should import from `store.py` directly — not from `cli.py` or `tui.py`.
+- `store.py` functions accept an optional `db_path` parameter for test isolation.
+- Tags and entities are always stored lowercase; `parser.py` normalises them.
+- The `session.py` context is process-local (env-var backed) and is not persisted to the DB.
 
 ## Renaming the package
 
