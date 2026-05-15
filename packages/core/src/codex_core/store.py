@@ -40,18 +40,13 @@ def _load_note(conn: sqlite3.Connection, row: sqlite3.Row) -> Note:
     )
 
 
-def add_note(body: str, db_path: Path | None = None) -> Note:
-    conn = connect(db_path)
-    parsed = parse(body)
-    now = datetime.now(timezone.utc).isoformat()
-
-    cur = conn.execute(
-        "INSERT INTO notes (uuid, body, created_at, updated_at, time_stamp) VALUES (?, ?, ?, ?, ?)",
-        (str(uuid4()), body, now, now, now),
-    )
-    note_id = cur.lastrowid
-
-    for tag in parsed.tags:
+def _attach_tags_entities(
+    conn: sqlite3.Connection,
+    note_id: int | None,
+    tags: list[str],
+    entities: list[str],
+) -> None:
+    for tag in tags:
         conn.execute("INSERT OR IGNORE INTO tags (name) VALUES (?)", (tag,))
         tag_id = conn.execute(
             "SELECT id FROM tags WHERE name = ?", (tag,)
@@ -60,8 +55,7 @@ def add_note(body: str, db_path: Path | None = None) -> Note:
             "INSERT OR IGNORE INTO note_tags (note_id, tag_id) VALUES (?, ?)",
             (note_id, tag_id),
         )
-
-    for entity in parsed.entities:
+    for entity in entities:
         conn.execute("INSERT OR IGNORE INTO entities (name) VALUES (?)", (entity,))
         entity_id = conn.execute(
             "SELECT id FROM entities WHERE name = ?", (entity,)
@@ -71,6 +65,25 @@ def add_note(body: str, db_path: Path | None = None) -> Note:
             (note_id, entity_id),
         )
 
+
+def add_note(
+    body: str,
+    extra_tags: list[str] | None = None,
+    extra_entities: list[str] | None = None,
+    db_path: Path | None = None,
+) -> Note:
+    conn = connect(db_path)
+    parsed = parse(body)
+    tags = list(dict.fromkeys(parsed.tags + [t.lower() for t in (extra_tags or [])]))
+    entities = list(dict.fromkeys(parsed.entities + [e.lower() for e in (extra_entities or [])]))
+    now = datetime.now(timezone.utc).isoformat()
+
+    cur = conn.execute(
+        "INSERT INTO notes (uuid, body, created_at, updated_at, time_stamp) VALUES (?, ?, ?, ?, ?)",
+        (str(uuid4()), body, now, now, now),
+    )
+    note_id = cur.lastrowid
+    _attach_tags_entities(conn, note_id, tags, entities)
     conn.commit()
     row = conn.execute("SELECT * FROM notes WHERE id = ?", (note_id,)).fetchone()
     return _load_note(conn, row)
@@ -119,7 +132,13 @@ def search_notes(query: str, db_path: Path | None = None) -> list[Note]:
     return [_load_note(conn, r) for r in rows]
 
 
-def update_note(note_id: int, body: str, db_path: Path | None = None) -> Note | None:
+def update_note(
+    note_id: int,
+    body: str,
+    extra_tags: list[str] | None = None,
+    extra_entities: list[str] | None = None,
+    db_path: Path | None = None,
+) -> Note | None:
     conn = connect(db_path)
     now = datetime.now(timezone.utc).isoformat()
     cur = conn.execute(
@@ -130,29 +149,11 @@ def update_note(note_id: int, body: str, db_path: Path | None = None) -> Note | 
         return None
 
     parsed = parse(body)
+    tags = list(dict.fromkeys(parsed.tags + [t.lower() for t in (extra_tags or [])]))
+    entities = list(dict.fromkeys(parsed.entities + [e.lower() for e in (extra_entities or [])]))
     conn.execute("DELETE FROM note_tags WHERE note_id = ?", (note_id,))
     conn.execute("DELETE FROM note_entities WHERE note_id = ?", (note_id,))
-
-    for tag in parsed.tags:
-        conn.execute("INSERT OR IGNORE INTO tags (name) VALUES (?)", (tag,))
-        tag_id = conn.execute(
-            "SELECT id FROM tags WHERE name = ?", (tag,)
-        ).fetchone()["id"]
-        conn.execute(
-            "INSERT OR IGNORE INTO note_tags (note_id, tag_id) VALUES (?, ?)",
-            (note_id, tag_id),
-        )
-
-    for entity in parsed.entities:
-        conn.execute("INSERT OR IGNORE INTO entities (name) VALUES (?)", (entity,))
-        entity_id = conn.execute(
-            "SELECT id FROM entities WHERE name = ?", (entity,)
-        ).fetchone()["id"]
-        conn.execute(
-            "INSERT OR IGNORE INTO note_entities (note_id, entity_id) VALUES (?, ?)",
-            (note_id, entity_id),
-        )
-
+    _attach_tags_entities(conn, note_id, tags, entities)
     conn.commit()
     row = conn.execute("SELECT * FROM notes WHERE id = ?", (note_id,)).fetchone()
     return _load_note(conn, row)

@@ -65,17 +65,19 @@ def get_notes(
 
 class NoteBody(BaseModel):
     body: str
+    tags: list[str] = []
+    entities: list[str] = []
 
 
 @app.post("/notes", status_code=201)
 def create_note(payload: NoteBody) -> dict[str, Any]:
-    note = add_note(payload.body)
+    note = add_note(payload.body, extra_tags=payload.tags, extra_entities=payload.entities)
     return _note_dict(note)
 
 
 @app.put("/notes/{note_id}")
 def edit_note(note_id: int, payload: NoteBody) -> dict[str, Any]:
-    note = update_note(note_id, payload.body)
+    note = update_note(note_id, payload.body, extra_tags=payload.tags, extra_entities=payload.entities)
     if note is None:
         raise HTTPException(status_code=404, detail=f"Note #{note_id} not found")
     return _note_dict(note)

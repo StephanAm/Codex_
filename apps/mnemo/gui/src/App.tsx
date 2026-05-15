@@ -41,14 +41,14 @@ export default function App() {
     return () => window.removeEventListener("keydown", handleKey);
   }, [mode, selected]);
 
-  async function handleSave(body: string) {
-    if (!body) return;
+  async function handleSave(body: string, tags: string[], entities: string[]) {
+    if (!body && tags.length === 0 && entities.length === 0) return;
     if (mode === "add") {
-      const note = await api.notes.create(body);
+      const note = await api.notes.create(body, tags, entities);
       await loadNotes(query);
       setSelected(note);
     } else if (mode === "edit" && selected) {
-      const note = await api.notes.update(selected.id, body);
+      const note = await api.notes.update(selected.id, body, tags, entities);
       await loadNotes(query);
       setSelected(note);
     }

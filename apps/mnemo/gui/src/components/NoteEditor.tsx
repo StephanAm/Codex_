@@ -6,7 +6,7 @@ interface Props {
   initialBody?: string;
   initialTags?: string[];
   initialEntities?: string[];
-  onSave: (body: string) => void;
+  onSave: (body: string, tags: string[], entities: string[]) => void;
   onCancel: () => void;
 }
 
@@ -30,22 +30,10 @@ export function NoteEditor({
     api.entities.list().then(es => setAllEntities(es.map(e => e.name)));
   }, []);
 
-  function buildBody() {
-    const tagTokens = selectedTags
-      .filter(t => !body.includes(`#${t}`))
-      .map(t => `#${t}`);
-    const entityTokens = selectedEntities
-      .filter(e => !body.includes(`@${e}`))
-      .map(e => `@${e}`);
-    const suffix = [...tagTokens, ...entityTokens].join(" ");
-    return suffix ? `${body.trim()} ${suffix}` : body.trim();
-  }
-
   function handleKeyDown(e: React.KeyboardEvent) {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
-      const built = buildBody();
-      if (built) onSave(built);
+      if (canSave) onSave(body.trim(), selectedTags, selectedEntities);
     }
     if (e.key === "Escape") {
       e.preventDefault();
@@ -53,7 +41,7 @@ export function NoteEditor({
     }
   }
 
-  const canSave = body.trim() || selectedTags.length > 0 || selectedEntities.length > 0;
+  const canSave = body.trim().length > 0 || selectedTags.length > 0 || selectedEntities.length > 0;
 
   return (
     <div className="note-editor">
@@ -86,7 +74,7 @@ export function NoteEditor({
         />
       </div>
       <div className="note-editor-actions">
-        <button className="btn btn-primary" onClick={() => { const b = buildBody(); if (b) onSave(b); }} disabled={!canSave}>
+        <button className="btn btn-primary" onClick={() => onSave(body.trim(), selectedTags, selectedEntities)} disabled={!canSave}>
           Save
         </button>
         <button className="btn btn-secondary" onClick={onCancel}>Cancel</button>

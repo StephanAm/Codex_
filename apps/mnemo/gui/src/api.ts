@@ -56,8 +56,10 @@ export const api = {
       const suffix = qs.toString() ? `?${qs}` : "";
       return get<Note[]>(`/notes${suffix}`);
     },
-    create: (body: string) => post<Note>("/notes", { body }),
-    update: (id: number, body: string) => put<Note>(`/notes/${id}`, { body }),
+    create: (body: string, tags: string[] = [], entities: string[] = []) =>
+      post<Note>("/notes", { body, tags, entities }),
+    update: (id: number, body: string, tags: string[] = [], entities: string[] = []) =>
+      put<Note>(`/notes/${id}`, { body, tags, entities }),
     delete: (id: number) => del(`/notes/${id}`),
   },
   tags: {
