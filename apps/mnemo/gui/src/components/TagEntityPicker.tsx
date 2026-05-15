@@ -7,9 +7,12 @@ interface Props {
   allItems: string[];
   selected: string[];
   onChange: (selected: string[]) => void;
+  allowNew?: boolean;
+  dropdownDir?: "up" | "down";
+  compact?: boolean;
 }
 
-export function TagEntityPicker({ label, prefix, kind, allItems, selected, onChange }: Props) {
+export function TagEntityPicker({ label, prefix, kind, allItems, selected, onChange, allowNew = true, dropdownDir = "up", compact = false }: Props) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -59,27 +62,37 @@ export function TagEntityPicker({ label, prefix, kind, allItems, selected, onCha
     <div className="picker-container" ref={containerRef}>
       <button
         type="button"
-        className={`picker-trigger picker-trigger-${kind}`}
+        className={`picker-trigger picker-trigger-${kind}${compact ? " picker-compact" : ""}`}
         onClick={() => setOpen(o => !o)}
       >
         <span className="picker-label">{label}</span>
-        {selected.length === 0 ? (
-          <span className="picker-placeholder">None selected</span>
+        {compact ? (
+          selected.length === 0 ? (
+            <span className="picker-placeholder">Any</span>
+          ) : selected.length === 1 ? (
+            <span className={badgeClass}>{prefix}{selected[0]}</span>
+          ) : (
+            <span className="picker-overflow">+{selected.length}</span>
+          )
         ) : (
-          <span className="picker-chips">
-            {selected.slice(0, 3).map(s => (
-              <span key={s} className={badgeClass}>{prefix}{s}</span>
-            ))}
-            {selected.length > 3 && (
-              <span className="picker-overflow">+{selected.length - 3}</span>
-            )}
-          </span>
+          selected.length === 0 ? (
+            <span className="picker-placeholder">None selected</span>
+          ) : (
+            <span className="picker-chips">
+              {selected.slice(0, 3).map(s => (
+                <span key={s} className={badgeClass}>{prefix}{s}</span>
+              ))}
+              {selected.length > 3 && (
+                <span className="picker-overflow">+{selected.length - 3}</span>
+              )}
+            </span>
+          )
         )}
         <span className="picker-arrow">{open ? "▴" : "▾"}</span>
       </button>
 
       {open && (
-        <div className="picker-dropdown">
+        <div className={`picker-dropdown${dropdownDir === "down" ? " picker-dropdown-down" : ""}`}>
           <div className="picker-search-wrap">
             <input
               ref={searchRef}
@@ -112,7 +125,7 @@ export function TagEntityPicker({ label, prefix, kind, allItems, selected, onCha
             ))}
           </ul>
 
-          {isNew && (
+          {isNew && allowNew && (
             <button type="button" className="picker-add-new" onClick={addNew}>
               + Add new: <span className={badgeClass}>{prefix}{search.trim().toLowerCase()}</span>
             </button>

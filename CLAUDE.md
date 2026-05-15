@@ -8,7 +8,7 @@ A note-taking tool built in layers:
 
 1. **CLI** (`note`) — done. Click-based commands: add, list, search, delete, entities, config, session, sync.
 2. **TUI** (`note-tui`) — done. Interactive curses UI with browse/add/edit/delete/search/config/session/sync.
-3. **GUI** — planned next. A desktop or web UI that calls `store.py` directly (no REST API intermediary).
+3. **GUI** — in progress. Tauri + React desktop app in `gui/`. See [`gui/README.md`](gui/README.md) for structure, important files, and dev commands.
 
 ## Commands
 

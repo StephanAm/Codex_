@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, Note } from "./api";
 import { ConfigPanel } from "./components/ConfigPanel";
 import { NoteDetail } from "./components/NoteDetail";
@@ -9,12 +9,48 @@ import "./App.css";
 
 type Mode = "view" | "add" | "edit" | "config";
 
+function timePeriodCutoff(period: string): Date | null {
+  const now = new Date();
+  switch (period) {
+    case "today": { const d = new Date(now); d.setHours(0, 0, 0, 0); return d; }
+    case "7d":  return new Date(now.getTime() - 7  * 86400_000);
+    case "30d": return new Date(now.getTime() - 30 * 86400_000);
+    case "3m":  return new Date(now.getTime() - 90 * 86400_000);
+    case "1y":  return new Date(now.getTime() - 365 * 86400_000);
+    default:    return null;
+  }
+}
+
 export default function App() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [selected, setSelected] = useState<Note | null>(null);
   const [mode, setMode] = useState<Mode>("view");
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
+  const [filterTags, setFilterTags] = useState<string[]>([]);
+  const [filterEntities, setFilterEntities] = useState<string[]>([]);
+  const [timePeriod, setTimePeriod] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
+  const allTags = useMemo(() => [...new Set(notes.flatMap(n => n.tags))].sort(), [notes]);
+  const allEntities = useMemo(() => [...new Set(notes.flatMap(n => n.entities))].sort(), [notes]);
+
+  const displayedNotes = useMemo(() => {
+    let from: Date | null;
+    let to: Date | null = null;
+    if (timePeriod === "custom") {
+      from = dateFrom ? new Date(dateFrom) : null;
+      to = dateTo ? new Date(dateTo + "T23:59:59") : null;
+    } else {
+      from = timePeriodCutoff(timePeriod);
+    }
+    return notes
+      .filter(n => !from || new Date(n.created_at) >= from)
+      .filter(n => !to   || new Date(n.created_at) <= to)
+      .filter(n => filterTags.length === 0 || n.tags.some(t => filterTags.includes(t)))
+      .filter(n => filterEntities.length === 0 || n.entities.some(e => filterEntities.includes(e)));
+  }, [notes, filterTags, filterEntities, timePeriod, dateFrom, dateTo]);
 
   const loadNotes = useCallback(async (q?: string) => {
     try {
@@ -125,11 +161,23 @@ export default function App() {
 
       <div className="app-body">
         <NoteList
-          notes={notes}
+          notes={displayedNotes}
           selectedId={selected?.id ?? null}
           query={query}
+          filterTags={filterTags}
+          filterEntities={filterEntities}
+          allTags={allTags}
+          allEntities={allEntities}
+          timePeriod={timePeriod}
+          dateFrom={dateFrom}
+          dateTo={dateTo}
           onSelect={handleSelect}
           onQueryChange={setQuery}
+          onFilterTagsChange={setFilterTags}
+          onFilterEntitiesChange={setFilterEntities}
+          onTimePeriodChange={setTimePeriod}
+          onDateFromChange={setDateFrom}
+          onDateToChange={setDateTo}
           onAdd={() => setMode("add")}
         />
         <main className="main-panel">
