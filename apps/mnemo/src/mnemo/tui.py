@@ -4,11 +4,23 @@ from __future__ import annotations
 
 import curses
 import re
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from enum import Enum, auto
 
 from .models import Note
 from .session import clear_session_context, get_session_context, set_session_context
-from .store import add_note, delete_note, get_default_tags, list_notes, search_notes, set_default_tags, update_note
+from .store import (
+    add_note,
+    delete_note,
+    get_default_tags,
+    get_sync_folder,
+    list_notes,
+    search_notes,
+    set_default_tags,
+    set_sync_folder,
+    update_note,
+)
 
 # ── colour pair indices ───────────────────────────────────────────────────────
 _C_HEADER = 1  # white on blue
@@ -26,8 +38,20 @@ class _Mode(Enum):
     EDIT        = auto()
     SEARCH      = auto()
     CONFIRM_DEL = auto()
-    CONFIG_TAGS = auto()
+    CONFIG      = auto()
     SESSION     = auto()
+
+
+_CFG_LABEL_W = 16  # fixed label column width in the config pane
+
+
+@dataclass
+class _CfgField:
+    label: str
+    hint: str
+    buf: str
+    save: Callable[[str], None]
+    cur: int = field(default=0, init=False)
 
 
 # ── editor buffer ─────────────────────────────────────────────────────────────
@@ -121,8 +145,8 @@ class _App:
         self.query  = ""  # live search filter
         self.ed: _Editor | None = None
         self._edit_id: int | None = None
-        self._tag_buf = ""   # input buffer for CONFIG_TAGS mode
-        self._tag_cur = 0    # cursor position within _tag_buf
+        self._cfg_fields: list[_CfgField] = []
+        self._cfg_sel = 0
         self._session_buf = ""  # input buffer for SESSION mode (free text with #/@)
         self._session_cur = 0
 
@@ -215,8 +239,8 @@ class _App:
 
         if self.mode in (_Mode.EDIT, _Mode.ADD):
             self._draw_editor_pane(h, lw + 1, dw)
-        elif self.mode == _Mode.CONFIG_TAGS:
-            self._draw_config_tags_pane(h, lw + 1, dw)
+        elif self.mode == _Mode.CONFIG:
+            self._draw_config_pane(h, lw + 1, dw)
         elif self.mode == _Mode.SESSION:
             self._draw_session_pane(h, lw + 1, dw)
         else:
@@ -227,8 +251,8 @@ class _App:
         # Must be last — status bar drawing moves the cursor away from the caret
         if self.mode in (_Mode.EDIT, _Mode.ADD):
             self._place_cursor(h, lw + 1, dw)
-        elif self.mode == _Mode.CONFIG_TAGS:
-            self._place_tag_cursor(h, lw + 1, dw)
+        elif self.mode == _Mode.CONFIG:
+            self._place_config_cursor(h, lw + 1, dw)
         elif self.mode == _Mode.SESSION:
             self._place_session_cursor(h, lw + 1, dw)
 
@@ -370,56 +394,115 @@ class _App:
             except curses.error:
                 pass
 
-    # ── config tags pane ─────────────────────────────────────────────────────
+    # ── config pane ───────────────────────────────────────────────────────────
 
-    def _draw_config_tags_pane(self, h: int, x: int, w: int) -> None:
-        self._put(1, x + 2, "── default tags ──  Enter save   Esc cancel", curses.A_BOLD)
-        self._put(3, x + 2, "Space-separated tag names (without #):", curses.A_DIM)
+    def _enter_config(self) -> None:
+        self._cfg_fields = [
+            _CfgField(
+                label="Default tags",
+                hint="Space-separated tag names (without #)",
+                buf=" ".join(get_default_tags()),
+                save=lambda v: set_default_tags([t for t in v.split() if t]),
+            ),
+            _CfgField(
+                label="Drive folder",
+                hint="Google Drive folder used for sync",
+                buf=get_sync_folder(),
+                save=set_sync_folder,
+            ),
+        ]
+        self._cfg_sel = 0
+        self._cfg_fields[0].cur = len(self._cfg_fields[0].buf)
+        self.mode = _Mode.CONFIG
 
-        # render buffer with # colouring
-        field_y = 5
-        cx = x + 2
-        tokens = self._tag_buf.split(" ")
-        for i, tok in enumerate(tokens):
-            if tok:
-                display = f"#{tok}"
-                self._put(field_y, cx, display, curses.color_pair(_C_TAG) | curses.A_BOLD)
-                cx += len(display)
-            if i < len(tokens) - 1:
-                self._put(field_y, cx, " ")
-                cx += 1
+    def _draw_config_pane(self, h: int, x: int, w: int) -> None:
+        self._put(1, x + 2, "── configuration ──  Ctrl+S save   Esc cancel", curses.A_BOLD)
 
-    def _place_tag_cursor(self, h: int, x: int, w: int) -> None:
+        for i, f in enumerate(self._cfg_fields):
+            y = 3 + i
+            if y >= h - 2:
+                break
+            is_sel = i == self._cfg_sel
+            label = f.label.ljust(_CFG_LABEL_W)
+            prefix = "▸ " if is_sel else "  "
+            attr = curses.A_BOLD if is_sel else curses.A_NORMAL
+            self._put(y, x + 2, prefix + label + f.buf, attr)
+
+        hint_y = 3 + len(self._cfg_fields) + 1
+        if hint_y < h - 1 and self._cfg_fields:
+            self._put(hint_y, x + 2, self._cfg_fields[self._cfg_sel].hint, curses.A_DIM)
+
+    def _place_config_cursor(self, h: int, x: int, w: int) -> None:
         try:
             curses.curs_set(1)
         except curses.error:
             pass
-        # compute screen column matching _tag_cur in the buffer
-        prefix = self._tag_buf[: self._tag_cur]
-        # each non-space char gets a # prepended when rendered
-        col = x + 2
-        tokens_before = prefix.split(" ")
-        for i, tok in enumerate(tokens_before):
-            if tok:
-                col += len(tok) + 1  # +1 for the '#'
-            if i < len(tokens_before) - 1:
-                col += 1  # space separator
-        if 0 < 5 < h - 1 and col < x + w:
+        if not self._cfg_fields:
+            return
+        row_y = 3 + self._cfg_sel
+        col = x + 2 + 2 + _CFG_LABEL_W + self._cfg_fields[self._cfg_sel].cur
+        if 0 < row_y < h - 1 and col < x + w:
             try:
-                self.scr.move(5, col)
+                self.scr.move(row_y, col)
             except curses.error:
                 pass
+
+    def _config_input(self, key: int) -> bool:
+        if not self._cfg_fields:
+            return True
+        f = self._cfg_fields[self._cfg_sel]
+
+        if key == 19:  # Ctrl+S — save all and exit
+            for field in self._cfg_fields:
+                field.save(field.buf)
+            self._exit_config()
+        elif key == 27:  # Esc — discard
+            self._exit_config()
+        elif key == curses.KEY_UP and self._cfg_sel > 0:
+            self._cfg_sel -= 1
+            self._cfg_fields[self._cfg_sel].cur = len(self._cfg_fields[self._cfg_sel].buf)
+        elif key == curses.KEY_DOWN and self._cfg_sel < len(self._cfg_fields) - 1:
+            self._cfg_sel += 1
+            self._cfg_fields[self._cfg_sel].cur = len(self._cfg_fields[self._cfg_sel].buf)
+        elif key == curses.KEY_LEFT:
+            f.cur = max(0, f.cur - 1)
+        elif key == curses.KEY_RIGHT:
+            f.cur = min(len(f.buf), f.cur + 1)
+        elif key == curses.KEY_HOME:
+            f.cur = 0
+        elif key == curses.KEY_END:
+            f.cur = len(f.buf)
+        elif key in (curses.KEY_BACKSPACE, 127, 8):
+            if f.cur > 0:
+                f.buf = f.buf[: f.cur - 1] + f.buf[f.cur :]
+                f.cur -= 1
+        elif key == curses.KEY_DC:
+            if f.cur < len(f.buf):
+                f.buf = f.buf[: f.cur] + f.buf[f.cur + 1 :]
+        elif 32 <= key <= 126:
+            ch = chr(key)
+            f.buf = f.buf[: f.cur] + ch + f.buf[f.cur :]
+            f.cur += 1
+        return True
+
+    def _exit_config(self) -> None:
+        self._cfg_fields = []
+        self.mode = _Mode.BROWSE
+        try:
+            curses.curs_set(0)
+        except curses.error:
+            pass
 
     # ── status bar ────────────────────────────────────────────────────────────
 
     def _draw_status(self, y: int, w: int) -> None:
         bars: dict[_Mode, str] = {
-            _Mode.BROWSE:      "  up/down navigate   Enter/e edit   a add   d delete   / search   t tags   s session   q quit",
+            _Mode.BROWSE:      "  up/down navigate   Enter/e edit   a add   d delete   / search   c config   s session   q quit",
             _Mode.CONFIRM_DEL: "  Delete this note?   y yes   n / Esc no",
             _Mode.SEARCH:      f"  Search: {self.query}▌   Enter keep   Esc clear",
             _Mode.EDIT:        "  Ctrl+S save   Esc cancel",
             _Mode.ADD:         "  Ctrl+S save   Esc cancel",
-            _Mode.CONFIG_TAGS: "  Enter save   Esc cancel",
+            _Mode.CONFIG:      "  up/down select field   Ctrl+S save   Esc cancel",
             _Mode.SESSION:     "  Enter save   Esc cancel   Ctrl+X clear session",
         }
         bar = bars.get(self.mode, "")
@@ -436,8 +519,8 @@ class _App:
             return self._search_input(key)
         if self.mode == _Mode.CONFIRM_DEL:
             return self._confirm_del(key)
-        if self.mode == _Mode.CONFIG_TAGS:
-            return self._config_tags_input(key)
+        if self.mode == _Mode.CONFIG:
+            return self._config_input(key)
         if self.mode == _Mode.SESSION:
             return self._session_input(key)
         return True
@@ -480,11 +563,8 @@ class _App:
             self._reload()
             self.mode = _Mode.SEARCH
 
-        elif key == ord("t"):
-            current = get_default_tags()
-            self._tag_buf = " ".join(current)
-            self._tag_cur = len(self._tag_buf)
-            self.mode = _Mode.CONFIG_TAGS
+        elif key in (ord("c"), ord("C")):
+            self._enter_config()
 
         elif key in (ord("s"), ord("S")):
             s_tags, s_entities = get_session_context()
@@ -547,47 +627,6 @@ class _App:
     def _exit_editor(self) -> None:
         self.ed = None
         self._edit_id = None
-        self.mode = _Mode.BROWSE
-        try:
-            curses.curs_set(0)
-        except curses.error:
-            pass
-
-    # ── config tags ───────────────────────────────────────────────────────────
-
-    def _config_tags_input(self, key: int) -> bool:
-        if key in (10, 13):  # Enter — save
-            tags = [t for t in self._tag_buf.split() if t]
-            set_default_tags(tags)
-            self._exit_config_tags()
-        elif key == 27:  # Esc — cancel
-            self._exit_config_tags()
-        elif key in (curses.KEY_LEFT,):
-            self._tag_cur = max(0, self._tag_cur - 1)
-        elif key == curses.KEY_RIGHT:
-            self._tag_cur = min(len(self._tag_buf), self._tag_cur + 1)
-        elif key == curses.KEY_HOME:
-            self._tag_cur = 0
-        elif key == curses.KEY_END:
-            self._tag_cur = len(self._tag_buf)
-        elif key in (curses.KEY_BACKSPACE, 127, 8):
-            if self._tag_cur > 0:
-                self._tag_buf = self._tag_buf[: self._tag_cur - 1] + self._tag_buf[self._tag_cur :]
-                self._tag_cur -= 1
-        elif key == curses.KEY_DC:
-            if self._tag_cur < len(self._tag_buf):
-                self._tag_buf = self._tag_buf[: self._tag_cur] + self._tag_buf[self._tag_cur + 1 :]
-        elif 32 <= key <= 126:
-            ch = chr(key)
-            # strip # if the user types it — we add it in rendering
-            if ch == "#":
-                ch = ""
-            if ch:
-                self._tag_buf = self._tag_buf[: self._tag_cur] + ch + self._tag_buf[self._tag_cur :]
-                self._tag_cur += 1
-        return True
-
-    def _exit_config_tags(self) -> None:
         self.mode = _Mode.BROWSE
         try:
             curses.curs_set(0)
