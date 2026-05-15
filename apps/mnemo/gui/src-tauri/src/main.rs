@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    homestephancodenote_takergui_lib::run()
+    note_taker_gui_lib::run()
 }
