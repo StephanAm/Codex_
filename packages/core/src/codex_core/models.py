@@ -9,6 +9,7 @@ class Note:
     body: str
     created_at: datetime
     updated_at: datetime
+    time_stamp: datetime
     tags: list[str] = field(default_factory=list)
     entities: list[str] = field(default_factory=list)
 

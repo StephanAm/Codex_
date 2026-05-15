@@ -63,6 +63,8 @@ def _migrate(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE notes ADD COLUMN uuid TEXT")
     if "updated_at" not in existing:
         conn.execute("ALTER TABLE notes ADD COLUMN updated_at TEXT")
+    if "time_stamp" not in existing:
+        conn.execute("ALTER TABLE notes ADD COLUMN time_stamp TEXT")
 
     conn.execute(
         "CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_uuid ON notes(uuid)"
@@ -72,5 +74,6 @@ def _migrate(conn: sqlite3.Connection) -> None:
     for row in conn.execute("SELECT id FROM notes WHERE uuid IS NULL").fetchall():
         conn.execute("UPDATE notes SET uuid = ? WHERE id = ?", (str(uuid4()), row[0]))
     conn.execute("UPDATE notes SET updated_at = created_at WHERE updated_at IS NULL")
+    conn.execute("UPDATE notes SET time_stamp = created_at WHERE time_stamp IS NULL")
 
     conn.commit()

@@ -34,6 +34,7 @@ def _load_note(conn: sqlite3.Connection, row: sqlite3.Row) -> Note:
         body=row["body"],
         created_at=datetime.fromisoformat(row["created_at"]),
         updated_at=datetime.fromisoformat(row["updated_at"]),
+        time_stamp=datetime.fromisoformat(row["time_stamp"]),
         tags=tags,
         entities=entities,
     )
@@ -45,8 +46,8 @@ def add_note(body: str, db_path: Path | None = None) -> Note:
     now = datetime.now(timezone.utc).isoformat()
 
     cur = conn.execute(
-        "INSERT INTO notes (uuid, body, created_at, updated_at) VALUES (?, ?, ?, ?)",
-        (str(uuid4()), body, now, now),
+        "INSERT INTO notes (uuid, body, created_at, updated_at, time_stamp) VALUES (?, ?, ?, ?, ?)",
+        (str(uuid4()), body, now, now, now),
     )
     note_id = cur.lastrowid
 
