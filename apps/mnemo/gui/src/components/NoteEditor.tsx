@@ -77,7 +77,7 @@ export function NoteEditor({
           onChange={setSelectedTags}
         />
         <TagEntityPicker
-          label="Entities"
+          label="References"
           prefix="@"
           kind="entity"
           allItems={allEntities}
