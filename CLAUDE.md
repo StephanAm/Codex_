@@ -25,10 +25,13 @@ uv run mypy                    # type check
 
 ```bash
 # Terminal 1 — Python API server
-uv run note-api                # starts FastAPI on http://localhost:8765
+./gui/gui.sh api               # starts FastAPI on http://localhost:8765
 
 # Terminal 2 — Tauri desktop window
-cd gui && npm run tauri dev    # requires Rust/Cargo installed
+./gui/gui.sh dev               # requires Rust/Cargo installed
+
+# Build check (TypeScript + Vite)
+./gui/gui.sh build
 ```
 
 Rust installation (one-time, if not already installed):

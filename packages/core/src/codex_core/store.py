@@ -173,6 +173,12 @@ def delete_note(note_id: int, db_path: Path | None = None) -> bool:
     return True
 
 
+def list_tags(db_path: Path | None = None) -> list[str]:
+    conn = connect(db_path)
+    rows = conn.execute("SELECT name FROM tags ORDER BY name").fetchall()
+    return [r["name"] for r in rows]
+
+
 def list_entities(db_path: Path | None = None) -> list[Entity]:
     conn = connect(db_path)
     rows = conn.execute("SELECT * FROM entities ORDER BY name").fetchall()

@@ -19,6 +19,7 @@ from .store import (
     get_sync_folder,
     list_entities,
     list_notes,
+    list_tags,
     search_notes,
     set_default_tags,
     set_sync_folder,
@@ -86,7 +87,12 @@ def remove_note(note_id: int) -> None:
         raise HTTPException(status_code=404, detail=f"Note #{note_id} not found")
 
 
-# ── entities ──────────────────────────────────────────────────────────────────
+# ── tags & entities ───────────────────────────────────────────────────────────
+
+@app.get("/tags")
+def get_tags() -> list[str]:
+    return list_tags()
+
 
 @app.get("/entities")
 def get_entities() -> list[dict[str, Any]]:

@@ -60,6 +60,9 @@ export const api = {
     update: (id: number, body: string) => put<Note>(`/notes/${id}`, { body }),
     delete: (id: number) => del(`/notes/${id}`),
   },
+  tags: {
+    list: () => get<string[]>("/tags"),
+  },
   entities: {
     list: () => get<Entity[]>("/entities"),
   },

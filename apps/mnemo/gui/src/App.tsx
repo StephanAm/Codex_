@@ -85,6 +85,8 @@ export default function App() {
       return (
         <NoteEditor
           initialBody={selected.body}
+          initialTags={selected.tags}
+          initialEntities={selected.entities}
           onSave={handleSave}
           onCancel={() => setMode("view")}
         />
