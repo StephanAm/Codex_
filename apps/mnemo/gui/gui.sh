@@ -18,6 +18,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
 
 case "${1:-}" in
+  kill)
+    pkill -f "uvicorn note_taker.api" && echo "API server stopped." || echo "No running API server found."
+    ;;
   build)
     cd "$SCRIPT_DIR"
     npm run build
@@ -31,7 +34,7 @@ case "${1:-}" in
     .venv/bin/uvicorn note_taker.api:app --host 127.0.0.1 --port 8765 --reload
     ;;
   *)
-    echo "Usage: $0 {build|dev|api}" >&2
+    echo "Usage: $0 {build|dev|api|kill}" >&2
     exit 1
     ;;
 esac
