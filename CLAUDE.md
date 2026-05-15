@@ -72,6 +72,10 @@ Notes use two inline annotation types, parsed from the body text by `parser.py`:
 
 Both use CamelCase with no spaces. They are stored lowercase in the DB regardless of how they are written.
 
+### Build artefacts
+
+The `build/` directory is the output location for both final and intermediary build artefacts. It is gitignored.
+
 ### Key conventions
 
 - New UI layers (GUI, etc.) should import from `store.py` directly — not from `cli.py` or `tui.py`.

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Command } from "@tauri-apps/plugin-shell";
 import { api, Note } from "./api";
 import { ConfigPanel } from "./components/ConfigPanel";
 import { NoteDetail } from "./components/NoteDetail";
@@ -27,6 +28,7 @@ export default function App() {
   const [mode, setMode] = useState<Mode>("view");
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
+  const [backendReady, setBackendReady] = useState(() => !('__TAURI_INTERNALS__' in window));
   const [filterTags, setFilterTags] = useState<string[]>([]);
   const [filterEntities, setFilterEntities] = useState<string[]>([]);
   const [timePeriod, setTimePeriod] = useState("all");
@@ -63,8 +65,16 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    loadNotes(query);
-  }, [query, loadNotes]);
+    if (!('__TAURI_INTERNALS__' in window)) return;
+    Command.sidecar('binaries/backend')
+      .spawn()
+      .then(() => setTimeout(() => setBackendReady(true), 1500))
+      .catch(() => setBackendReady(true));
+  }, []);
+
+  useEffect(() => {
+    if (backendReady) loadNotes(query);
+  }, [query, loadNotes, backendReady]);
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
