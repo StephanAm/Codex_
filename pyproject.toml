@@ -38,6 +38,7 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--cov=note_taker --cov-report=term-missing"
+markers = ["integration: requires external services (deselected by default)"]
 
 [tool.coverage.run]
 source = ["src"]
