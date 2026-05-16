@@ -242,10 +242,14 @@ body::after {
 }
 
 .app-title {
-  font-weight: 700;
-  font-size: 14px;
+  font-weight: 500;
+  font-size: 13px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
+  color: var(--text);
+}
+
+.app-title-cursor {
   color: var(--accent);
 }
 
