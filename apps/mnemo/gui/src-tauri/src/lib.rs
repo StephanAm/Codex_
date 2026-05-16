@@ -13,8 +13,11 @@ pub fn run() {
                 .shell()
                 .sidecar("backend")
                 .expect("backend sidecar not found");
-            let (_rx, child) = sidecar.spawn().expect("failed to spawn backend");
+            let (mut rx, child) = sidecar.spawn().expect("failed to spawn backend");
             app.manage(BackendProcess(child));
+            tauri::async_runtime::spawn(async move {
+                while rx.recv().await.is_some() {}
+            });
             Ok(())
         })
         .run(tauri::generate_context!())

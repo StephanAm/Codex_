@@ -30,7 +30,7 @@ app = FastAPI(title="note-taker API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:1420", "http://localhost:5173", "tauri://localhost", "https://tauri.localhost"],
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
