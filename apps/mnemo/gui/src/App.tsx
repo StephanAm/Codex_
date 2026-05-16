@@ -71,7 +71,9 @@ export default function App() {
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (mode !== "view") return;
-      if (e.key === "n" && !e.ctrlKey && !e.metaKey) setMode("add");
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.key === "n" && !e.ctrlKey && !e.metaKey) { e.preventDefault(); setMode("add"); }
       if (e.key === "e" && selected) setMode("edit");
       if (e.key === "Escape") setMode("view");
     }
