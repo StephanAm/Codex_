@@ -11,7 +11,14 @@
       "Bash(npm run *)",
       "Bash(/home/stephan/Code/note-taker/gui/gui.sh build *)",
       "Bash(./gui/gui.sh build *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(git -C /home/stephan/Code/note-taker status)",
+      "Bash(git -C /home/stephan/Code/note-taker diff)",
+      "Bash(git -C /home/stephan/Code/note-taker log --oneline -5)",
+      "Bash(git -C /home/stephan/Code/note-taker restore --staged gui/package-lock.json gui/src/App.css gui/src/App.tsx scripts/bump_version.sh uv.lock .claude/commands/release.md)",
+      "Bash(git -C /home/stephan/Code/note-taker add src/note_taker/api.py)",
+      "Bash(git -C /home/stephan/Code/note-taker commit -m ' *)",
+      "Bash(git -C /home/stephan/Code/note-taker add .claude/settings.json gui/package-lock.json gui/src/App.css gui/src/App.tsx scripts/bump_version.sh uv.lock .claude/commands/)"
     ]
   },
   "hooks": {

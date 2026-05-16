@@ -139,7 +139,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <span className="app-title">Mnemo</span>
+        <span className="app-title">MNEMO<span className="app-title-cursor">_</span></span>
         <div className="app-header-actions">
           <SyncButton onSyncComplete={() => loadNotes(query)} />
           <button className="btn btn-secondary" onClick={() => setMode("config")}>
