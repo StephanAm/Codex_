@@ -33,8 +33,11 @@ def main() -> int:
 
     if not MSG_FILE.exists():
         print(
-            "🚨 There are uncommitted changes but no commit message file.\n"
-            f"Write the commit message to {MSG_FILE} then stop again.",
+            "STOP. ACTION REQUIRED BEFORE YOU DO ANYTHING ELSE:\n"
+            "There are uncommitted changes and no commit message file.\n"
+            f"Use the Write tool to create {MSG_FILE} with a concise commit message.\n"
+            "Run `git diff --stat HEAD` first if you need to see what changed.\n"
+            "Do not respond to the user, do not do any other work — write the file and stop.",
             file=sys.stderr,
         )
         return 1
