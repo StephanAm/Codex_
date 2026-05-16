@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "note-taker",
+  "productName": "Mnemo",
   "version": "0.1.1",
   "identifier": "com.notetaker.app",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "note-taker",
+        "title": "Mnemo",
         "width": 1100,
         "height": 720,
         "minWidth": 700,
