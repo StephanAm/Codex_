@@ -10,7 +10,8 @@
       "Bash(git commit *)",
       "Bash(npm run *)",
       "Bash(/home/stephan/Code/note-taker/gui/gui.sh build *)",
-      "Bash(./gui/gui.sh build *)"
+      "Bash(./gui/gui.sh build *)",
+      "Bash(git push *)"
     ]
   },
   "hooks": {
