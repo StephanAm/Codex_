@@ -1,7 +1,11 @@
-# GUI — note-taker desktop app
+# Mnemo — desktop GUI
 
 A Tauri desktop window wrapping a React/TypeScript frontend. The UI talks to a
 local FastAPI server (part of the main Python package) over HTTP on port 8765.
+
+**Design system:** all colour, typography, component, and copy rules are in
+[`../mnemo-design-system.md`](../mnemo-design-system.md). Prompt that file
+when making UI changes and follow every rule exactly.
 
 ## How to run
 

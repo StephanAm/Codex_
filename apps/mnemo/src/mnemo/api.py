@@ -38,6 +38,13 @@ app.add_middleware(
 PORT = 8765
 
 
+# ── health ────────────────────────────────────────────────────────────────────
+
+@app.get("/health")
+def health() -> dict[str, str]:
+    return {"status": "ok"}
+
+
 # ── serialisation ─────────────────────────────────────────────────────────────
 
 def _note_dict(note: Note) -> dict[str, Any]:
@@ -193,4 +200,4 @@ def _do_sync() -> str:
 # ── entry point ───────────────────────────────────────────────────────────────
 
 def serve() -> None:
-    uvicorn.run("note_taker.api:app", host="127.0.0.1", port=PORT, reload=True)
+    uvicorn.run(app, host="127.0.0.1", port=PORT, reload=False)

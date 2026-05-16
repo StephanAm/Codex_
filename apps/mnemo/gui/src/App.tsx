@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Command } from "@tauri-apps/plugin-shell";
 import { api, Note } from "./api";
 import { ConfigPanel } from "./components/ConfigPanel";
 import { NoteDetail } from "./components/NoteDetail";
 import { NoteEditor } from "./components/NoteEditor";
 import { NoteList } from "./components/NoteList";
+import { SplashScreen } from "./components/SplashScreen";
 import { SyncButton } from "./components/SyncButton";
 import "./App.css";
 
@@ -23,19 +23,19 @@ function timePeriodCutoff(period: string): Date | null {
 }
 
 export default function App() {
-  const [notes, setNotes] = useState<Note[]>([]);
+  const [ready, setReady]       = useState(false);
+  const [notes, setNotes]       = useState<Note[]>([]);
   const [selected, setSelected] = useState<Note | null>(null);
-  const [mode, setMode] = useState<Mode>("view");
-  const [query, setQuery] = useState("");
-  const [error, setError] = useState("");
-  const [backendReady, setBackendReady] = useState(() => !('__TAURI_INTERNALS__' in window));
-  const [filterTags, setFilterTags] = useState<string[]>([]);
-  const [filterEntities, setFilterEntities] = useState<string[]>([]);
-  const [timePeriod, setTimePeriod] = useState("all");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [mode, setMode]         = useState<Mode>("view");
+  const [query, setQuery]       = useState("");
+  const [error, setError]       = useState("");
+  const [filterTags, setFilterTags]           = useState<string[]>([]);
+  const [filterEntities, setFilterEntities]   = useState<string[]>([]);
+  const [timePeriod, setTimePeriod]           = useState("all");
+  const [dateFrom, setDateFrom]               = useState("");
+  const [dateTo, setDateTo]                   = useState("");
 
-  const allTags = useMemo(() => [...new Set(notes.flatMap(n => n.tags))].sort(), [notes]);
+  const allTags     = useMemo(() => [...new Set(notes.flatMap(n => n.tags))].sort(),     [notes]);
   const allEntities = useMemo(() => [...new Set(notes.flatMap(n => n.entities))].sort(), [notes]);
 
   const displayedNotes = useMemo(() => {
@@ -43,14 +43,14 @@ export default function App() {
     let to: Date | null = null;
     if (timePeriod === "custom") {
       from = dateFrom ? new Date(dateFrom) : null;
-      to = dateTo ? new Date(dateTo + "T23:59:59") : null;
+      to   = dateTo   ? new Date(dateTo + "T23:59:59") : null;
     } else {
       from = timePeriodCutoff(timePeriod);
     }
     return notes
       .filter(n => !from || new Date(n.created_at) >= from)
       .filter(n => !to   || new Date(n.created_at) <= to)
-      .filter(n => filterTags.length === 0 || n.tags.some(t => filterTags.includes(t)))
+      .filter(n => filterTags.length     === 0 || n.tags.some(t => filterTags.includes(t)))
       .filter(n => filterEntities.length === 0 || n.entities.some(e => filterEntities.includes(e)));
   }, [notes, filterTags, filterEntities, timePeriod, dateFrom, dateTo]);
 
@@ -60,21 +60,13 @@ export default function App() {
       setNotes(result);
       setError("");
     } catch {
-      setError("Cannot reach the API server. Run: uv run note-api");
+      setError("Cannot reach the API server.");
     }
   }, []);
 
   useEffect(() => {
-    if (!('__TAURI_INTERNALS__' in window)) return;
-    Command.sidecar('binaries/backend')
-      .spawn()
-      .then(() => setTimeout(() => setBackendReady(true), 1500))
-      .catch(() => setBackendReady(true));
-  }, []);
-
-  useEffect(() => {
-    if (backendReady) loadNotes(query);
-  }, [query, loadNotes, backendReady]);
+    if (ready) loadNotes(query);
+  }, [query, loadNotes, ready]);
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
@@ -116,17 +108,8 @@ export default function App() {
   }
 
   const mainContent = () => {
-    if (mode === "config") {
-      return <ConfigPanel onClose={() => setMode("view")} />;
-    }
-    if (mode === "add") {
-      return (
-        <NoteEditor
-          onSave={handleSave}
-          onCancel={() => setMode("view")}
-        />
-      );
-    }
+    if (mode === "config") return <ConfigPanel onClose={() => setMode("view")} />;
+    if (mode === "add") return <NoteEditor onSave={handleSave} onCancel={() => setMode("view")} />;
     if (mode === "edit" && selected) {
       return (
         <NoteEditor
@@ -138,15 +121,7 @@ export default function App() {
         />
       );
     }
-    if (selected) {
-      return (
-        <NoteDetail
-          note={selected}
-          onEdit={() => setMode("edit")}
-          onDelete={handleDelete}
-        />
-      );
-    }
+    if (selected) return <NoteDetail note={selected} onEdit={() => setMode("edit")} onDelete={handleDelete} />;
     return (
       <div className="empty-state">
         {error
@@ -157,10 +132,12 @@ export default function App() {
     );
   };
 
+  if (!ready) return <SplashScreen onReady={() => setReady(true)} />;
+
   return (
     <div className="app">
       <header className="app-header">
-        <span className="app-title">note-taker</span>
+        <span className="app-title">Mnemo</span>
         <div className="app-header-actions">
           <SyncButton onSyncComplete={() => loadNotes(query)} />
           <button className="btn btn-secondary" onClick={() => setMode("config")}>

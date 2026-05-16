@@ -1,6 +1,8 @@
-# note-taker
+# Mnemo
 
-A command-line tool for capturing, tagging, and searching plain-text notes, with Google Drive sync across devices.
+A tool for capturing, tagging, and searching plain-text notes, with Google Drive sync across devices. Interfaces: CLI, TUI, and a Tauri desktop GUI (in progress).
+
+**Design system:** [`mnemo-design-system.md`](mnemo-design-system.md) — colours, typography, components, and copy rules for the GUI.
 
 ## Setup
 

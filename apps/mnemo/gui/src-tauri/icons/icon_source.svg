@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="240 40 200 200" width="512" height="512">
+  <rect x="240" y="40" width="200" height="200" rx="36" fill="#0A0A0F"/>
+  <rect x="240" y="40" width="200" height="200" rx="36" fill="none" stroke="#1A1A2E" stroke-width="1"/>
+
+  <line x1="240" y1="84"  x2="440" y2="84"  stroke="#1A1A2E" stroke-width="0.5"/>
+  <line x1="240" y1="196" x2="440" y2="196" stroke="#1A1A2E" stroke-width="0.5"/>
+  <line x1="284" y1="40"  x2="284" y2="240" stroke="#1A1A2E" stroke-width="0.5"/>
+  <line x1="396" y1="40"  x2="396" y2="240" stroke="#1A1A2E" stroke-width="0.5"/>
+
+  <g transform="translate(340,140)">
+    <line x1="-56" y1="-60" x2="-56" y2="60"  stroke="#E8E8F0" stroke-width="9"  stroke-linecap="square"/>
+    <line x1="56"  y1="-60" x2="56"  y2="60"  stroke="#E8E8F0" stroke-width="9"  stroke-linecap="square"/>
+    <line x1="-56" y1="-60" x2="0"   y2="4"   stroke="#E8E8F0" stroke-width="9"  stroke-linecap="square" stroke-linejoin="miter"/>
+    <line x1="56"  y1="-60" x2="0"   y2="4"   stroke="#E8E8F0" stroke-width="9"  stroke-linecap="square" stroke-linejoin="miter"/>
+    <line x1="2"   y1="-72" x2="2"   y2="72"  stroke="#00E5FF" stroke-width="4"  stroke-linecap="square"/>
+    <rect x="-2" y="56" width="8" height="16" fill="#00E5FF"/>
+  </g>
+</svg>

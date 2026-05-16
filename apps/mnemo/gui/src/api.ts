@@ -47,6 +47,7 @@ export interface Session {
 }
 
 export const api = {
+  health: () => get<{ status: string }>("/health"),
   notes: {
     list: (params: { q?: string; tag?: string; entity?: string } = {}) => {
       const qs = new URLSearchParams();

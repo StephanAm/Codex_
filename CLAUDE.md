@@ -2,6 +2,23 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Application name
+
+This application is called **Mnemo**. Always capitalised, never with a full stop. Short for mnemonic — the art of remembering.
+
+Tagline: *"Remember everything."*
+
+## Design system
+
+The full design system lives in [`mnemo-design-system.md`](mnemo-design-system.md). **When building any Mnemo UI, prompt that file and follow every rule exactly.** It is the single source of truth for colours, typography, layout, components, motion, and copy tone.
+
+Key points:
+- Wordmark: `MNEMO_` — trailing underscore is part of the mark, rendered in Cyan Pulse
+- One typeface only: **IBM Plex Mono** (weights 400 and 500)
+- Seven permitted colours — no others
+- No drop shadows, gradients, glows, or blur
+- No border-radius beyond 4px except on the app icon
+
 ## Project purpose
 
 A note-taking tool built in layers:
