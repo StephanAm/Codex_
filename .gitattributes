@@ -1,0 +1,23 @@
+# Normalise line endings in the repo to LF; let git convert on checkout.
+* text=auto
+
+# Always LF — these must not gain CRLF endings (shebangs, Python, Rust, TOML).
+*.py   text eol=lf
+*.sh   text eol=lf
+*.rs   text eol=lf
+*.toml text eol=lf
+
+# Web / TypeScript — LF in repo, CRLF on Windows checkout is fine.
+*.ts   text eol=lf
+*.tsx  text eol=lf
+*.js   text eol=lf
+*.css  text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+
+# Binaries — never touch.
+*.png  binary
+*.ico  binary
+*.icns binary
+*.db   binary
