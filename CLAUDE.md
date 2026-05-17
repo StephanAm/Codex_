@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+For user-facing documentation see [`README.md`](README.md) (setup, usage, CLI reference, project structure) and [`gui/README.md`](gui/README.md) (GUI architecture, dev commands, component reference).
+
 ## Application name
 
 This application is called **Mnemo**. Always capitalised, never with a full stop. Short for mnemonic — the art of remembering.
@@ -18,6 +20,10 @@ Key points:
 - Seven permitted colours — no others
 - No drop shadows, gradients, glows, or blur
 - No border-radius beyond 4px except on the app icon
+
+## Platform targets
+
+This is a multi-platform project. All code must build and run correctly on both **Linux** and **Windows**. When writing scripts, paths, or system calls, account for both environments.
 
 ## Project purpose
 
@@ -75,8 +81,10 @@ All tool configuration (pytest, ruff, mypy, coverage) is in `pyproject.toml`. My
 | `session.py` | In-process session context backed by env vars; auto-applies tags/entities to new notes |
 | `db.py` | SQLite connection factory and schema migrations |
 | `logger.py` | Structured logger (`get_logger`); use instead of `print` everywhere |
+| `api.py` | FastAPI server — REST API consumed by the GUI, runs on port 8765 |
 | `sync/adapter.py` | Abstract sync adapter interface |
 | `sync/google_drive.py` | Google Drive implementation of the adapter |
+| `sync/local_folder.py` | Local folder implementation of the adapter |
 | `sync/device.py` | Generates and persists a stable per-device ID |
 | `sync/merge.py` | 3-way merge logic for reconciling remote DBs into the local DB |
 
@@ -95,7 +103,7 @@ The `build/` directory is the output location for both final and intermediary bu
 
 ### Key conventions
 
-- New UI layers (GUI, etc.) should import from `store.py` directly — not from `cli.py` or `tui.py`.
+- Python layers that need data access (CLI, TUI, `api.py`) import from `store.py` directly — never from `cli.py` or `tui.py`. The GUI is fully decoupled: it talks to `api.py` over HTTP; `api.py` is the only Python module it touches.
 - `store.py` functions accept an optional `db_path` parameter for test isolation.
 - Tags and references are always stored lowercase; `parser.py` normalises them.
 - The `session.py` context is process-local (env-var backed) and is not persisted to the DB.

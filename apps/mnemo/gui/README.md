@@ -47,8 +47,9 @@ gui/
 │       ├── NoteEditor.tsx      # right panel: create / edit form (body + tag/entity pickers)
 │       ├── TagEntityPicker.tsx # reusable dropdown for selecting tags or references
 │       ├── TagBadge.tsx        # small coloured badge for a single tag or reference
-│       ├── SyncButton.tsx      # header button that triggers Google Drive sync
-│       └── ConfigPanel.tsx     # right panel: view/edit app config (default tags, sync folder)
+│       ├── SyncButton.tsx      # header button that triggers sync
+│       ├── SplashScreen.tsx    # startup screen: polls /health until backend is ready
+│       └── ConfigPanel.tsx     # right panel: view/edit app config (default tags, sync adapter, sync path)
 │
 └── src-tauri/              # Rust/Tauri shell
     ├── src/

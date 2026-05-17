@@ -57,33 +57,44 @@ note session show
 note session clear
 ```
 
-### Sync (Google Drive)
+### Sync
 
-Place `credentials.json` from the Google Cloud Console in `~/.note_taker/`.
+Two storage adapters are supported: **Google Drive** (default) and **local folder**.
 
 ```bash
 note sync push          # upload this device's DB
 note sync pull          # merge all other devices' DBs locally
-note sync status        # show device ID and folder config
+note sync status        # show device ID and current adapter config
+
+# Google Drive — place credentials.json from the Google Cloud Console in ~/.note_taker/
+note sync config adapter google_drive
 note sync config folder my-notes-folder
+
+# Local folder
+note sync config adapter local_folder
+note sync config local-path /path/to/shared/folder
 ```
 
 ## Project structure
 
 ```
 ├── src/note_taker/
-│   ├── cli.py          # Click entry point  (`note` command)
-│   ├── tui.py          # Curses TUI         (`note-tui` command)
-│   ├── store.py        # All DB reads/writes (primary API layer)
+│   ├── cli.py          # Click entry point (`note` command)
+│   ├── tui.py          # Curses TUI (`note-tui` command)
+│   ├── api.py          # FastAPI server (`note-api` command, port 8765)
+│   ├── store.py        # All DB reads/writes — primary API layer
 │   ├── models.py       # Note and Entity dataclasses
 │   ├── parser.py       # Extracts #tags and @entities from text
 │   ├── session.py      # In-process session context (env-var backed)
 │   ├── db.py           # SQLite connection and schema setup
+│   ├── logger.py       # Structured logger (get_logger); use instead of print
 │   └── sync/
-│       ├── adapter.py       # Abstract sync adapter interface
-│       ├── google_drive.py  # Google Drive implementation
-│       ├── device.py        # Stable per-device ID
-│       └── merge.py         # 3-way merge logic
+│       ├── adapter.py        # Abstract sync adapter interface
+│       ├── google_drive.py   # Google Drive implementation
+│       ├── local_folder.py   # Local folder implementation
+│       ├── device.py         # Stable per-device ID
+│       └── merge.py          # 3-way merge logic
+├── gui/                # Tauri + React desktop app — see gui/README.md
 ├── tests/
 ├── pyproject.toml
 └── .github/workflows/  # CI
