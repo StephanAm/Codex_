@@ -49,6 +49,8 @@ sync_files() {
     sed -i "s/__version__ = \"[^\"]*\"/__version__ = \"$ver\"/"     "$REPO_DIR/src/note_taker/__init__.py"
     sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$ver\"/"       "$REPO_DIR/gui/src-tauri/tauri.conf.json"
     sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$ver\"/"       "$REPO_DIR/gui/package.json"
+    uv sync --extra google-drive --quiet
+    (cd "$REPO_DIR/gui" && npm install --silent)
 }
 
 commit_and_tag() {
@@ -60,9 +62,11 @@ commit_and_tag() {
         git -C "$REPO_DIR" add \
             "$VERSION_FILE" \
             "$REPO_DIR/pyproject.toml" \
+            "$REPO_DIR/uv.lock" \
             "$REPO_DIR/src/note_taker/__init__.py" \
             "$REPO_DIR/gui/src-tauri/tauri.conf.json" \
-            "$REPO_DIR/gui/package.json"
+            "$REPO_DIR/gui/package.json" \
+            "$REPO_DIR/gui/package-lock.json"
         git -C "$REPO_DIR" commit -m "Bump version to $ver"
     fi
     git -C "$REPO_DIR" tag "v$ver"
