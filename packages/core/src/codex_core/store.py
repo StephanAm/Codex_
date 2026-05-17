@@ -216,6 +216,44 @@ def set_sync_folder(name: str, db_path: Path | None = None) -> None:
     conn.commit()
 
 
+def get_sync_adapter(db_path: Path | None = None) -> str:
+    conn = connect(db_path)
+    row = conn.execute(
+        "SELECT value FROM config WHERE key = 'sync_adapter'"
+    ).fetchone()
+    return str(row["value"]) if row else "google_drive"
+
+
+def set_sync_adapter(adapter: str, db_path: Path | None = None) -> None:
+    if adapter not in ("google_drive", "local_folder"):
+        raise ValueError(f"Unknown adapter {adapter!r}. Choose 'google_drive' or 'local_folder'.")
+    conn = connect(db_path)
+    conn.execute(
+        "INSERT INTO config (key, value) VALUES ('sync_adapter', ?)"
+        " ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        (adapter,),
+    )
+    conn.commit()
+
+
+def get_sync_local_path(db_path: Path | None = None) -> str:
+    conn = connect(db_path)
+    row = conn.execute(
+        "SELECT value FROM config WHERE key = 'sync_local_folder_path'"
+    ).fetchone()
+    return str(row["value"]) if row else ""
+
+
+def set_sync_local_path(path: str, db_path: Path | None = None) -> None:
+    conn = connect(db_path)
+    conn.execute(
+        "INSERT INTO config (key, value) VALUES ('sync_local_folder_path', ?)"
+        " ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        (path.strip(),),
+    )
+    conn.commit()
+
+
 def get_default_tags(db_path: Path | None = None) -> list[str]:
     conn = connect(db_path)
     row = conn.execute(

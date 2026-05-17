@@ -13,9 +13,6 @@ TMP_DIR="$BUILD_DIR/.tmp"
 log() { echo "▶ $*"; }
 die() { echo "✗ $*" >&2; exit 1; }
 
-# ── version ───────────────────────────────────────────────────────────────────
-bash "$REPO_DIR/scripts/bump_version.sh"
-
 # ── prerequisites ─────────────────────────────────────────────────────────────
 command -v uv         >/dev/null || die "uv not found"
 command -v mksquashfs >/dev/null || die "squashfs-tools not installed — run: sudo apt install squashfs-tools"

@@ -43,6 +43,13 @@ class GoogleDriveAdapter:
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
             else:
+                if not self._credentials_path.exists():
+                    raise FileNotFoundError(
+                        f"Google Drive credentials not found at {self._credentials_path}.\n"
+                        "Download credentials.json from the Google Cloud Console "
+                        "(APIs & Services → Credentials → Create OAuth 2.0 Client ID) "
+                        "and save it to that path."
+                    )
                 flow = InstalledAppFlow.from_client_secrets_file(
                     str(self._credentials_path), _SCOPES
                 )

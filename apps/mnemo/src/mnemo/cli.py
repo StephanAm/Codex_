@@ -9,13 +9,17 @@ from .store import (
     add_note,
     delete_note,
     get_default_tags,
+    get_sync_adapter,
     get_sync_folder,
+    get_sync_local_path,
     list_entities,
     list_notes,
     search_notes,
     set_default_tags,
     set_entity_type,
+    set_sync_adapter,
     set_sync_folder,
+    set_sync_local_path,
 )
 
 
@@ -203,16 +207,24 @@ def session_clear() -> None:
 # ── sync ──────────────────────────────────────────────────────────────────────
 
 def _get_adapter() -> object:
+    adapter = get_sync_adapter()
+    if adapter == "local_folder":
+        from .sync.local_folder import LocalFolderAdapter
+        raw = get_sync_local_path()
+        if not raw:
+            raise click.ClickException(
+                "Local folder path is not configured. "
+                "Run: note sync config local-path <PATH>"
+            )
+        return LocalFolderAdapter(Path(raw))
+    # default: google_drive
     from .sync.google_drive import GoogleDriveAdapter
     config_dir = Path.home() / ".note_taker"
-    creds = config_dir / "credentials.json"
-    token = config_dir / "token.json"
-    if not creds.exists():
-        raise click.ClickException(
-            f"Google Drive credentials not found at {creds}.\n"
-            "Download credentials.json from the Google Cloud Console and place it there."
-        )
-    return GoogleDriveAdapter(creds, token, folder_name=get_sync_folder())
+    return GoogleDriveAdapter(
+        config_dir / "credentials.json",
+        config_dir / "token.json",
+        folder_name=get_sync_folder(),
+    )
 
 
 @cli.group()
@@ -263,8 +275,13 @@ def sync_pull() -> None:
 def sync_status() -> None:
     """Show this device's ID and sync configuration."""
     from .sync.device import get_device_id
+    adapter = get_sync_adapter()
     click.echo(f"Device ID:     {get_device_id()}")
-    click.echo(f"Drive folder:  {get_sync_folder()}")
+    click.echo(f"Adapter:       {adapter}")
+    if adapter == "local_folder":
+        click.echo(f"Local path:    {get_sync_local_path() or '(not set)'}")
+    else:
+        click.echo(f"Drive folder:  {get_sync_folder()}")
 
 
 @sync.group("config")
@@ -289,3 +306,40 @@ def sync_config_folder(name: str | None, clear: bool) -> None:
         click.echo(f"Drive folder set to: {name}")
     else:
         click.echo(f"Drive folder: {get_sync_folder()}")
+
+
+@sync_config.command("adapter")
+@click.argument("name", required=False, metavar="ADAPTER")
+def sync_config_adapter(name: str | None) -> None:
+    """View or set the sync storage adapter.
+
+    ADAPTER must be 'google_drive' or 'local_folder'.
+    With no arguments, shows the current adapter.
+    """
+    if name:
+        try:
+            set_sync_adapter(name)
+        except ValueError as exc:
+            raise click.ClickException(str(exc)) from exc
+        click.echo(f"Sync adapter set to: {name}")
+    else:
+        click.echo(f"Sync adapter: {get_sync_adapter()}")
+
+
+@sync_config.command("local-path")
+@click.argument("path", required=False)
+@click.option("--clear", is_flag=True, help="Clear the configured local path.")
+def sync_config_local_path(path: str | None, clear: bool) -> None:
+    """View or set the local folder path used by the local_folder adapter.
+
+    With no arguments, shows the current path.
+    """
+    if clear:
+        set_sync_local_path("")
+        click.echo("Local sync path cleared.")
+    elif path:
+        set_sync_local_path(path)
+        click.echo(f"Local sync path set to: {path}")
+    else:
+        current = get_sync_local_path()
+        click.echo(f"Local sync path: {current or '(not set)'}")

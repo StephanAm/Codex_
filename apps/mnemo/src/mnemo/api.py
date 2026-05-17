@@ -2,7 +2,13 @@
 
 from __future__ import annotations
 
+import json
+import os
+import signal
+import threading
+from contextlib import asynccontextmanager
 from dataclasses import asdict
+from pathlib import Path
 from typing import Any
 
 import uvicorn
@@ -16,17 +22,43 @@ from .store import (
     add_note,
     delete_note,
     get_default_tags,
+    get_sync_adapter,
     get_sync_folder,
+    get_sync_local_path,
     list_entities,
     list_notes,
     list_tags,
     search_notes,
     set_default_tags,
+    set_sync_adapter,
     set_sync_folder,
+    set_sync_local_path,
     update_note,
 )
 
-app = FastAPI(title="note-taker API")
+PORT = 8765
+PID_FILE = Path.home() / ".note_taker" / "api.pid"
+
+
+def _write_pid_file() -> None:
+    PID_FILE.parent.mkdir(parents=True, exist_ok=True)
+    PID_FILE.write_text(json.dumps({"pid": os.getpid(), "port": PORT}))
+
+
+def _remove_pid_file() -> None:
+    PID_FILE.unlink(missing_ok=True)
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> Any:
+    _write_pid_file()
+    try:
+        yield
+    finally:
+        _remove_pid_file()
+
+
+app = FastAPI(title="note-taker API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,14 +67,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-PORT = 8765
-
 
 # ── health ────────────────────────────────────────────────────────────────────
 
 @app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+def health() -> dict[str, Any]:
+    return {"status": "ok", "pid": os.getpid()}
+
+
+@app.post("/shutdown")
+def shutdown() -> dict[str, str]:
+    threading.Timer(0.1, lambda: signal.raise_signal(signal.SIGINT)).start()
+    return {"message": "Shutting down"}
 
 
 # ── serialisation ─────────────────────────────────────────────────────────────
@@ -115,12 +151,16 @@ def get_config() -> dict[str, Any]:
     return {
         "default_tags": get_default_tags(),
         "sync_folder": get_sync_folder(),
+        "sync_adapter": get_sync_adapter(),
+        "sync_local_path": get_sync_local_path(),
     }
 
 
 class ConfigPayload(BaseModel):
     default_tags: list[str] | None = None
     sync_folder: str | None = None
+    sync_adapter: str | None = None
+    sync_local_path: str | None = None
 
 
 @app.put("/config")
@@ -129,6 +169,13 @@ def set_config(payload: ConfigPayload) -> dict[str, Any]:
         set_default_tags(payload.default_tags)
     if payload.sync_folder is not None:
         set_sync_folder(payload.sync_folder)
+    if payload.sync_adapter is not None:
+        try:
+            set_sync_adapter(payload.sync_adapter)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if payload.sync_local_path is not None:
+        set_sync_local_path(payload.sync_local_path)
     return get_config()
 
 
@@ -164,21 +211,28 @@ def run_sync() -> dict[str, str]:
 
 
 def _do_sync() -> str:
-    from pathlib import Path
-
     from .db import connect, get_db_path
     from .sync.device import get_device_id
     from .sync.merge import merge_remote
 
-    config_dir = Path.home() / ".note_taker"
-    creds = config_dir / "credentials.json"
-    if not creds.exists():
-        return "Sync failed: credentials.json not found in ~/.note_taker/"
     try:
-        from .sync.google_drive import GoogleDriveAdapter
-        adapter = GoogleDriveAdapter(
-            creds, config_dir / "token.json", folder_name=get_sync_folder()
-        )
+        from .sync.adapter import StorageAdapter
+        sync_adapter = get_sync_adapter()
+        adapter: StorageAdapter
+        if sync_adapter == "local_folder":
+            from .sync.local_folder import LocalFolderAdapter
+            raw = get_sync_local_path()
+            if not raw:
+                return "Sync failed: local folder path is not configured."
+            adapter = LocalFolderAdapter(Path(raw))
+        else:
+            from .sync.google_drive import GoogleDriveAdapter
+            config_dir = Path.home() / ".note_taker"
+            adapter = GoogleDriveAdapter(
+                config_dir / "credentials.json",
+                config_dir / "token.json",
+                folder_name=get_sync_folder(),
+            )
         device_id = get_device_id()
         db_path = get_db_path()
         adapter.upload(device_id, db_path)

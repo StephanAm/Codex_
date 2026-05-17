@@ -39,6 +39,8 @@ export interface Entity {
 export interface Config {
   default_tags: string[];
   sync_folder: string;
+  sync_adapter: string;
+  sync_local_path: string;
 }
 
 export interface Session {

@@ -10,11 +10,16 @@ from enum import Enum, auto
 
 from .models import Note
 from .session import clear_session_context, get_session_context, set_session_context
+from .sync.adapter import StorageAdapter
 from .store import (
     add_note,
     delete_note,
     get_default_tags,
+    get_sync_adapter,
     get_sync_folder,
+    get_sync_local_path,
+    set_sync_adapter,
+    set_sync_local_path,
     list_notes,
     search_notes,
     set_default_tags,
@@ -414,6 +419,18 @@ class _App:
                 buf=get_sync_folder(),
                 save=set_sync_folder,
             ),
+            _CfgField(
+                label="Sync adapter",
+                hint="'google_drive' or 'local_folder'",
+                buf=get_sync_adapter(),
+                save=set_sync_adapter,
+            ),
+            _CfgField(
+                label="Local sync path",
+                hint="Folder path (used when adapter is local_folder)",
+                buf=get_sync_local_path(),
+                save=set_sync_local_path,
+            ),
         ]
         self._cfg_sel = 0
         self._cfg_fields[0].cur = len(self._cfg_fields[0].buf)
@@ -660,15 +677,22 @@ class _App:
         from .db import connect, get_db_path
         from .sync.device import get_device_id
         from .sync.merge import merge_remote
-        config_dir = Path.home() / ".note_taker"
-        creds = config_dir / "credentials.json"
-        if not creds.exists():
-            return "Sync failed: credentials.json not found in ~/.note_taker/"
         try:
-            from .sync.google_drive import GoogleDriveAdapter
-            adapter = GoogleDriveAdapter(
-                creds, config_dir / "token.json", folder_name=get_sync_folder()
-            )
+            sync_adapter = get_sync_adapter()
+            if sync_adapter == "local_folder":
+                from .sync.local_folder import LocalFolderAdapter
+                raw = get_sync_local_path()
+                if not raw:
+                    return "Sync failed: local folder path is not configured."
+                adapter: StorageAdapter = LocalFolderAdapter(Path(raw))
+            else:
+                from .sync.google_drive import GoogleDriveAdapter
+                config_dir = Path.home() / ".note_taker"
+                adapter = GoogleDriveAdapter(
+                    config_dir / "credentials.json",
+                    config_dir / "token.json",
+                    folder_name=get_sync_folder(),
+                )
             device_id = get_device_id()
             db_path = get_db_path()
             adapter.upload(device_id, db_path)

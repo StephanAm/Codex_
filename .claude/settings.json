@@ -18,7 +18,11 @@
       "Bash(git -C /home/stephan/Code/note-taker restore --staged gui/package-lock.json gui/src/App.css gui/src/App.tsx scripts/bump_version.sh uv.lock .claude/commands/release.md)",
       "Bash(git -C /home/stephan/Code/note-taker add src/note_taker/api.py)",
       "Bash(git -C /home/stephan/Code/note-taker commit -m ' *)",
-      "Bash(git -C /home/stephan/Code/note-taker add .claude/settings.json gui/package-lock.json gui/src/App.css gui/src/App.tsx scripts/bump_version.sh uv.lock .claude/commands/)"
+      "Bash(git -C /home/stephan/Code/note-taker add .claude/settings.json gui/package-lock.json gui/src/App.css gui/src/App.tsx scripts/bump_version.sh uv.lock .claude/commands/)",
+      "Bash(grep -v \"^$\")"
+    ],
+    "additionalDirectories": [
+      "/home/stephan/.claude/commands"
     ]
   },
   "hooks": {
