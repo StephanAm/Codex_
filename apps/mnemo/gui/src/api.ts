@@ -41,6 +41,7 @@ export interface Config {
   sync_folder: string;
   sync_adapter: string;
   sync_local_path: string;
+  autosync_debounce_ms: number;
 }
 
 export interface Session {
@@ -82,7 +83,9 @@ export const api = {
     clear: () => del("/session"),
   },
   sync: {
-    run: () => post<{ message: string; needs_auth: boolean }>("/sync"),
+    run:  () => post<{ message: string; needs_auth: boolean }>("/sync"),
+    push: () => post<{ message: string; needs_auth: boolean }>("/sync/push"),
+    pull: () => post<{ message: string; needs_auth: boolean }>("/sync/pull"),
   },
   auth: {
     googleConnect: () => post<{ message: string }>("/auth/google"),

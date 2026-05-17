@@ -11,6 +11,7 @@ export function ConfigPanel({ onClose }: Props) {
   const [folderInput, setFolderInput] = useState("");
   const [adapterInput, setAdapterInput] = useState("google_drive");
   const [localPathInput, setLocalPathInput] = useState("");
+  const [debounceInput, setDebounceInput] = useState("600000");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
 
@@ -21,6 +22,7 @@ export function ConfigPanel({ onClose }: Props) {
       setFolderInput(c.sync_folder);
       setAdapterInput(c.sync_adapter);
       setLocalPathInput(c.sync_local_path);
+      setDebounceInput(String(c.autosync_debounce_ms));
     });
   }, []);
 
@@ -32,6 +34,7 @@ export function ConfigPanel({ onClose }: Props) {
         sync_folder: folderInput.trim() || "note-taker-sync",
         sync_adapter: adapterInput,
         sync_local_path: localPathInput,
+        autosync_debounce_ms: parseInt(debounceInput, 10) || 600_000,
       });
       setMsg("Saved.");
       setTimeout(() => setMsg(""), 2000);
@@ -98,6 +101,17 @@ export function ConfigPanel({ onClose }: Props) {
           />
         </label>
       )}
+
+      <label className="config-label">
+        Auto-sync idle timeout (ms)
+        <span className="config-hint">Push after this many ms of inactivity. Default: 600000 (10 min).</span>
+        <input
+          className="config-input"
+          value={debounceInput}
+          onChange={e => setDebounceInput(e.target.value)}
+          placeholder="600000"
+        />
+      </label>
 
       <div className="config-actions">
         <button className="btn btn-primary" onClick={handleSave} disabled={saving}>

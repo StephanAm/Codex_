@@ -135,7 +135,7 @@ export function SplashScreen({ onReady }: Props) {
         </div>
       )}
 
-      <div className="splash-version">v0.1.0</div>
+      <div className="splash-version">v{__APP_VERSION__}</div>
     </div>
   );
 }

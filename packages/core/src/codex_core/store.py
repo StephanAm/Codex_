@@ -254,6 +254,26 @@ def set_sync_local_path(path: str, db_path: Path | None = None) -> None:
     conn.commit()
 
 
+def get_autosync_debounce_ms(db_path: Path | None = None) -> int:
+    conn = connect(db_path)
+    row = conn.execute(
+        "SELECT value FROM config WHERE key = 'autosync_debounce_ms'"
+    ).fetchone()
+    return int(row["value"]) if row else 600_000
+
+
+def set_autosync_debounce_ms(ms: int, db_path: Path | None = None) -> None:
+    if ms < 1000:
+        raise ValueError("Debounce interval must be at least 1000ms.")
+    conn = connect(db_path)
+    conn.execute(
+        "INSERT INTO config (key, value) VALUES ('autosync_debounce_ms', ?)"
+        " ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        (ms,),
+    )
+    conn.commit()
+
+
 def get_default_tags(db_path: Path | None = None) -> list[str]:
     conn = connect(db_path)
     row = conn.execute(
