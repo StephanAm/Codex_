@@ -3,6 +3,8 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+from platformdirs import user_log_path
+
 _ICONS: dict[int, str] = {
     logging.DEBUG: "🐛",
     logging.INFO: "ℹ️ ",
@@ -27,7 +29,7 @@ _COLORS = [
 ]
 _RESET = "\033[0m"
 
-_LOG_FILE = Path("app.log")
+_LOG_FILE = user_log_path("Mnemo", ensure_exists=True) / "app.log"
 _file_handler: logging.FileHandler | None = None
 _registry: dict[str, logging.Logger] = {}
 

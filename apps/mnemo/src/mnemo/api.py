@@ -17,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from .models import Note
+from .logger import get_logger
 from .session import clear_session_context, get_session_context, set_session_context
 from .store import (
     add_note,
@@ -39,6 +40,7 @@ from .store import (
 )
 
 PORT = 8765
+_log = get_logger("api")
 PID_FILE = Path.home() / ".note_taker" / "api.pid"
 
 
@@ -355,6 +357,7 @@ async def auth_google() -> dict[str, str]:
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, run_auth_flow, creds_path, token_path)
     except Exception as exc:
+        _log.exception("Google auth flow failed: %s", exc)
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     return {"message": "Authorized"}
 
