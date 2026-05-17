@@ -206,12 +206,14 @@ def delete_session() -> None:
 # ── sync ──────────────────────────────────────────────────────────────────────
 
 @app.post("/sync")
-def run_sync() -> dict[str, str]:
-    return {"message": _do_sync()}
+def run_sync() -> dict[str, Any]:
+    message, needs_auth = _do_sync()
+    return {"message": message, "needs_auth": needs_auth}
 
 
-def _do_sync() -> str:
+def _do_sync() -> tuple[str, bool]:
     from .db import connect, get_db_path
+    from .sync.adapter import AuthRequired
     from .sync.device import get_device_id
     from .sync.merge import merge_remote
 
@@ -223,7 +225,7 @@ def _do_sync() -> str:
             from .sync.local_folder import LocalFolderAdapter
             raw = get_sync_local_path()
             if not raw:
-                return "Sync failed: local folder path is not configured."
+                return "Sync failed: local folder path is not configured.", False
             adapter = LocalFolderAdapter(Path(raw))
         else:
             from .sync.google_drive import GoogleDriveAdapter
@@ -238,7 +240,7 @@ def _do_sync() -> str:
         adapter.upload(device_id, db_path)
         devices = [d for d in adapter.list_devices() if d != device_id]
         if not devices:
-            return "Push complete — no other devices to pull from."
+            return "Push complete — no other devices to pull from.", False
         local_conn = connect(db_path)
         added = updated = deleted = 0
         for d in devices:
@@ -246,9 +248,37 @@ def _do_sync() -> str:
             added += result.added
             updated += result.updated
             deleted += result.deleted
-        return f"Sync complete — {added} added, {updated} updated, {deleted} deleted."
+        return f"Sync complete — {added} added, {updated} updated, {deleted} deleted.", False
+    except AuthRequired:
+        return "Google Drive authorization required.", True
     except Exception as exc:
-        return f"Sync failed: {exc}"
+        return f"Sync failed: {exc}", False
+
+
+# ── auth ───────────────────────────────────────────────────────────────────────
+
+@app.post("/auth/google")
+async def auth_google() -> dict[str, str]:
+    import asyncio
+    config_dir = Path.home() / ".note_taker"
+    creds_path = config_dir / "credentials.json"
+    token_path = config_dir / "token.json"
+    if not creds_path.exists():
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"credentials.json not found at {creds_path}. "
+                "Download it from Google Cloud Console "
+                "(APIs & Services → Credentials → OAuth 2.0 Client ID)."
+            ),
+        )
+    try:
+        from .sync.google_drive import run_auth_flow
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, run_auth_flow, creds_path, token_path)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return {"message": "Authorized"}
 
 
 # ── entry point ───────────────────────────────────────────────────────────────

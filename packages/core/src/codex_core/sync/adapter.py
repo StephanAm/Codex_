@@ -2,6 +2,10 @@ from pathlib import Path
 from typing import Protocol, runtime_checkable
 
 
+class AuthRequired(Exception):
+    """Raised when an interactive OAuth flow is needed before sync can proceed."""
+
+
 @runtime_checkable
 class StorageAdapter(Protocol):
     def upload(self, device_id: str, local_db: Path) -> None: ...

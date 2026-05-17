@@ -82,6 +82,9 @@ export const api = {
     clear: () => del("/session"),
   },
   sync: {
-    run: () => post<{ message: string }>("/sync"),
+    run: () => post<{ message: string; needs_auth: boolean }>("/sync"),
+  },
+  auth: {
+    googleConnect: () => post<{ message: string }>("/auth/google"),
   },
 };

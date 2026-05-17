@@ -14,8 +14,24 @@ except ImportError as exc:  # pragma: no cover
         "uv pip install 'note_taker[google-drive]'"
     ) from exc
 
+from .adapter import AuthRequired
+
 _SCOPES = ["https://www.googleapis.com/auth/drive.file"]
 _DEFAULT_FOLDER = "note-taker-sync"
+
+
+def run_auth_flow(credentials_path: Path, token_path: Path) -> None:
+    """Open a browser for OAuth consent and persist the resulting token."""
+    if not credentials_path.exists():
+        raise FileNotFoundError(
+            f"credentials.json not found at {credentials_path}. "
+            "Download it from Google Cloud Console "
+            "(APIs & Services → Credentials → OAuth 2.0 Client ID)."
+        )
+    flow = InstalledAppFlow.from_client_secrets_file(str(credentials_path), _SCOPES)
+    creds = flow.run_local_server(port=0)
+    token_path.parent.mkdir(parents=True, exist_ok=True)
+    token_path.write_text(creds.to_json())
 
 
 class GoogleDriveAdapter:
@@ -42,19 +58,12 @@ class GoogleDriveAdapter:
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
+                self._token_path.write_text(creds.to_json())
             else:
-                if not self._credentials_path.exists():
-                    raise FileNotFoundError(
-                        f"Google Drive credentials not found at {self._credentials_path}.\n"
-                        "Download credentials.json from the Google Cloud Console "
-                        "(APIs & Services → Credentials → Create OAuth 2.0 Client ID) "
-                        "and save it to that path."
-                    )
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    str(self._credentials_path), _SCOPES
+                raise AuthRequired(
+                    "Google Drive authorization required. "
+                    "Use the GUI to complete the OAuth flow."
                 )
-                creds = flow.run_local_server(port=0)
-            self._token_path.write_text(creds.to_json())
         self._service = build("drive", "v3", credentials=creds)
         return self._service
 
