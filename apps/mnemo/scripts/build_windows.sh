@@ -73,8 +73,9 @@ log "Building Tauri NSIS installer..."
 npm run tauri build -- --bundles nsis
 
 # ── 5. Collect artefact ───────────────────────────────────────────────────────
-INSTALLER_SRC="$(find "$TAURI_DIR/target/release/bundle/nsis" -name "*.exe" | head -1)"
-[[ -n "$INSTALLER_SRC" ]] || die "NSIS installer not found in Tauri bundle output"
+VERSION="$(awk -F'"' '/"version"/{print $4; exit}' "$TAURI_DIR/tauri.conf.json")"
+INSTALLER_SRC="$TAURI_DIR/target/release/bundle/nsis/Mnemo_${VERSION}_x64-setup.exe"
+[[ -f "$INSTALLER_SRC" ]] || die "NSIS installer not found: $INSTALLER_SRC"
 cp "$INSTALLER_SRC" "$BUILD_DIR/"
 
 # ── cleanup ───────────────────────────────────────────────────────────────────
