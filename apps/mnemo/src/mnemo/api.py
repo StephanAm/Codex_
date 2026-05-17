@@ -17,6 +17,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from .models import Note
+import truststore
+truststore.inject_into_ssl()
+
 from .logger import get_logger
 from .session import clear_session_context, get_session_context, set_session_context
 from .store import (
