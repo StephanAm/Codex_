@@ -99,10 +99,19 @@ export default function App() {
       if (e.key === "n" && !e.ctrlKey && !e.metaKey) { e.preventDefault(); setMode("add"); }
       if (e.key === "e" && selected) { e.preventDefault(); setMode("edit"); }
       if (e.key === "Escape") setMode("view");
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        const idx = displayedNotes.findIndex(n => n.id === selected?.id);
+        const next = e.key === "ArrowDown"
+          ? displayedNotes[idx + 1] ?? displayedNotes[0]
+          : displayedNotes[idx - 1] ?? displayedNotes[displayedNotes.length - 1];
+        if (next) setSelected(next);
+      }
+      if (e.key === "Enter" && selected) { e.preventDefault(); setMode("edit"); }
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [mode, selected]);
+  }, [mode, selected, displayedNotes]);
 
   // ── sync logic ──────────────────────────────────────────────────────────────
 

@@ -18,8 +18,8 @@ The filter and search dropdowns don't fully follow the design system. Colours, b
 ## ~~#4 — 'e' key leaks into editor~~ ✓
 Pressing `e` to edit a note while the note list has focus incorrectly inserts the character into the editor. The shortcut should only fire when no editable element is focused.
 
-## #5 — Arrow key navigation in note list
+## ~~#5 — Arrow key navigation in note list~~ ✓
 Allow moving up and down through the note list using the arrow keys, with the selected note updating as you go.
 
-## #6 — Enter to open note
-Pressing `Enter` on a focused note in the list should open it (same as clicking). Pairs naturally with arrow key navigation (#5).
+## ~~#6 — Enter to open note~~ ✓
+Pressing `Enter` on a focused note in the list should open it in the editor. Pairs naturally with arrow key navigation (#5).

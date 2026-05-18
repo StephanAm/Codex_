@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Note } from "../api";
 import { TagEntityPicker } from "./TagEntityPicker";
 
@@ -34,6 +35,12 @@ function firstLine(body: string) {
 }
 
 export function NoteList({ notes, selectedId, query, filterTags, filterEntities, allTags, allEntities, timePeriod, dateFrom, dateTo, onSelect, onQueryChange, onFilterTagsChange, onFilterEntitiesChange, onTimePeriodChange, onDateFromChange, onDateToChange, onAdd, className }: Props) {
+  const selectedRef = useRef<HTMLLIElement>(null);
+
+  useEffect(() => {
+    selectedRef.current?.scrollIntoView({ block: "nearest" });
+  }, [selectedId]);
+
   return (
     <div className={`note-list-panel${className ? ` ${className}` : ""}`}>
       <div className="note-list-toolbar">
@@ -115,6 +122,7 @@ export function NoteList({ notes, selectedId, query, filterTags, filterEntities,
         {notes.map(note => (
           <li
             key={note.id}
+            ref={note.id === selectedId ? selectedRef : null}
             className={`note-list-item${note.id === selectedId ? " selected" : ""}`}
             onClick={() => onSelect(note)}
           >
