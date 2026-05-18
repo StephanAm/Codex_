@@ -1,3 +1,4 @@
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { Note } from "../api";
 import { TagBadge } from "./TagBadge";
 
@@ -27,6 +28,8 @@ function formatDateToken(iso: string): string {
   return timePart ? `${label} at ${timePart}` : label;
 }
 
+const URL_RE = /^https?:\/\/\S+$/;
+
 type Segment = { type: "date"; iso: string } | { type: "text"; value: string };
 
 function renderLine(line: string, li: number) {
@@ -47,6 +50,13 @@ function renderLine(line: string, li: number) {
         return seg.value.split(/(\s+)/).map((part, pi) => {
           if (/^#\w/.test(part)) return <span key={`${si}-${pi}`} className="highlight-tag">{part}</span>;
           if (/^@\w/.test(part)) return <span key={`${si}-${pi}`} className="highlight-entity">{part}</span>;
+          const trail = part.match(/[.,;:!?)]+$/)?.[0] ?? "";
+          const url = trail ? part.slice(0, -trail.length) : part;
+          if (URL_RE.test(url)) return (
+            <span key={`${si}-${pi}`}>
+              <a className="highlight-url" onClick={() => { void openUrl(url); }}>{url}</a>{trail}
+            </span>
+          );
           return part;
         });
       })}

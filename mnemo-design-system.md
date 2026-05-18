@@ -25,11 +25,17 @@ Use only these values. No other colours permitted.
 | `--color-border` | `#1A1A2E` | All borders and dividers |
 | `--color-accent` | `#00E5FF` | Primary accent, `#tags`, icon cursor, active states |
 | `--color-ref` | `#7FDFFF` | `@references` |
+| `--color-flag` | `#FF9500` | `!flags` — urgent / attention |
+| `--color-date` | `#7FFF00` | Dates and times — auto-detected |
+| `--color-danger` | `#FF4D4D` | Destructive UI actions only. Never in note content. |
 | `--color-text` | `#E8E8F0` | Primary text |
 | `--color-muted` | `#7878A0` | Secondary text, metadata, inactive items |
 
 **Tag highlight:** `#00E5FF` at 15% opacity background.
 **Reference highlight:** `#7FDFFF` at 8% opacity background.
+**Flag highlight:** `#FF9500` at 8% opacity background.
+**Date highlight:** `#7FFF00` at 7% opacity background.
+**Danger:** `#FF4D4D` — UI chrome only (delete buttons, destructive confirmations). Never rendered in note body.
 
 ### CSS custom properties
 
@@ -40,6 +46,9 @@ Use only these values. No other colours permitted.
   --color-border:  #1A1A2E;
   --color-accent:  #00E5FF;
   --color-ref:     #7FDFFF;
+  --color-flag:    #FF9500;
+  --color-date:    #7FFF00;
+  --color-danger:  #FF4D4D;
   --color-text:    #E8E8F0;
   --color-muted:   #7878A0;
   --font-mono:     'IBM Plex Mono', 'Courier New', monospace;
@@ -129,7 +138,9 @@ Each note item shows:
 }
 ```
 
-### #tag rendering
+### Inline syntax rendering
+
+Five colour roles. Four appear in note content. One (`--color-danger`) is UI chrome only.
 
 ```css
 .tag {
@@ -141,11 +152,7 @@ Each note item shows:
   border-radius: 2px;
   letter-spacing: 0.05em;
 }
-```
 
-### @reference rendering
-
-```css
 .ref {
   display: inline-block;
   font-size: 9px;
@@ -155,9 +162,46 @@ Each note item shows:
   border-radius: 2px;
   letter-spacing: 0.05em;
 }
+
+.flag {
+  display: inline-block;
+  font-size: 9px;
+  color: var(--color-flag);
+  background: rgba(255, 149, 0, 0.08);
+  padding: 3px 8px;
+  border-radius: 2px;
+  letter-spacing: 0.05em;
+}
+
+.date {
+  display: inline-block;
+  font-size: 9px;
+  color: var(--color-date);
+  background: rgba(127, 255, 0, 0.07);
+  padding: 3px 8px;
+  border-radius: 2px;
+  letter-spacing: 0.05em;
+}
 ```
 
-### Tag and reference regex
+### Destructive action buttons (UI only)
+
+```css
+.btn-danger {
+  font-size: 9px;
+  color: var(--color-danger);
+  border: 1px solid rgba(255, 111, 255, 0.25);
+  padding: 4px 10px;
+  border-radius: 2px;
+  letter-spacing: 0.08em;
+  background: transparent;
+  cursor: pointer;
+}
+```
+
+`--color-danger` (`#FF4D4D`) must never appear inside note body content.
+
+### Syntax regex
 
 ```js
 // #tags — apply .tag class
@@ -165,6 +209,12 @@ Each note item shows:
 
 // @references — apply .ref class
 /(@[a-zA-Z0-9_-]+)/g
+
+// !flags — apply .flag class
+/(![\w-]+)/g
+
+// Dates and times — apply .date class
+// Date detection is handled by the application's date parsing rules. Apply --color-date to any token identified as a date or time expression.
 ```
 
 ### Cursor
@@ -299,3 +349,4 @@ UI copy: precise and minimal. Every string earns its place.
 - Do not round corners beyond 4px except on the app icon
 - Do not place the wordmark or icon on a light background
 - Do not add decorative elements of any kind
+- Do not render `--color-danger` (`#FF4D4D`) inside note body content — UI chrome only

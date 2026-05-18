@@ -196,6 +196,8 @@
   --accent:     #00E5FF;
   --accent-dim: rgba(0, 229, 255, 0.15);
   --accent-ice: #7FDFFF;
+  --date:       #7FFF00;
+  --date-dim:   rgba(127, 255, 0, 0.07);
   --danger:     #ff4d4d;
 
   font-family: 'IBM Plex Mono', monospace;
@@ -744,7 +746,8 @@ body::after {
 
 .highlight-tag    { color: var(--accent);     font-weight: 600; }
 .highlight-entity { color: var(--accent-ice); font-weight: 600; }
-.highlight-date   { color: var(--accent-ice); background: var(--accent-dim); border-radius: 4px; padding: 0 5px; font-size: 0.88em; }
+.highlight-date   { color: var(--date); background: var(--date-dim); border-radius: 4px; padding: 0 5px; font-size: 0.88em; }
+.highlight-url    { color: var(--text-muted); text-decoration: underline; cursor: pointer; }
 
 /* ── buttons ──────────────────────────────────────────────────────────────── */
 
