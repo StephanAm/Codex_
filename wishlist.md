@@ -15,7 +15,7 @@ A way to associate a duration or time reference with a note (e.g. a meeting time
 ## ~~#3 — Fix dropdown colours~~ ✓
 The filter and search dropdowns don't fully follow the design system. Colours, borders, and focus states need to be brought in line with the rest of the UI.
 
-## #4 — 'e' key leaks into editor
+## ~~#4 — 'e' key leaks into editor~~ ✓
 Pressing `e` to edit a note while the note list has focus incorrectly inserts the character into the editor. The shortcut should only fire when no editable element is focused.
 
 ## #5 — Arrow key navigation in note list
