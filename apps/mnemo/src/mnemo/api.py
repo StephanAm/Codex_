@@ -13,8 +13,13 @@ from typing import Any
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
-from importlib.metadata import version as _pkg_version
 from fastapi.middleware.cors import CORSMiddleware
+
+try:
+    from importlib.metadata import version as _pkg_version
+    _VERSION = _pkg_version("note-taker")
+except Exception:
+    _VERSION = "unknown"
 from pydantic import BaseModel
 
 from .models import Note
@@ -50,7 +55,7 @@ PID_FILE = Path.home() / ".note_taker" / "api.pid"
 
 def _write_pid_file() -> None:
     PID_FILE.parent.mkdir(parents=True, exist_ok=True)
-    PID_FILE.write_text(json.dumps({"pid": os.getpid(), "port": PORT, "version": _pkg_version("note-taker")}))
+    PID_FILE.write_text(json.dumps({"pid": os.getpid(), "port": PORT, "version": _VERSION}))
 
 
 def _remove_pid_file() -> None:
@@ -80,7 +85,7 @@ app.add_middleware(
 
 @app.get("/health")
 def health() -> dict[str, Any]:
-    return {"status": "ok", "pid": os.getpid(), "version": _pkg_version("note-taker")}
+    return {"status": "ok", "pid": os.getpid(), "version": _VERSION}
 
 
 @app.post("/shutdown")
