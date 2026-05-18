@@ -233,12 +233,21 @@ body::after {
 .app-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 16px;
   padding: 0 16px;
   height: 44px;
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+}
+
+.app-header-status {
+  flex: 1;
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .app-title {
@@ -263,6 +272,7 @@ body::after {
   display: flex;
   flex: 1;
   overflow: hidden;
+  position: relative;
 }
 
 /* ── note list panel ──────────────────────────────────────────────────────── */
@@ -275,6 +285,17 @@ body::after {
   background: var(--bg-surface);
   border-right: 1px solid var(--border);
   overflow: hidden;
+}
+
+.note-list-panel--hidden  { display: none; }
+
+.note-list-panel--overlay {
+  position: absolute;
+  top: 44px;
+  left: 0;
+  bottom: 0;
+  z-index: 50;
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
 }
 
 .note-list-toolbar {
@@ -698,17 +719,6 @@ body::after {
 .config-msg { font-size: 12px; color: var(--accent-ice); }
 
 /* ── sync ─────────────────────────────────────────────────────────────────── */
-
-.sync-wrapper { display: flex; align-items: center; gap: 8px; }
-
-.sync-msg {
-  font-size: 11px;
-  color: var(--text-muted);
-  max-width: 260px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 
 /* ── badges ───────────────────────────────────────────────────────────────── */
 

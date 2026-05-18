@@ -20,6 +20,7 @@ interface Props {
   onDateFromChange: (d: string) => void;
   onDateToChange: (d: string) => void;
   onAdd: () => void;
+  className?: string;
 }
 
 function formatDate(iso: string) {
@@ -32,9 +33,9 @@ function firstLine(body: string) {
   return body.split("\n").find(l => l.trim()) ?? "";
 }
 
-export function NoteList({ notes, selectedId, query, filterTags, filterEntities, allTags, allEntities, timePeriod, dateFrom, dateTo, onSelect, onQueryChange, onFilterTagsChange, onFilterEntitiesChange, onTimePeriodChange, onDateFromChange, onDateToChange, onAdd }: Props) {
+export function NoteList({ notes, selectedId, query, filterTags, filterEntities, allTags, allEntities, timePeriod, dateFrom, dateTo, onSelect, onQueryChange, onFilterTagsChange, onFilterEntitiesChange, onTimePeriodChange, onDateFromChange, onDateToChange, onAdd, className }: Props) {
   return (
-    <div className="note-list-panel">
+    <div className={`note-list-panel${className ? ` ${className}` : ""}`}>
       <div className="note-list-toolbar">
         <input
           className="search-input"

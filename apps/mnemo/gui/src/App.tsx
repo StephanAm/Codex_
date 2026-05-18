@@ -36,6 +36,21 @@ export default function App() {
   const [dateFrom, setDateFrom]               = useState("");
   const [dateTo, setDateTo]                   = useState("");
 
+  // ── responsive layout ───────────────────────────────────────────────────────
+  const SIDEBAR_BREAKPOINT = 640;
+  const [narrow, setNarrow]           = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    const ro = new ResizeObserver(entries => {
+      setNarrow(entries[0].contentRect.width < SIDEBAR_BREAKPOINT);
+    });
+    ro.observe(document.documentElement);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => { if (narrow) setSidebarOpen(false); }, [narrow]);
+
   // ── sync state ──────────────────────────────────────────────────────────────
   const [syncState, setSyncState] = useState<SyncState>("idle");
   const [syncMsg,   setSyncMsg]   = useState("");
@@ -201,6 +216,7 @@ export default function App() {
   function handleSelect(note: Note) {
     setSelected(note);
     setMode("view");
+    if (narrow) setSidebarOpen(false);
   }
 
   const mainContent = () => {
@@ -233,11 +249,18 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
+        {narrow && (
+          <button
+            className="btn-icon"
+            title="Toggle note list"
+            onClick={() => setSidebarOpen(o => !o)}
+          >≡</button>
+        )}
         <span className="app-title">MNEMO<span className="app-title-cursor">_</span></span>
+        <span className="app-header-status">{syncMsg}</span>
         <div className="app-header-actions">
           <SyncButton
             syncState={syncState}
-            syncMsg={syncMsg}
             onSync={() => runSync("full")}
             onConnect={handleConnect}
           />
@@ -267,6 +290,7 @@ export default function App() {
           onDateFromChange={setDateFrom}
           onDateToChange={setDateTo}
           onAdd={() => setMode("add")}
+          className={narrow ? (sidebarOpen ? "note-list-panel--overlay" : "note-list-panel--hidden") : ""}
         />
         <main className="main-panel">
           {mainContent()}
