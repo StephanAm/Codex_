@@ -97,7 +97,7 @@ export default function App() {
       const tag = (e.target as HTMLElement).tagName;
       if (tag === "INPUT" || tag === "TEXTAREA") return;
       if (e.key === "n" && !e.ctrlKey && !e.metaKey) { e.preventDefault(); setMode("add"); }
-      if (e.key === "e" && selected) setMode("edit");
+      if (e.key === "e" && selected) { e.preventDefault(); setMode("edit"); }
       if (e.key === "Escape") setMode("view");
     }
     window.addEventListener("keydown", handleKey);

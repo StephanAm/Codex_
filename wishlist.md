@@ -12,7 +12,7 @@ Ability to split a single note into two separate notes at a chosen point in the 
 ## #2 — Time tagging
 A way to associate a duration or time reference with a note (e.g. a meeting time, a logged work period). Could be a structured field or a special tag syntax.
 
-## #3 — Fix dropdown colours
+## ~~#3 — Fix dropdown colours~~ ✓
 The filter and search dropdowns don't fully follow the design system. Colours, borders, and focus states need to be brought in line with the rest of the UI.
 
 ## #4 — 'e' key leaks into editor
