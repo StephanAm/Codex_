@@ -14,16 +14,48 @@ function formatDateTime(iso: string) {
   });
 }
 
-function renderBody(body: string) {
-  return body.split("\n").map((line, li) => (
+const DATE_EXPR_RE = /~\{(\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2})?)\}/g;
+
+function formatDateToken(iso: string): string {
+  const tIdx = iso.indexOf("T");
+  const datePart = tIdx === -1 ? iso : iso.slice(0, tIdx);
+  const timePart = tIdx === -1 ? null : iso.slice(tIdx + 1);
+  const [year, month, day] = datePart.split("-").map(Number);
+  const label = new Date(year, month - 1, day).toLocaleDateString(undefined, {
+    day: "numeric", month: "short", year: "numeric",
+  });
+  return timePart ? `${label} at ${timePart}` : label;
+}
+
+type Segment = { type: "date"; iso: string } | { type: "text"; value: string };
+
+function renderLine(line: string, li: number) {
+  const segments: Segment[] = [];
+  let last = 0;
+  for (const m of line.matchAll(DATE_EXPR_RE)) {
+    if (m.index! > last) segments.push({ type: "text", value: line.slice(last, m.index) });
+    segments.push({ type: "date", iso: m[1] });
+    last = m.index! + m[0].length;
+  }
+  if (last < line.length) segments.push({ type: "text", value: line.slice(last) });
+
+  return (
     <p key={li} className="note-body-line">
-      {line.split(/(\s+)/).map((part, pi) => {
-        if (/^#\w/.test(part)) return <span key={pi} className="highlight-tag">{part}</span>;
-        if (/^@\w/.test(part)) return <span key={pi} className="highlight-entity">{part}</span>;
-        return part;
+      {segments.map((seg, si) => {
+        if (seg.type === "date")
+          return <span key={si} className="highlight-date" title={seg.iso}>{formatDateToken(seg.iso)}</span>;
+        return seg.value.split(/(\s+)/).map((part, pi) => {
+          if (/^#\w/.test(part)) return <span key={`${si}-${pi}`} className="highlight-tag">{part}</span>;
+          if (/^@\w/.test(part)) return <span key={`${si}-${pi}`} className="highlight-entity">{part}</span>;
+          return part;
+        });
       })}
     </p>
-  ));
+  );
+}
+
+function renderBody(body: string) {
+  return body.split("\n").map((line, li) => renderLine(line, li));
 }
 
 export function NoteDetail({ note, onEdit, onDelete }: Props) {

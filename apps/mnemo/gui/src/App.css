@@ -736,6 +736,7 @@ body::after {
 
 .highlight-tag    { color: var(--accent);     font-weight: 600; }
 .highlight-entity { color: var(--accent-ice); font-weight: 600; }
+.highlight-date   { color: var(--accent-ice); background: var(--accent-dim); border-radius: 4px; padding: 0 5px; font-size: 0.88em; }
 
 /* ── buttons ──────────────────────────────────────────────────────────────── */
 

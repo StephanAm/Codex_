@@ -9,7 +9,7 @@ Each entry should include a short description of what the feature is and why it 
 ## #1 — Split note
 Ability to split a single note into two separate notes at a chosen point in the body. Useful when a note grows and naturally contains two distinct ideas.
 
-## #2 — Time tagging
+## ~~#2 — Time tagging~~ ✓
 A way to associate a duration or time reference with a note (e.g. a meeting time, a logged work period). Could be a structured field or a special tag syntax.
 
 ## ~~#3 — Fix dropdown colours~~ ✓
