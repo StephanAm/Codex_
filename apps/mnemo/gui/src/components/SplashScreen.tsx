@@ -13,14 +13,17 @@ const LABELS = [
 
 const HEALTH_URL  = "http://127.0.0.1:8765/health";
 const POLL_MS     = 400;
-const TIMEOUT_MS  = 5_000;
+const TIMEOUT_MS  = 10_000;
 
-async function waitForBackend(): Promise<void> {
+async function waitForBackend(): Promise<string> {
   const deadline = Date.now() + TIMEOUT_MS;
   while (Date.now() < deadline) {
     try {
       const r = await fetch(HEALTH_URL, { signal: AbortSignal.timeout(900) });
-      if (r.ok) return;
+      if (r.ok) {
+        const body = await r.json() as { version?: string };
+        return body.version ?? "";
+      }
     } catch { /* not yet */ }
     await new Promise<void>(r => setTimeout(r, POLL_MS));
   }
@@ -30,10 +33,11 @@ async function waitForBackend(): Promise<void> {
 interface Props { onReady: () => void }
 
 export function SplashScreen({ onReady }: Props) {
-  const [steps, setSteps]       = useState<Step[]>(LABELS.map(l => ({ label: l, status: "pending" })));
-  const [progress, setProgress] = useState(0);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [bootKey, setBootKey]   = useState(0);
+  const [steps, setSteps]         = useState<Step[]>(LABELS.map(l => ({ label: l, status: "pending" })));
+  const [progress, setProgress]   = useState(0);
+  const [errorMsg, setErrorMsg]   = useState<string | null>(null);
+  const [versionWarn, setVersionWarn] = useState<string | null>(null);
+  const [bootKey, setBootKey]     = useState(0);
 
   const mark = useCallback((i: number, s: Status) =>
     setSteps(prev => prev.map((step, idx) => idx === i ? { ...step, status: s } : step)), []);
@@ -45,6 +49,7 @@ export function SplashScreen({ onReady }: Props) {
       setSteps(LABELS.map(l => ({ label: l, status: "pending" })));
       setProgress(0);
       setErrorMsg(null);
+      setVersionWarn(null);
 
       // Steps 0–2: cosmetic
       for (let i = 0; i < 3; i++) {
@@ -56,8 +61,10 @@ export function SplashScreen({ onReady }: Props) {
 
       // Step 3: real backend check
       try {
-        await waitForBackend();
+        const apiVersion = await waitForBackend();
         if (cancelled) return;
+        if (apiVersion && apiVersion !== __APP_VERSION__)
+          setVersionWarn(`API v${apiVersion} · GUI v${__APP_VERSION__}`);
         mark(3, "ok");
         setProgress(86);
       } catch {
@@ -125,6 +132,12 @@ export function SplashScreen({ onReady }: Props) {
       <div className="splash-progress-wrap">
         <div className="splash-progress-bar" style={{ width: `${progress}%` }} />
       </div>
+
+      {versionWarn && (
+        <div className="splash-version-warn">
+          Version mismatch — {versionWarn}
+        </div>
+      )}
 
       {errorMsg && (
         <div className="splash-error-block">

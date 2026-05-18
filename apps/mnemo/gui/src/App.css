@@ -164,6 +164,14 @@
 
 .splash-retry-btn:hover { background: rgba(0, 229, 255, 0.08); }
 
+.splash-version-warn {
+  margin-top: 12px;
+  font-size: 10px;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
 .splash-version {
   position: absolute;
   bottom: 20px; right: 24px;
