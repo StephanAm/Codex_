@@ -20,7 +20,7 @@ try:
     _VERSION = _pkg_version("note-taker")
 except Exception:
     _VERSION = "unknown"
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from .models import Note
 import truststore
@@ -32,6 +32,7 @@ from .store import (
     add_note,
     delete_note,
     get_autosync_debounce_ms,
+    get_note,
     get_default_tags,
     get_sync_adapter,
     get_sync_folder,
@@ -83,13 +84,15 @@ app.add_middleware(
 
 # ── health ────────────────────────────────────────────────────────────────────
 
-@app.get("/health")
+@app.get("/health", summary="Health check")
 def health() -> dict[str, Any]:
+    """Return the API status, process ID, and running version."""
     return {"status": "ok", "pid": os.getpid(), "version": _VERSION}
 
 
-@app.post("/shutdown")
+@app.post("/shutdown", summary="Shut down the API server")
 def shutdown() -> dict[str, str]:
+    """Gracefully stop the API server process. Used by the GUI on quit."""
     threading.Timer(0.1, lambda: signal.raise_signal(signal.SIGINT)).start()
     return {"message": "Shutting down"}
 
@@ -104,19 +107,67 @@ def _note_dict(note: Note) -> dict[str, Any]:
     return d
 
 
+# ── response models ───────────────────────────────────────────────────────────
+
+class NoteResponse(BaseModel):
+    id: int = Field(..., description="Auto-incrementing integer primary key")
+    uuid: str = Field(..., description="Stable UUID used for sync and conflict resolution")
+    body: str = Field(..., description="Full plain-text note body, including any inline tags and references")
+    tags: list[str] = Field(..., description="Tags parsed from the body (`#Tag`) plus any injected at creation, stored lowercase")
+    entities: list[str] = Field(..., description="References parsed from the body (`@Name`) plus any injected at creation, stored lowercase")
+    created_at: str = Field(..., description="ISO 8601 UTC timestamp of when the note was created")
+    updated_at: str = Field(..., description="ISO 8601 UTC timestamp of the most recent edit")
+    time_stamp: str = Field(..., description="ISO 8601 timestamp of the `~{date}` expression in the body, or equal to `created_at` if none was specified")
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "id": 42,
+                "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                "body": "Discussed caching strategy with @Alice — going with Redis. #Backend #Architecture ~{2026-05-18}",
+                "tags": ["backend", "architecture"],
+                "entities": ["alice"],
+                "created_at": "2026-05-18T09:30:00+00:00",
+                "updated_at": "2026-05-18T09:30:00+00:00",
+                "time_stamp": "2026-05-18T00:00:00+00:00",
+            }
+        }
+    }
+
+
 # ── notes ─────────────────────────────────────────────────────────────────────
 
-@app.get("/notes")
+@app.get("/notes", summary="List or search notes", response_model=list[NoteResponse])
 def get_notes(
     q: str | None = None,
     tag: str | None = None,
     entity: str | None = None,
 ) -> list[dict[str, Any]]:
+    """Return a list of notes, optionally filtered or searched.
+
+    - **q** — full-text search query; when provided, `tag` and `entity` are ignored
+    - **tag** — filter by tag (lowercase, e.g. `work`)
+    - **entity** — filter by referenced entity (lowercase, e.g. `alice`)
+
+    Returns up to 500 notes ordered by creation date descending.
+    """
     if q:
         notes = search_notes(q)
     else:
         notes = list_notes(tag=tag, entity=entity, limit=500)
     return [_note_dict(n) for n in notes]
+
+
+@app.get("/notes/{note_id}", summary="Get a note by ID", response_model=NoteResponse)
+def get_note_by_id(note_id: int) -> dict[str, Any]:
+    """Return a single note by its integer ID.
+
+    Raises **404** if no note with that ID exists.
+    """
+    note = get_note(note_id)
+    if note is None:
+        raise HTTPException(status_code=404, detail=f"Note #{note_id} not found")
+    return _note_dict(note)
 
 
 class NoteBody(BaseModel):
@@ -125,42 +176,63 @@ class NoteBody(BaseModel):
     entities: list[str] = []
 
 
-@app.post("/notes", status_code=201)
+@app.post("/notes", status_code=201, summary="Create a note", response_model=NoteResponse)
 def create_note(payload: NoteBody) -> dict[str, Any]:
+    """Create a new note from a plain-text body.
+
+    Tags (`#Tag`) and references (`@Name`) are parsed automatically from the body.
+    Additional tags and entities can be injected via the `tags` and `entities` fields
+    without embedding them in the body text.
+
+    Returns the created note with its assigned ID and timestamps.
+    """
     note = add_note(payload.body, extra_tags=payload.tags, extra_entities=payload.entities)
     return _note_dict(note)
 
 
-@app.put("/notes/{note_id}")
+@app.put("/notes/{note_id}", summary="Update a note", response_model=NoteResponse)
 def edit_note(note_id: int, payload: NoteBody) -> dict[str, Any]:
+    """Replace the body of an existing note and re-parse its tags and references.
+
+    The full body must be supplied — this is a replace, not a patch.
+    Raises **404** if no note with that ID exists.
+    """
     note = update_note(note_id, payload.body, extra_tags=payload.tags, extra_entities=payload.entities)
     if note is None:
         raise HTTPException(status_code=404, detail=f"Note #{note_id} not found")
     return _note_dict(note)
 
 
-@app.delete("/notes/{note_id}", status_code=204)
+@app.delete("/notes/{note_id}", status_code=204, summary="Delete a note")
 def remove_note(note_id: int) -> None:
+    """Permanently delete a note by ID.
+
+    The deletion is recorded so it can be propagated during sync.
+    Raises **404** if no note with that ID exists.
+    """
     if not delete_note(note_id):
         raise HTTPException(status_code=404, detail=f"Note #{note_id} not found")
 
 
 # ── tags & entities ───────────────────────────────────────────────────────────
 
-@app.get("/tags")
+@app.get("/tags", summary="List all tags")
 def get_tags() -> list[str]:
+    """Return a sorted list of all tags that appear on at least one note."""
     return list_tags()
 
 
-@app.get("/entities")
+@app.get("/entities", summary="List all entities")
 def get_entities() -> list[dict[str, Any]]:
+    """Return all referenced entities (people, teams, named things) across all notes."""
     return [asdict(e) for e in list_entities()]
 
 
 # ── config ────────────────────────────────────────────────────────────────────
 
-@app.get("/config")
+@app.get("/config", summary="Get configuration")
 def get_config() -> dict[str, Any]:
+    """Return the current Mnemo configuration, including sync settings and default tags."""
     return {
         "default_tags": get_default_tags(),
         "sync_folder": get_sync_folder(),
@@ -178,8 +250,18 @@ class ConfigPayload(BaseModel):
     autosync_debounce_ms: int | None = None
 
 
-@app.put("/config")
+@app.put("/config", summary="Update configuration")
 def set_config(payload: ConfigPayload) -> dict[str, Any]:
+    """Update one or more configuration values. Omitted fields are left unchanged.
+
+    - **default_tags** — tags automatically applied to every new note
+    - **sync_adapter** — `google_drive` or `local_folder`
+    - **sync_folder** — Google Drive folder name (only used when adapter is `google_drive`)
+    - **sync_local_path** — absolute path to the local sync folder (only used when adapter is `local_folder`)
+    - **autosync_debounce_ms** — milliseconds to wait before triggering an autosync after a note change
+
+    Returns the full updated configuration.
+    """
     if payload.default_tags is not None:
         set_default_tags(payload.default_tags)
     if payload.sync_folder is not None:
@@ -201,8 +283,13 @@ def set_config(payload: ConfigPayload) -> dict[str, Any]:
 
 # ── session ───────────────────────────────────────────────────────────────────
 
-@app.get("/session")
+@app.get("/session", summary="Get session context")
 def get_session() -> dict[str, Any]:
+    """Return the active session tags and entities.
+
+    Session context is applied automatically to all notes created during the session.
+    It is process-local and not persisted to the database.
+    """
     tags, entities = get_session_context()
     return {"tags": tags, "entities": entities}
 
@@ -212,33 +299,52 @@ class SessionPayload(BaseModel):
     entities: list[str]
 
 
-@app.put("/session")
+@app.put("/session", summary="Set session context")
 def set_session(payload: SessionPayload) -> dict[str, Any]:
+    """Set the active session tags and entities.
+
+    Any tags and entities supplied here will be automatically attached to every note
+    created while the session is active.
+    """
     set_session_context(payload.tags, payload.entities)
     return {"tags": payload.tags, "entities": payload.entities}
 
 
-@app.delete("/session", status_code=204)
+@app.delete("/session", status_code=204, summary="Clear session context")
 def delete_session() -> None:
+    """Clear the active session, removing any automatically applied tags and entities."""
     clear_session_context()
 
 
 # ── sync ──────────────────────────────────────────────────────────────────────
 
-@app.post("/sync")
+@app.post("/sync", summary="Push and pull (full sync)")
 def run_sync() -> dict[str, Any]:
+    """Upload the local database to the configured sync target, then pull and merge changes from all other devices.
+
+    Returns a result message and a `needs_auth` flag. When `needs_auth` is `true`,
+    the user must complete Google Drive authorisation via `POST /auth/google` before syncing.
+    """
     message, needs_auth = _do_sync()
     return {"message": message, "needs_auth": needs_auth}
 
 
-@app.post("/sync/push")
+@app.post("/sync/push", summary="Push local changes")
 def run_push() -> dict[str, Any]:
+    """Upload the local database to the configured sync target without pulling remote changes.
+
+    Returns a result message and a `needs_auth` flag.
+    """
     message, needs_auth = _do_push()
     return {"message": message, "needs_auth": needs_auth}
 
 
-@app.post("/sync/pull")
+@app.post("/sync/pull", summary="Pull remote changes")
 def run_pull() -> dict[str, Any]:
+    """Download and merge databases from all other known devices without pushing local changes.
+
+    Returns a result message and a `needs_auth` flag.
+    """
     message, needs_auth = _do_pull()
     return {"message": message, "needs_auth": needs_auth}
 
@@ -346,8 +452,16 @@ def _do_sync() -> tuple[str, bool]:
 
 # ── auth ───────────────────────────────────────────────────────────────────────
 
-@app.post("/auth/google")
+@app.post("/auth/google", summary="Authorise Google Drive")
 async def auth_google() -> dict[str, str]:
+    """Run the Google Drive OAuth flow to obtain and store an access token.
+
+    Requires `credentials.json` to be present at `~/.note_taker/credentials.json`.
+    Download it from the Google Cloud Console under APIs & Services → Credentials → OAuth 2.0 Client ID.
+
+    This call opens a browser window for the user to complete the OAuth consent flow.
+    Raises **400** if `credentials.json` is missing, **500** if the flow fails.
+    """
     import asyncio
     config_dir = Path.home() / ".note_taker"
     creds_path = config_dir / "credentials.json"
@@ -375,3 +489,7 @@ async def auth_google() -> dict[str, str]:
 
 def serve() -> None:
     uvicorn.run(app, host="127.0.0.1", port=PORT, reload=False)
+
+
+def export_openapi() -> None:
+    print(json.dumps(app.openapi(), indent=2))

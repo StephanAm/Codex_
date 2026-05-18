@@ -25,9 +25,10 @@ google-drive = [
 ]
 
 [project.scripts]
-note     = "note_taker.cli:cli"
-note-tui = "note_taker.tui:launch"
-note-api = "note_taker.api:serve"
+note          = "note_taker.cli:cli"
+note-tui      = "note_taker.tui:launch"
+note-api      = "note_taker.api:serve"
+note-openapi  = "note_taker.api:export_openapi"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/note_taker"]

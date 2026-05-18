@@ -134,6 +134,14 @@ def search_notes(query: str, db_path: Path | None = None) -> list[Note]:
     return [_load_note(conn, r) for r in rows]
 
 
+def get_note(note_id: int, db_path: Path | None = None) -> Note | None:
+    conn = connect(db_path)
+    row = conn.execute("SELECT * FROM notes WHERE id = ?", (note_id,)).fetchone()
+    if row is None:
+        return None
+    return _load_note(conn, row)
+
+
 def update_note(
     note_id: int,
     body: str,
