@@ -4,6 +4,7 @@ import { ConfigPanel } from "./components/ConfigPanel";
 import { NoteDetail } from "./components/NoteDetail";
 import { NoteEditor } from "./components/NoteEditor";
 import { NoteList } from "./components/NoteList";
+import { RecallSidebar } from "./components/RecallSidebar";
 import { SplashScreen } from "./components/SplashScreen";
 import { SyncButton, SyncState } from "./components/SyncButton";
 import "./App.css";
@@ -54,6 +55,7 @@ export default function App() {
   const SIDEBAR_BREAKPOINT = 640;
   const [narrow, setNarrow]           = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeSidebar, setActiveSidebar] = useState<"log" | "recall">("log");
 
   useEffect(() => {
     const ro = new ResizeObserver(entries => {
@@ -126,6 +128,16 @@ export default function App() {
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [mode, selected, displayedNotes]);
+
+  useEffect(() => {
+    function handleSidebarKey(e: KeyboardEvent) {
+      if (!e.metaKey && !e.ctrlKey) return;
+      if (e.key === "1") { e.preventDefault(); setActiveSidebar("log");    if (narrow) setSidebarOpen(true); }
+      if (e.key === "2") { e.preventDefault(); setActiveSidebar("recall"); if (narrow) setSidebarOpen(true); }
+    }
+    window.addEventListener("keydown", handleSidebarKey);
+    return () => window.removeEventListener("keydown", handleSidebarKey);
+  }, [narrow]);
 
   // ── sync logic ──────────────────────────────────────────────────────────────
 
@@ -273,27 +285,46 @@ export default function App() {
       </header>
 
       <div className="app-body">
-        <NoteList
-          notes={displayedNotes}
-          selectedId={selected?.id ?? null}
-          query={query}
-          filterTags={filterTags}
-          filterEntities={filterEntities}
-          allTags={allTags}
-          allEntities={allEntities}
-          timePeriod={timePeriod}
-          dateFrom={dateFrom}
-          dateTo={dateTo}
-          onSelect={handleSelect}
-          onQueryChange={setQuery}
-          onFilterTagsChange={setFilterTags}
-          onFilterEntitiesChange={setFilterEntities}
-          onTimePeriodChange={setTimePeriod}
-          onDateFromChange={setDateFrom}
-          onDateToChange={setDateTo}
-          onAdd={() => setMode("add")}
-          className={narrow ? (sidebarOpen ? "note-list-panel--overlay" : "note-list-panel--hidden") : ""}
-        />
+        <div className="rail">
+          <span
+            className={`rail-glyph rail-glyph--log${activeSidebar === "log" ? " rail-glyph--active" : ""}`}
+            data-label="log"
+            onClick={() => { setActiveSidebar("log"); if (narrow) setSidebarOpen(true); }}
+          >≡</span>
+          <span
+            className={`rail-glyph rail-glyph--recall${activeSidebar === "recall" ? " rail-glyph--active" : ""}`}
+            data-label="recall"
+            onClick={() => { setActiveSidebar("recall"); if (narrow) setSidebarOpen(true); }}
+          >◎</span>
+        </div>
+        {activeSidebar === "log" && (
+          <NoteList
+            notes={displayedNotes}
+            selectedId={selected?.id ?? null}
+            query={query}
+            filterTags={filterTags}
+            filterEntities={filterEntities}
+            allTags={allTags}
+            allEntities={allEntities}
+            timePeriod={timePeriod}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onSelect={handleSelect}
+            onQueryChange={setQuery}
+            onFilterTagsChange={setFilterTags}
+            onFilterEntitiesChange={setFilterEntities}
+            onTimePeriodChange={setTimePeriod}
+            onDateFromChange={setDateFrom}
+            onDateToChange={setDateTo}
+            onAdd={() => setMode("add")}
+            className={narrow ? (sidebarOpen ? "note-list-panel--overlay" : "note-list-panel--hidden") : ""}
+          />
+        )}
+        {activeSidebar === "recall" && (
+          <RecallSidebar
+            className={narrow ? (sidebarOpen ? "note-list-panel--overlay" : "note-list-panel--hidden") : ""}
+          />
+        )}
         <main className="main-panel">
           <div className="mnemo-watermark" aria-hidden="true">
             <div className="mnemo-watermark__inner">

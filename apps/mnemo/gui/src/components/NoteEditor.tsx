@@ -57,7 +57,7 @@ export function NoteEditor({
 
   return (
     <div className="note-editor">
-      <div className="note-editor-hint">Ctrl+Enter to save · Esc to cancel</div>
+      <div className="note-editor-hint">Ctrl+Enter to save · Esc to cancel · ⌘1 log · ⌘2 recall</div>
       <textarea
         ref={ref}
         className="note-editor-textarea"

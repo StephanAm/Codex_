@@ -199,6 +199,7 @@
   --date:       #7FFF00;
   --date-dim:   rgba(127, 255, 0, 0.07);
   --danger:     #ff4d4d;
+  --color-flag: #FF9500;
 
   font-family: 'IBM Plex Mono', monospace;
   font-size: 13px;
@@ -318,6 +319,85 @@ body::after {
   bottom: 0;
   z-index: 50;
   box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
+}
+
+/* ── sidebar rail ─────────────────────────────────────────────────────────── */
+
+.rail {
+  width: 36px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 12px;
+  gap: 12px;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border);
+  position: relative;
+  z-index: 1;
+}
+
+.rail-glyph {
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text-muted);
+  cursor: pointer;
+  line-height: 1;
+  position: relative;
+  transition: color 300ms ease, text-shadow 300ms ease;
+}
+
+.rail-glyph--log.rail-glyph--active    { color: var(--accent); }
+.rail-glyph--recall.rail-glyph--active { color: var(--color-flag); }
+
+.rail-glyph--log:hover    { color: var(--accent);      text-shadow: 0 0 10px rgba(0, 229, 255, 0.45); }
+.rail-glyph--recall:hover { color: var(--color-flag);  text-shadow: 0 0 10px rgba(255, 149, 0, 0.45); }
+
+.rail-glyph::after {
+  content: attr(data-label);
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 9px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 3px 8px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+.rail-glyph:hover::after { opacity: 1; }
+
+/* ── recall sidebar ───────────────────────────────────────────────────────── */
+
+.recall-sidebar {
+  width: 300px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-surface);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0px, transparent 3px,
+    rgba(0, 0, 0, 0.08) 3px, rgba(0, 0, 0, 0.08) 4px
+  );
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.recall-sidebar-empty {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
 }
 
 .note-list-toolbar {
