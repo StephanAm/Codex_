@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { api, Note } from "./api";
 import { ConfigPanel } from "./components/ConfigPanel";
 import { NoteDetail } from "./components/NoteDetail";
@@ -172,28 +171,6 @@ export default function App() {
     runSync("pull");
   }, [ready, runSync]);
 
-  // Push on close — intercept window destroy with 5s timeout
-  useEffect(() => {
-    if (!ready) return;
-    let unlisten: (() => void) | undefined;
-    getCurrentWindow().onCloseRequested(async (event) => {
-      event.preventDefault();
-      if (autopushTimer.current !== null) {
-        clearTimeout(autopushTimer.current);
-        autopushTimer.current = null;
-      }
-      try {
-        await Promise.race([
-          api.sync.push(),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("timeout")), 5_000)
-          ),
-        ]);
-      } catch { /* timeout or error — close anyway */ }
-      await getCurrentWindow().destroy();
-    }).then(fn => { unlisten = fn; });
-    return () => { unlisten?.(); };
-  }, [ready]);
 
   // ── note mutations ──────────────────────────────────────────────────────────
 
