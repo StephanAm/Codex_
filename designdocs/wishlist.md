@@ -9,7 +9,7 @@ Each entry should include a short description of what the feature is and why it 
 ## #12 — Additional time filter options
 The time filter dropdown is missing common periods. Add: Yesterday, This week, This month — alongside the existing options.
 
-## #11 — Clear all in tag/reference dropdowns
+## ~~#11 — Clear all in tag/reference dropdowns~~ ✓
 The Tags and References filter dropdowns need a "clear all" option to reset the selection in one click, rather than deselecting items one by one.
 
 ## #10 — Auto-tag TODO items

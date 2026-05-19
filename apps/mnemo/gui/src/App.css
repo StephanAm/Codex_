@@ -679,7 +679,25 @@ body::after {
 .picker-search-wrap {
   padding: 8px;
   border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
+
+.picker-clear {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 9px;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+.picker-clear:hover { color: var(--danger); }
 
 .picker-search {
   width: 100%;

@@ -105,6 +105,15 @@ export function TagEntityPicker({ label, prefix, kind, allItems, selected, onCha
                 if (e.key === "Escape") { setOpen(false); setSearch(""); }
               }}
             />
+            {selected.length > 0 && (
+              <button
+                type="button"
+                className="picker-clear"
+                onClick={() => onChange([])}
+              >
+                clear
+              </button>
+            )}
           </div>
 
           <ul className="picker-list">
