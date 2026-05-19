@@ -85,7 +85,7 @@ Sync is manual (push/pull), not continuous. A 3-way merge reconciles diverged da
 
 ## Design
 
-The GUI follows a strict design system (`mnemo-design-system.md`). Key constraints:
+The GUI follows a strict design system (`designdocs/mnemo-design-system.md`). Key constraints:
 
 - One typeface: IBM Plex Mono
 - Seven permitted colours, no others

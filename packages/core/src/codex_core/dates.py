@@ -1,7 +1,7 @@
 """Date expression normaliser for Mnemo notes.
 
 Finds ~expressions in note text and resolves them to ISO dates/datetimes
-per rules/dateparsingrules.md. Resolved forms are stored as ~YYYY-MM-DD or
+per designdocs/dateparsingrules.md. Resolved forms are stored as ~YYYY-MM-DD or
 ~YYYY-MM-DDTHH:MM. Unresolvable expressions are left unchanged.
 """
 

@@ -14,7 +14,7 @@ Tagline: *"Remember everything."*
 
 ## Design system
 
-The full design system lives in [`mnemo-design-system.md`](mnemo-design-system.md). **When building any Mnemo UI, prompt that file and follow every rule exactly.** It is the single source of truth for colours, typography, layout, components, motion, and copy tone.
+The full design system lives in [`designdocs/mnemo-design-system.md`](designdocs/mnemo-design-system.md). **When building any Mnemo UI, prompt that file and follow every rule exactly.** It is the single source of truth for colours, typography, layout, components, motion, and copy tone.
 
 Key points:
 - Wordmark: `MNEMO_` — trailing underscore is part of the mark, rendered in Cyan Pulse

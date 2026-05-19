@@ -17,7 +17,7 @@ Stop and report if any step fails.
 ### 2. Generate OpenAPI spec
 
 ```bash
-uv run note-openapi > openapi.json
+uv run note-openapi > designdocs/openapi.json
 ```
 
 ### 3. Commit pending changes

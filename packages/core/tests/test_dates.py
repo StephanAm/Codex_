@@ -1,4 +1,4 @@
-"""Tests for date expression normalisation (rules/dateparsingrules.md)."""
+"""Tests for date expression normalisation (designdocs/dateparsingrules.md)."""
 
 import csv
 from datetime import date
