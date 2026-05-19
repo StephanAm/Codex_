@@ -238,6 +238,18 @@ body::after {
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
+  position: relative;
+}
+
+.app-version {
+  position: absolute;
+  bottom: 12px;
+  right: 16px;
+  font-size: 9px;
+  color: #3A3A5C;
+  letter-spacing: 0.12em;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .app-header {
@@ -381,6 +393,55 @@ body::after {
   display: flex;
   flex-direction: column;
   background: var(--bg);
+  position: relative;
+}
+
+/* watermark — sits behind all main-panel content */
+.mnemo-watermark {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.mnemo-watermark__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  opacity: 0.045;
+  transform: rotate(-20deg) scale(1.2);
+  user-select: none;
+}
+
+.mnemo-watermark__logo {
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: 52px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  line-height: 1;
+}
+
+.mnemo-watermark__text        { color: var(--text); }
+.mnemo-watermark__underscore  { color: var(--accent); }
+
+.mnemo-watermark__tagline {
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+/* all main-panel children above the watermark */
+.main-panel > *:not(.mnemo-watermark) {
+  position: relative;
+  z-index: 1;
 }
 
 .empty-state {

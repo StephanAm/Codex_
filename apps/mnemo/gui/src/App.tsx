@@ -234,6 +234,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <span className="app-version">v{__APP_VERSION__}</span>
       <header className="app-header">
         {narrow && (
           <button
@@ -279,6 +280,14 @@ export default function App() {
           className={narrow ? (sidebarOpen ? "note-list-panel--overlay" : "note-list-panel--hidden") : ""}
         />
         <main className="main-panel">
+          <div className="mnemo-watermark" aria-hidden="true">
+            <div className="mnemo-watermark__inner">
+              <div className="mnemo-watermark__logo">
+                <span className="mnemo-watermark__text">MNEMO</span><span className="mnemo-watermark__underscore">_</span>
+              </div>
+              <div className="mnemo-watermark__tagline">Remember everything</div>
+            </div>
+          </div>
           {mainContent()}
         </main>
       </div>
