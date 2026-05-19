@@ -10,15 +10,30 @@ import "./App.css";
 
 type Mode = "view" | "add" | "edit" | "config";
 
-function timePeriodCutoff(period: string): Date | null {
+function timePeriodRange(period: string): [Date | null, Date | null] {
   const now = new Date();
+  const startOfDay = (d: Date) => { d.setHours(0, 0, 0, 0); return d; };
+  const endOfDay   = (d: Date) => { d.setHours(23, 59, 59, 999); return d; };
   switch (period) {
-    case "today": { const d = new Date(now); d.setHours(0, 0, 0, 0); return d; }
-    case "7d":  return new Date(now.getTime() - 7  * 86400_000);
-    case "30d": return new Date(now.getTime() - 30 * 86400_000);
-    case "3m":  return new Date(now.getTime() - 90 * 86400_000);
-    case "1y":  return new Date(now.getTime() - 365 * 86400_000);
-    default:    return null;
+    case "today": return [startOfDay(new Date(now)), null];
+    case "yesterday": {
+      const d = new Date(now);
+      d.setDate(d.getDate() - 1);
+      return [startOfDay(new Date(d)), endOfDay(new Date(d))];
+    }
+    case "thisweek": {
+      const d = new Date(now);
+      d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // Monday
+      return [startOfDay(d), null];
+    }
+    case "thismonth": {
+      return [new Date(now.getFullYear(), now.getMonth(), 1), null];
+    }
+    case "7d":  return [new Date(now.getTime() - 7   * 86400_000), null];
+    case "30d": return [new Date(now.getTime() - 30  * 86400_000), null];
+    case "3m":  return [new Date(now.getTime() - 90  * 86400_000), null];
+    case "1y":  return [new Date(now.getTime() - 365 * 86400_000), null];
+    default:    return [null, null];
   }
 }
 
@@ -62,12 +77,12 @@ export default function App() {
 
   const displayedNotes = useMemo(() => {
     let from: Date | null;
-    let to: Date | null = null;
+    let to: Date | null;
     if (timePeriod === "custom") {
       from = dateFrom ? new Date(dateFrom) : null;
       to   = dateTo   ? new Date(dateTo + "T23:59:59") : null;
     } else {
-      from = timePeriodCutoff(timePeriod);
+      [from, to] = timePeriodRange(timePeriod);
     }
     return notes
       .filter(n => !from || new Date(n.created_at) >= from)

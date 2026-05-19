@@ -62,6 +62,9 @@ export function NoteList({ notes, selectedId, query, filterTags, filterEntities,
           >
             <option value="all">Any time</option>
             <option value="today">Today</option>
+            <option value="yesterday">Yesterday</option>
+            <option value="thisweek">This week</option>
+            <option value="thismonth">This month</option>
             <option value="7d">Last 7 days</option>
             <option value="30d">Last 30 days</option>
             <option value="3m">Last 3 months</option>

@@ -6,7 +6,7 @@ Each entry should include a short description of what the feature is and why it 
 
 ---
 
-## #12 — Additional time filter options
+## ~~#12 — Additional time filter options~~ ✓
 The time filter dropdown is missing common periods. Add: Yesterday, This week, This month — alongside the existing options.
 
 ## ~~#11 — Clear all in tag/reference dropdowns~~ ✓
@@ -21,8 +21,10 @@ Add a background to the GUI.
 ## ~~#8 — Clickable hyperlinks~~ ✓
 URLs in note bodies should be rendered as clickable links that open in the default browser. Reduces friction when notes contain references to external resources.
 
-## #7 — Flag syntax (`!flags`)
+## ~~#7 — Flag syntax (`!flags`)~~ ✗
 Inline `!flag` annotations in note bodies (e.g. `!urgent`, `!blocked`) rendered in `--color-flag` (#FF9500). Would need parser support to extract flags like tags and entities, a `.flag` style in the renderer, and optionally a filter in the sidebar.
+
+Decided against — the use case isn't meaningfully different from `#tags`. Would clutter the syntax without adding real value.
 
 ## ~~#6 — Enter to open note~~ ✓
 Pressing `Enter` on a focused note in the list should open it in the editor. Pairs naturally with arrow key navigation (#5).
