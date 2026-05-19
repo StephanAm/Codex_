@@ -1,0 +1,81 @@
+/* ============================================================
+   MNEMO_ Watermark Component v1.0
+   Sits behind editor content. Never apply to sidebar.
+   Assumes mnemo-tokens.css is already imported.
+   ============================================================ */
+
+/*
+  MARKUP:
+
+  <div class="mnemo-editor">
+    <div class="mnemo-watermark" aria-hidden="true">
+      <div class="mnemo-watermark__inner">
+        <div class="mnemo-watermark__logo">
+          <span class="mnemo-watermark__text">MNEMO</span><span class="mnemo-watermark__underscore">_</span>
+        </div>
+        <div class="mnemo-watermark__tagline">Remember everything</div>
+      </div>
+    </div>
+
+    <!-- editor content sits here, above the watermark -->
+  </div>
+*/
+
+.mnemo-editor {
+  position: relative;
+  overflow: hidden;
+}
+
+.mnemo-watermark {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.mnemo-watermark__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  opacity: 0.045;
+  transform: rotate(-20deg) scale(1.2);
+  user-select: none;
+}
+
+.mnemo-watermark__logo {
+  font-family: var(--font-mono);
+  font-size: 52px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  line-height: 1;
+}
+
+/* MNEMO — white */
+.mnemo-watermark__text {
+  color: var(--color-text);
+}
+
+/* _ — cyan */
+.mnemo-watermark__underscore {
+  color: var(--color-accent);
+}
+
+.mnemo-watermark__tagline {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-text);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+/* All editor content must sit above the watermark */
+.mnemo-editor > *:not(.mnemo-watermark) {
+  position: relative;
+  z-index: 1;
+}

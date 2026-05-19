@@ -29,3 +29,6 @@ Inline `!flag` annotations in note bodies (e.g. `!urgent`, `!blocked`) rendered 
 
 ## ~~#8 — Clickable hyperlinks~~ ✓
 URLs in note bodies should be rendered as clickable links that open in the default browser. Reduces friction when notes contain references to external resources.
+
+## #9 — Add background
+Add a background to the GUI.
