@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 For user-facing documentation see [`README.md`](README.md) (setup, usage, CLI reference, project structure) and [`gui/README.md`](gui/README.md) (GUI architecture, dev commands, component reference).
 
-Feature requests and deferred ideas are tracked in [`wishlist.md`](wishlist.md). When a good idea comes up during active work but shouldn't be actioned immediately, add it there.
+Feature requests and deferred ideas are tracked in [`designdocs/wishlist.md`](designdocs/wishlist.md). When a good idea comes up during active work but shouldn't be actioned immediately, add it there.
 
 ## Application name
 

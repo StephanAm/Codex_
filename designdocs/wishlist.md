@@ -27,5 +27,5 @@ Pressing `Enter` on a focused note in the list should open it in the editor. Pai
 ## #7 — Flag syntax (`!flags`)
 Inline `!flag` annotations in note bodies (e.g. `!urgent`, `!blocked`) rendered in `--color-flag` (#FF9500). Would need parser support to extract flags like tags and entities, a `.flag` style in the renderer, and optionally a filter in the sidebar.
 
-## #8 — Clickable hyperlinks
+## ~~#8 — Clickable hyperlinks~~ ✓
 URLs in note bodies should be rendered as clickable links that open in the default browser. Reduces friction when notes contain references to external resources.
