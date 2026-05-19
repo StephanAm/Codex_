@@ -15,7 +15,7 @@ When saving a note, ensure the body always ends with exactly one newline. Preven
 ## #14 — Pinned notes
 Allow notes to be pinned so they always appear at the top of the note list regardless of sort order. Useful for persistent reminders, standing agenda items, or reference notes that are frequently consulted.
 
-## #13 — Backend lifecycle config flags
+## ~~#13 — Backend lifecycle config flags~~ ✓
 Two boolean config options controlling how the GUI manages the API process:
 
 - **`gui.start_backend_on_startup`** (default: `true`) — when enabled, the GUI spawns the API server on launch; when disabled, it assumes the API is already running externally.
