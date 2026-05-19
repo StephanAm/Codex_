@@ -12,7 +12,7 @@ The time filter dropdown is missing common periods. Add: Yesterday, This week, T
 ## ~~#11 — Clear all in tag/reference dropdowns~~ ✓
 The Tags and References filter dropdowns need a "clear all" option to reset the selection in one click, rather than deselecting items one by one.
 
-## #10 — Auto-tag TODO items
+## ~~#10 — Auto-tag TODO items~~ ✓
 When saving a note, any `TODO:` text should be automatically interpreted as a `#TODO` tag, so the note is tagged without the user having to add it manually.
 
 ## ~~#9 — Add background~~ ✓

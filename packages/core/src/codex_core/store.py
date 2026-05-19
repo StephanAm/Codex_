@@ -6,7 +6,7 @@ from uuid import uuid4
 from .dates import normalize_dates
 from .db import connect
 from .models import Entity, Note
-from .parser import parse
+from .parser import normalise, parse
 
 
 def _load_note(conn: sqlite3.Connection, row: sqlite3.Row) -> Note:
@@ -74,7 +74,7 @@ def add_note(
     db_path: Path | None = None,
 ) -> Note:
     conn = connect(db_path)
-    body = normalize_dates(body).text
+    body = normalise(normalize_dates(body).text)
     parsed = parse(body)
     tags = list(dict.fromkeys(parsed.tags + [t.lower() for t in (extra_tags or [])]))
     entities = list(dict.fromkeys(parsed.entities + [e.lower() for e in (extra_entities or [])]))
@@ -150,7 +150,7 @@ def update_note(
     db_path: Path | None = None,
 ) -> Note | None:
     conn = connect(db_path)
-    body = normalize_dates(body).text
+    body = normalise(normalize_dates(body).text)
     now = datetime.now(timezone.utc).isoformat()
     cur = conn.execute(
         "UPDATE notes SET body = ?, updated_at = ? WHERE id = ?", (body, now, note_id)
