@@ -6,6 +6,23 @@ Each entry should include a short description of what the feature is and why it 
 
 ---
 
+## ~~#16 — Cursor at end of note on edit~~ ✓
+When opening a note for editing, place the cursor on a new line at the end of the note body. If the note doesn't already end with a newline, insert one before positioning the cursor. Avoids the user having to manually navigate to the bottom before typing.
+
+## ~~#15 — Trailing newline on save~~ ✓
+When saving a note, ensure the body always ends with exactly one newline. Prevents notes from accumulating trailing whitespace or missing the final newline across repeated edits.
+
+## #14 — Pinned notes
+Allow notes to be pinned so they always appear at the top of the note list regardless of sort order. Useful for persistent reminders, standing agenda items, or reference notes that are frequently consulted.
+
+## #13 — Backend lifecycle config flags
+Two boolean config options controlling how the GUI manages the API process:
+
+- **`gui.start_backend_on_startup`** (default: `true`) — when enabled, the GUI spawns the API server on launch; when disabled, it assumes the API is already running externally.
+- **`gui.kill_backend_on_exit`** (default: `true`) — when enabled, the GUI terminates the API process on close; when disabled, the API keeps running after the GUI exits.
+
+Rationale: in some setups the API runs as a persistent background service and the GUI should attach to it without touching its lifecycle. In others the user may want to keep the API warm between GUI sessions for faster startup. The defaults preserve current behavior so nothing breaks out of the box.
+
 ## ~~#12 — Additional time filter options~~ ✓
 The time filter dropdown is missing common periods. Add: Yesterday, This week, This month — alongside the existing options.
 

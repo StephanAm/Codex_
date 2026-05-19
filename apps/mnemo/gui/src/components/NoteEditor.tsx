@@ -17,7 +17,10 @@ export function NoteEditor({
   onSave,
   onCancel,
 }: Props) {
-  const [body, setBody] = useState(initialBody);
+  const [body, setBody] = useState(() => {
+    if (!initialBody) return initialBody;
+    return initialBody.endsWith("\n") ? initialBody : initialBody + "\n";
+  });
   const [selectedTags, setSelectedTags] = useState<string[]>(initialTags);
   const [selectedEntities, setSelectedEntities] = useState<string[]>(initialEntities);
   const [allTags, setAllTags] = useState<string[]>([]);
@@ -25,7 +28,11 @@ export function NoteEditor({
   const ref = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    ref.current?.focus();
+    const el = ref.current;
+    if (el) {
+      el.focus();
+      el.setSelectionRange(el.value.length, el.value.length);
+    }
     api.tags.list().then(setAllTags);
     api.entities.list().then(es => setAllEntities(es.map(e => e.name)));
   }, []);
@@ -33,12 +40,17 @@ export function NoteEditor({
   function handleKeyDown(e: React.KeyboardEvent) {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
-      if (canSave) onSave(body.trim(), selectedTags, selectedEntities);
+      if (canSave) onSave(prepareBody(body), selectedTags, selectedEntities);
     }
     if (e.key === "Escape") {
       e.preventDefault();
       onCancel();
     }
+  }
+
+  function prepareBody(raw: string): string {
+    const trimmed = raw.trim();
+    return trimmed ? trimmed + "\n" : trimmed;
   }
 
   const canSave = body.trim().length > 0 || selectedTags.length > 0 || selectedEntities.length > 0;
@@ -74,7 +86,7 @@ export function NoteEditor({
         />
       </div>
       <div className="note-editor-actions">
-        <button className="btn btn-primary" onClick={() => onSave(body.trim(), selectedTags, selectedEntities)} disabled={!canSave}>
+        <button className="btn btn-primary" onClick={() => onSave(prepareBody(body), selectedTags, selectedEntities)} disabled={!canSave}>
           Save
         </button>
         <button className="btn btn-secondary" onClick={onCancel}>Cancel</button>
