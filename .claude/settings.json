@@ -21,7 +21,8 @@
       "Bash(git -C /home/stephan/Code/note-taker add .claude/settings.json gui/package-lock.json gui/src/App.css gui/src/App.tsx scripts/bump_version.sh uv.lock .claude/commands/)",
       "Bash(grep -v \"^$\")",
       "Bash(./scripts/bump_version.sh patch *)",
-      "Bash(./scripts/bump_version.sh major *)"
+      "Bash(./scripts/bump_version.sh major *)",
+      "Bash(./scripts/bump_version.sh minor *)"
     ],
     "additionalDirectories": [
       "/home/stephan/.claude/commands"
