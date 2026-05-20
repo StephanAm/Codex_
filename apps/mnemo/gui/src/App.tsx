@@ -154,10 +154,15 @@ export default function App() {
         if (next) setSelected(next);
       }
       if (e.key === "Enter" && selected) { e.preventDefault(); setMode("edit"); }
+      if (e.key === "p" && e.ctrlKey && selected) {
+        e.preventDefault();
+        const isPinned = pinnedNotes.some(n => n.uuid === selected.uuid);
+        isPinned ? handleUnpin(selected) : handlePin(selected);
+      }
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [mode, selected, displayedNotes, activeSidebar, pinnedNotes]);
+  }, [mode, selected, displayedNotes, activeSidebar, pinnedNotes, handlePin, handleUnpin]);
 
   useEffect(() => {
     function handleSidebarKey(e: KeyboardEvent) {

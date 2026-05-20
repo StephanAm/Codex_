@@ -78,11 +78,11 @@ export function NoteDetail({ note, onEdit, onDelete, isPinned, onPin, onUnpin }:
         <span className="note-detail-id">#{note.id}</span>
         <span className="note-detail-date">{formatDateTime(note.created_at)}</span>
         <div className="note-detail-actions">
-          <button className="btn btn-secondary" onClick={isPinned ? onUnpin : onPin}>
-            {isPinned ? "Unpin" : "Pin"}
+          <button className="btn-icon btn-icon--flag" title={isPinned ? "unpin" : "pin"} onClick={isPinned ? onUnpin : onPin}>
+            {isPinned ? "◉" : "◎"}
           </button>
-          <button className="btn btn-secondary" onClick={onEdit}>Edit</button>
-          <button className="btn btn-danger" onClick={onDelete}>Delete</button>
+          <button className="btn-icon" title="edit" onClick={onEdit}>✎</button>
+          <button className="btn-icon btn-icon--danger" title="delete" onClick={onDelete}>✕</button>
         </div>
       </div>
       <div className="note-detail-body">{renderBody(note.body)}</div>

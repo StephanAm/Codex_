@@ -1071,5 +1071,8 @@ body::after {
 .note-list-toolbar .btn-icon:hover,
 .config-panel-header .btn-icon:hover { border-color: var(--accent); color: var(--accent); }
 
+.btn-icon--flag:hover  { border-color: var(--color-flag) !important; color: var(--color-flag) !important; }
+.btn-icon--danger:hover { border-color: var(--danger) !important; color: var(--danger) !important; }
+
 .note-list-toolbar .btn-icon,
 .config-panel-header .btn-icon { border-color: var(--border); background: transparent; color: var(--text-muted); }
