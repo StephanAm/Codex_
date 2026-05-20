@@ -304,3 +304,37 @@ def set_default_tags(tags: list[str], db_path: Path | None = None) -> None:
         (value,),
     )
     conn.commit()
+
+
+def get_pins(db_path: Path | None = None) -> list[str]:
+    conn = connect(db_path)
+    row = conn.execute("SELECT value FROM config WHERE key = 'pins'").fetchone()
+    if row is None or not row["value"]:
+        return []
+    return [u for u in row["value"].split(",") if u]
+
+
+def get_pins_updated_at(db_path: Path | None = None) -> str:
+    conn = connect(db_path)
+    row = conn.execute(
+        "SELECT value FROM config WHERE key = 'pins_updated_at'"
+    ).fetchone()
+    return str(row["value"]) if row else ""
+
+
+def set_pins(uuids: list[str], db_path: Path | None = None) -> None:
+    from datetime import datetime, timezone
+
+    now = datetime.now(timezone.utc).isoformat()
+    conn = connect(db_path)
+    conn.execute(
+        "INSERT INTO config (key, value) VALUES ('pins', ?)"
+        " ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        (",".join(uuids),),
+    )
+    conn.execute(
+        "INSERT INTO config (key, value) VALUES ('pins_updated_at', ?)"
+        " ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        (now,),
+    )
+    conn.commit()

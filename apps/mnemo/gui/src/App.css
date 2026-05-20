@@ -381,8 +381,6 @@ body::after {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
   background: var(--bg-surface);
   background-image: repeating-linear-gradient(
     to bottom,
@@ -398,7 +396,80 @@ body::after {
   text-transform: uppercase;
   letter-spacing: 0.2em;
   color: var(--text-muted);
+  padding: 20px 16px;
 }
+
+.recall-section-label {
+  padding: 12px 16px 6px;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: rgba(255, 149, 0, 0.7);
+  flex-shrink: 0;
+}
+
+.recall-list {
+  list-style: none;
+  overflow-y: auto;
+  flex: 1;
+  width: 100%;
+}
+
+.recall-item {
+  position: relative;
+  padding: 8px 28px 8px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  border-left: 2px solid transparent;
+}
+
+.recall-item:hover { background: #0F0F18; color: #B0B0C8; }
+
+.recall-item--active {
+  background: var(--bg);
+  border-left: 2px solid var(--color-flag);
+}
+
+.recall-item--dragging { opacity: 0.35; }
+
+.recall-item--drop-target { border-top: 1px solid var(--color-flag); }
+
+.recall-item-title {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.recall-item--active .recall-item-title { color: var(--text); }
+
+.recall-item-meta {
+  display: flex;
+  gap: 4px;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.recall-item-handle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 9px;
+  color: var(--border);
+  opacity: 0;
+  cursor: grab;
+  line-height: 1;
+  user-select: none;
+}
+
+.recall-item:hover .recall-item-handle { opacity: 1; }
+
+.recall-item-handle:active { cursor: grabbing; }
 
 .note-list-toolbar {
   display: flex;

@@ -76,6 +76,26 @@ def _merge(local: sqlite3.Connection, remote: sqlite3.Connection) -> MergeResult
             _copy_entities(remote, local, row["id"], local_id)
             updated += 1
 
+    # Sync pins — last-write-wins on pins_updated_at
+    remote_pins_ts = remote.execute(
+        "SELECT value FROM config WHERE key = 'pins_updated_at'"
+    ).fetchone()
+    if remote_pins_ts:
+        local_pins_ts = local.execute(
+            "SELECT value FROM config WHERE key = 'pins_updated_at'"
+        ).fetchone()
+        if local_pins_ts is None or remote_pins_ts["value"] > local_pins_ts["value"]:
+            for key in ("pins", "pins_updated_at"):
+                row = remote.execute(
+                    "SELECT value FROM config WHERE key = ?", (key,)
+                ).fetchone()
+                if row:
+                    local.execute(
+                        "INSERT INTO config (key, value) VALUES (?, ?)"
+                        " ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                        (key, row["value"]),
+                    )
+
     local.commit()
     return MergeResult(added=added, updated=updated, deleted=deleted)
 

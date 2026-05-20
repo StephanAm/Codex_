@@ -34,6 +34,8 @@ from .store import (
     get_autosync_debounce_ms,
     get_note,
     get_default_tags,
+    get_pins,
+    get_pins_updated_at,
     get_sync_adapter,
     get_sync_folder,
     get_sync_local_path,
@@ -43,6 +45,7 @@ from .store import (
     search_notes,
     set_autosync_debounce_ms,
     set_default_tags,
+    set_pins,
     set_sync_adapter,
     set_sync_folder,
     set_sync_local_path,
@@ -279,6 +282,38 @@ def set_config(payload: ConfigPayload) -> dict[str, Any]:
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
     return get_config()
+
+
+# ── pins ──────────────────────────────────────────────────────────────────────
+
+class PinsPayload(BaseModel):
+    uuids: list[str]
+
+
+class PinsResponse(BaseModel):
+    notes: list[NoteResponse]
+    updated_at: str
+
+
+def _build_pins_response() -> dict[str, Any]:
+    uuids = get_pins()
+    updated_at = get_pins_updated_at()
+    notes_by_uuid = {n.uuid: _note_dict(n) for n in list_notes(limit=10_000)}
+    ordered = [notes_by_uuid[u] for u in uuids if u in notes_by_uuid]
+    return {"notes": ordered, "updated_at": updated_at}
+
+
+@app.get("/pins", summary="Get pinned notes in order")
+def get_pins_endpoint() -> dict[str, Any]:
+    """Return the ordered list of pinned notes as full note objects."""
+    return _build_pins_response()
+
+
+@app.put("/pins", summary="Set pinned note order")
+def put_pins_endpoint(payload: PinsPayload) -> dict[str, Any]:
+    """Replace the ordered list of pinned note UUIDs and persist with a new timestamp."""
+    set_pins(payload.uuids)
+    return _build_pins_response()
 
 
 # ── session ───────────────────────────────────────────────────────────────────

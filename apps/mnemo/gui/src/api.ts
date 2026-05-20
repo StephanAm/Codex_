@@ -49,6 +49,11 @@ export interface Session {
   entities: string[];
 }
 
+export interface PinsResponse {
+  notes: Note[];
+  updated_at: string;
+}
+
 export const api = {
   health: () => get<{ status: string }>("/health"),
   notes: {
@@ -86,6 +91,10 @@ export const api = {
     run:  () => post<{ message: string; needs_auth: boolean }>("/sync"),
     push: () => post<{ message: string; needs_auth: boolean }>("/sync/push"),
     pull: () => post<{ message: string; needs_auth: boolean }>("/sync/pull"),
+  },
+  pins: {
+    list: () => get<PinsResponse>("/pins"),
+    save: (uuids: string[]) => put<PinsResponse>("/pins", { uuids }),
   },
   auth: {
     googleConnect: () => post<{ message: string }>("/auth/google"),

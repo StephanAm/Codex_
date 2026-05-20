@@ -50,6 +50,7 @@ export default function App() {
   const [timePeriod, setTimePeriod]           = useState("all");
   const [dateFrom, setDateFrom]               = useState("");
   const [dateTo, setDateTo]                   = useState("");
+  const [pinnedNotes, setPinnedNotes]         = useState<Note[]>([]);
 
   // ── responsive layout ───────────────────────────────────────────────────────
   const SIDEBAR_BREAKPOINT = 640;
@@ -103,9 +104,37 @@ export default function App() {
     }
   }, []);
 
+  const loadPins = useCallback(async () => {
+    try {
+      const result = await api.pins.list();
+      setPinnedNotes(result.notes);
+    } catch { /* server not up yet */ }
+  }, []);
+
   useEffect(() => {
     if (ready) loadNotes(query);
   }, [query, loadNotes, ready]);
+
+  useEffect(() => {
+    if (ready) loadPins();
+  }, [ready, loadPins]);
+
+  const handlePin = useCallback(async (note: Note) => {
+    const next = [...pinnedNotes, note];
+    await api.pins.save(next.map(n => n.uuid));
+    setPinnedNotes(next);
+  }, [pinnedNotes]);
+
+  const handleUnpin = useCallback(async (note: Note) => {
+    const next = pinnedNotes.filter(n => n.uuid !== note.uuid);
+    await api.pins.save(next.map(n => n.uuid));
+    setPinnedNotes(next);
+  }, [pinnedNotes]);
+
+  const handlePinReorder = useCallback(async (reordered: Note[]) => {
+    await api.pins.save(reordered.map(n => n.uuid));
+    setPinnedNotes(reordered);
+  }, []);
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
@@ -246,7 +275,19 @@ export default function App() {
         />
       );
     }
-    if (selected) return <NoteDetail note={selected} onEdit={() => setMode("edit")} onDelete={handleDelete} />;
+    if (selected) {
+      const isPinned = pinnedNotes.some(n => n.uuid === selected.uuid);
+      return (
+        <NoteDetail
+          note={selected}
+          onEdit={() => setMode("edit")}
+          onDelete={handleDelete}
+          isPinned={isPinned}
+          onPin={() => handlePin(selected)}
+          onUnpin={() => handleUnpin(selected)}
+        />
+      );
+    }
     return (
       <div className="empty-state">
         {error
@@ -322,6 +363,10 @@ export default function App() {
         )}
         {activeSidebar === "recall" && (
           <RecallSidebar
+            pinnedNotes={pinnedNotes}
+            selectedId={selected?.id ?? null}
+            onSelect={handleSelect}
+            onReorder={handlePinReorder}
             className={narrow ? (sidebarOpen ? "note-list-panel--overlay" : "note-list-panel--hidden") : ""}
           />
         )}

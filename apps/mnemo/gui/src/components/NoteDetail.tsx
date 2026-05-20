@@ -6,6 +6,9 @@ interface Props {
   note: Note;
   onEdit: () => void;
   onDelete: () => void;
+  isPinned: boolean;
+  onPin: () => void;
+  onUnpin: () => void;
 }
 
 function formatDateTime(iso: string) {
@@ -68,13 +71,16 @@ function renderBody(body: string) {
   return body.split("\n").map((line, li) => renderLine(line, li));
 }
 
-export function NoteDetail({ note, onEdit, onDelete }: Props) {
+export function NoteDetail({ note, onEdit, onDelete, isPinned, onPin, onUnpin }: Props) {
   return (
     <div className="note-detail">
       <div className="note-detail-header">
         <span className="note-detail-id">#{note.id}</span>
         <span className="note-detail-date">{formatDateTime(note.created_at)}</span>
         <div className="note-detail-actions">
+          <button className="btn btn-secondary" onClick={isPinned ? onUnpin : onPin}>
+            {isPinned ? "Unpin" : "Pin"}
+          </button>
           <button className="btn btn-secondary" onClick={onEdit}>Edit</button>
           <button className="btn btn-danger" onClick={onDelete}>Delete</button>
         </div>
