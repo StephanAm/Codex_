@@ -27,13 +27,12 @@ export interface Note {
   updated_at: string;
   time_stamp: string;
   tags: string[];
-  entities: string[];
+  references: string[];
 }
 
-export interface Entity {
+export interface Reference {
   id: number;
   name: string;
-  entity_type: string | null;
 }
 
 export interface Config {
@@ -46,7 +45,7 @@ export interface Config {
 
 export interface Session {
   tags: string[];
-  entities: string[];
+  references: string[];
 }
 
 export interface PinsResponse {
@@ -57,25 +56,25 @@ export interface PinsResponse {
 export const api = {
   health: () => get<{ status: string }>("/health"),
   notes: {
-    list: (params: { q?: string; tag?: string; entity?: string } = {}) => {
+    list: (params: { q?: string; tag?: string; reference?: string } = {}) => {
       const qs = new URLSearchParams();
       if (params.q) qs.set("q", params.q);
       if (params.tag) qs.set("tag", params.tag);
-      if (params.entity) qs.set("entity", params.entity);
+      if (params.reference) qs.set("reference", params.reference);
       const suffix = qs.toString() ? `?${qs}` : "";
       return get<Note[]>(`/notes${suffix}`);
     },
-    create: (body: string, tags: string[] = [], entities: string[] = []) =>
-      post<Note>("/notes", { body, tags, entities }),
-    update: (id: number, body: string, tags: string[] = [], entities: string[] = []) =>
-      put<Note>(`/notes/${id}`, { body, tags, entities }),
+    create: (body: string, tags: string[] = [], references: string[] = []) =>
+      post<Note>("/notes", { body, tags, references }),
+    update: (id: number, body: string, tags: string[] = [], references: string[] = []) =>
+      put<Note>(`/notes/${id}`, { body, tags, references }),
     delete: (id: number) => del(`/notes/${id}`),
   },
   tags: {
     list: () => get<string[]>("/tags"),
   },
-  entities: {
-    list: () => get<Entity[]>("/entities"),
+  references: {
+    list: () => get<Reference[]>("/references"),
   },
   config: {
     get: () => get<Config>("/config"),
@@ -83,8 +82,8 @@ export const api = {
   },
   session: {
     get: () => get<Session>("/session"),
-    set: (tags: string[], entities: string[]) =>
-      put<Session>("/session", { tags, entities }),
+    set: (tags: string[], references: string[]) =>
+      put<Session>("/session", { tags, references }),
     clear: () => del("/session"),
   },
   sync: {

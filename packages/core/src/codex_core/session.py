@@ -8,20 +8,22 @@ def _session_path() -> Path:
 
 
 def get_session_context() -> tuple[list[str], list[str]]:
-    """Returns (tags, entities) active for the current session."""
+    """Returns (tags, references) active for the current session."""
     p = _session_path()
     if not p.exists():
         return [], []
     try:
         data = json.loads(p.read_text())
-        return data.get("tags", []), data.get("entities", [])
+        # Accept old "entities" key from pre-migration session files
+        references = data.get("references", data.get("entities", []))
+        return data.get("tags", []), references
     except (json.JSONDecodeError, OSError):
         return [], []
 
 
-def set_session_context(tags: list[str], entities: list[str]) -> None:
+def set_session_context(tags: list[str], references: list[str]) -> None:
     p = _session_path()
-    p.write_text(json.dumps({"tags": tags, "entities": entities}))
+    p.write_text(json.dumps({"tags": tags, "references": references}))
 
 
 def clear_session_context() -> None:

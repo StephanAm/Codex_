@@ -722,7 +722,7 @@ body::after {
 .note-editor-pickers { display: flex; gap: 10px; flex-wrap: wrap; }
 .note-editor-actions { display: flex; gap: 8px; }
 
-/* ── tag / entity picker ──────────────────────────────────────────────────── */
+/* ── tag / reference picker ──────────────────────────────────────────────── */
 
 .picker-container { position: relative; }
 
@@ -1000,10 +1000,10 @@ body::after {
 }
 
 .badge-tag    { background: var(--accent-dim); color: var(--accent); }
-.badge-entity { background: rgba(127, 223, 255, 0.12); color: var(--accent-ice); }
+.badge-reference { background: rgba(127, 223, 255, 0.12); color: var(--accent-ice); }
 
 .highlight-tag    { color: var(--accent);     font-weight: 600; }
-.highlight-entity { color: var(--accent-ice); font-weight: 600; }
+.highlight-reference { color: var(--accent-ice); font-weight: 600; }
 .highlight-date   { color: var(--date); background: var(--date-dim); border-radius: 4px; padding: 0 5px; font-size: 0.88em; }
 .highlight-url    { color: var(--text-muted); text-decoration: underline; cursor: pointer; }
 

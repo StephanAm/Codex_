@@ -39,7 +39,7 @@ from .store import (
     get_sync_adapter,
     get_sync_folder,
     get_sync_local_path,
-    list_entities,
+    list_references,
     list_notes,
     list_tags,
     search_notes,
@@ -117,7 +117,7 @@ class NoteResponse(BaseModel):
     uuid: str = Field(..., description="Stable UUID used for sync and conflict resolution")
     body: str = Field(..., description="Full plain-text note body, including any inline tags and references")
     tags: list[str] = Field(..., description="Tags parsed from the body (`#Tag`) plus any injected at creation, stored lowercase")
-    entities: list[str] = Field(..., description="References parsed from the body (`@Name`) plus any injected at creation, stored lowercase")
+    references: list[str] = Field(..., description="References parsed from the body (`@Name`) plus any injected at creation, stored lowercase")
     created_at: str = Field(..., description="ISO 8601 UTC timestamp of when the note was created")
     updated_at: str = Field(..., description="ISO 8601 UTC timestamp of the most recent edit")
     time_stamp: str = Field(..., description="ISO 8601 timestamp of the `~{date}` expression in the body, or equal to `created_at` if none was specified")
@@ -129,7 +129,7 @@ class NoteResponse(BaseModel):
                 "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
                 "body": "Discussed caching strategy with @Alice — going with Redis. #Backend #Architecture ~{2026-05-18}",
                 "tags": ["backend", "architecture"],
-                "entities": ["alice"],
+                "references": ["alice"],
                 "created_at": "2026-05-18T09:30:00+00:00",
                 "updated_at": "2026-05-18T09:30:00+00:00",
                 "time_stamp": "2026-05-18T00:00:00+00:00",
@@ -144,20 +144,20 @@ class NoteResponse(BaseModel):
 def get_notes(
     q: str | None = None,
     tag: str | None = None,
-    entity: str | None = None,
+    reference: str | None = None,
 ) -> list[dict[str, Any]]:
     """Return a list of notes, optionally filtered or searched.
 
-    - **q** — full-text search query; when provided, `tag` and `entity` are ignored
+    - **q** — full-text search query; when provided, `tag` and `reference` are ignored
     - **tag** — filter by tag (lowercase, e.g. `work`)
-    - **entity** — filter by referenced entity (lowercase, e.g. `alice`)
+    - **reference** — filter by referenced name (lowercase, e.g. `alice`)
 
     Returns up to 500 notes ordered by creation date descending.
     """
     if q:
         notes = search_notes(q)
     else:
-        notes = list_notes(tag=tag, entity=entity, limit=500)
+        notes = list_notes(tag=tag, reference=reference, limit=500)
     return [_note_dict(n) for n in notes]
 
 
@@ -176,7 +176,7 @@ def get_note_by_id(note_id: int) -> dict[str, Any]:
 class NoteBody(BaseModel):
     body: str
     tags: list[str] = []
-    entities: list[str] = []
+    references: list[str] = []
 
 
 @app.post("/notes", status_code=201, summary="Create a note", response_model=NoteResponse)
@@ -184,12 +184,12 @@ def create_note(payload: NoteBody) -> dict[str, Any]:
     """Create a new note from a plain-text body.
 
     Tags (`#Tag`) and references (`@Name`) are parsed automatically from the body.
-    Additional tags and entities can be injected via the `tags` and `entities` fields
+    Additional tags and references can be injected via the `tags` and `references` fields
     without embedding them in the body text.
 
     Returns the created note with its assigned ID and timestamps.
     """
-    note = add_note(payload.body, extra_tags=payload.tags, extra_entities=payload.entities)
+    note = add_note(payload.body, extra_tags=payload.tags, extra_references=payload.references)
     return _note_dict(note)
 
 
@@ -200,7 +200,7 @@ def edit_note(note_id: int, payload: NoteBody) -> dict[str, Any]:
     The full body must be supplied — this is a replace, not a patch.
     Raises **404** if no note with that ID exists.
     """
-    note = update_note(note_id, payload.body, extra_tags=payload.tags, extra_entities=payload.entities)
+    note = update_note(note_id, payload.body, extra_tags=payload.tags, extra_references=payload.references)
     if note is None:
         raise HTTPException(status_code=404, detail=f"Note #{note_id} not found")
     return _note_dict(note)
@@ -217,7 +217,7 @@ def remove_note(note_id: int) -> None:
         raise HTTPException(status_code=404, detail=f"Note #{note_id} not found")
 
 
-# ── tags & entities ───────────────────────────────────────────────────────────
+# ── tags & references ─────────────────────────────────────────────────────────
 
 @app.get("/tags", summary="List all tags")
 def get_tags() -> list[str]:
@@ -225,10 +225,10 @@ def get_tags() -> list[str]:
     return list_tags()
 
 
-@app.get("/entities", summary="List all entities")
-def get_entities() -> list[dict[str, Any]]:
-    """Return all referenced entities (people, teams, named things) across all notes."""
-    return [asdict(e) for e in list_entities()]
+@app.get("/references", summary="List all references")
+def get_references() -> list[dict[str, Any]]:
+    """Return all @references (people, teams, named things) across all notes."""
+    return [asdict(r) for r in list_references()]
 
 
 # ── config ────────────────────────────────────────────────────────────────────
@@ -320,34 +320,34 @@ def put_pins_endpoint(payload: PinsPayload) -> dict[str, Any]:
 
 @app.get("/session", summary="Get session context")
 def get_session() -> dict[str, Any]:
-    """Return the active session tags and entities.
+    """Return the active session tags and references.
 
     Session context is applied automatically to all notes created during the session.
     It is process-local and not persisted to the database.
     """
-    tags, entities = get_session_context()
-    return {"tags": tags, "entities": entities}
+    tags, references = get_session_context()
+    return {"tags": tags, "references": references}
 
 
 class SessionPayload(BaseModel):
     tags: list[str]
-    entities: list[str]
+    references: list[str]
 
 
 @app.put("/session", summary="Set session context")
 def set_session(payload: SessionPayload) -> dict[str, Any]:
-    """Set the active session tags and entities.
+    """Set the active session tags and references.
 
-    Any tags and entities supplied here will be automatically attached to every note
+    Any tags and references supplied here will be automatically attached to every note
     created while the session is active.
     """
-    set_session_context(payload.tags, payload.entities)
-    return {"tags": payload.tags, "entities": payload.entities}
+    set_session_context(payload.tags, payload.references)
+    return {"tags": payload.tags, "references": payload.references}
 
 
 @app.delete("/session", status_code=204, summary="Clear session context")
 def delete_session() -> None:
-    """Clear the active session, removing any automatically applied tags and entities."""
+    """Clear the active session, removing any automatically applied tags and references."""
     clear_session_context()
 
 

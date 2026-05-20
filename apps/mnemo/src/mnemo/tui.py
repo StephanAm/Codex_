@@ -32,7 +32,7 @@ _C_HEADER = 1  # white on blue
 _C_STATUS = 2  # black on white
 _C_SEL    = 3  # black on cyan  (selected list row)
 _C_TAG    = 4  # yellow         (#tags)
-_C_ENTITY = 5  # cyan           (@entities)
+_C_REFERENCE = 5  # cyan           (@references)
 
 _MIN_W, _MIN_H = 60, 10
 
@@ -166,7 +166,7 @@ class _App:
         curses.init_pair(_C_STATUS, curses.COLOR_BLACK,  curses.COLOR_WHITE)
         curses.init_pair(_C_SEL,    curses.COLOR_BLACK,  curses.COLOR_CYAN)
         curses.init_pair(_C_TAG,    curses.COLOR_YELLOW, -1)
-        curses.init_pair(_C_ENTITY, curses.COLOR_CYAN,   -1)
+        curses.init_pair(_C_REFERENCE, curses.COLOR_CYAN,   -1)
 
     # ── run loop ──────────────────────────────────────────────────────────────
 
@@ -202,9 +202,9 @@ class _App:
 
     def _new_editor(self) -> _Editor:
         defaults = get_default_tags()
-        s_tags, s_entities = get_session_context()
+        s_tags, s_references = get_session_context()
         all_tags = list(dict.fromkeys(defaults + s_tags))
-        context_parts = [f"#{t}" for t in all_tags] + [f"@{e}" for e in s_entities]
+        context_parts = [f"#{t}" for t in all_tags] + [f"@{r}" for r in s_references]
         if context_parts:
             ed = _Editor("\n" + " ".join(context_parts))
             ed.row = 0
@@ -273,9 +273,9 @@ class _App:
         right = f" {n} note{'s' if n != 1 else ''} "
         if self.query:
             right = f"  search: {self.query!r}" + right
-        s_tags, s_entities = get_session_context()
-        if s_tags or s_entities:
-            parts = [f"#{t}" for t in s_tags] + [f"@{e}" for e in s_entities]
+        s_tags, s_references = get_session_context()
+        if s_tags or s_references:
+            parts = [f"#{t}" for t in s_tags] + [f"@{r}" for r in s_references]
             right = f"  [{' '.join(parts)}]" + right
         bar = (title + right.rjust(w - len(title)))[:w]
         self._put(0, 0, bar.ljust(w), curses.color_pair(_C_HEADER) | curses.A_BOLD)
@@ -331,16 +331,16 @@ class _App:
                 cx += len(s)
             y += 1
 
-        if note.entities and y < h - 1:
-            self._put(y, x + 2, "ent:   ")
+        if note.references and y < h - 1:
+            self._put(y, x + 2, "ref:   ")
             cx = x + 9
-            for ent in note.entities:
-                s = f"@{ent}  "
-                self._put(y, cx, s, curses.color_pair(_C_ENTITY) | curses.A_BOLD)
+            for ref in note.references:
+                s = f"@{ref}  "
+                self._put(y, cx, s, curses.color_pair(_C_REFERENCE) | curses.A_BOLD)
                 cx += len(s)
 
     def _draw_body(self, start_y: int, x: int, w: int, h: int, body: str) -> int:
-        """Render body text with coloured #tags and @entities. Returns next free y."""
+        """Render body text with coloured #tags and @references. Returns next free y."""
         y     = start_y
         right = x + w - 1
         for raw_line in body.splitlines():
@@ -356,7 +356,7 @@ class _App:
                 if re.match(r"#\w", part):
                     attr: int = curses.color_pair(_C_TAG) | curses.A_BOLD
                 elif re.match(r"@\w", part):
-                    attr = curses.color_pair(_C_ENTITY) | curses.A_BOLD
+                    attr = curses.color_pair(_C_REFERENCE) | curses.A_BOLD
                 else:
                     attr = curses.A_NORMAL
                 # wrap to next line if needed
@@ -592,8 +592,8 @@ class _App:
             self._enter_config()
 
         elif key == ord("s"):
-            s_tags, s_entities = get_session_context()
-            parts = [f"#{t}" for t in s_tags] + [f"@{e}" for e in s_entities]
+            s_tags, s_references = get_session_context()
+            parts = [f"#{t}" for t in s_tags] + [f"@{r}" for r in s_references]
             self._session_buf = " ".join(parts)
             self._session_cur = len(self._session_buf)
             self.mode = _Mode.SESSION
@@ -726,7 +726,7 @@ class _App:
             if token.startswith("#"):
                 attr: int = curses.color_pair(_C_TAG) | curses.A_BOLD
             elif token.startswith("@"):
-                attr = curses.color_pair(_C_ENTITY) | curses.A_BOLD
+                attr = curses.color_pair(_C_REFERENCE) | curses.A_BOLD
             else:
                 attr = curses.A_NORMAL
             self._put(field_y, cx, token, attr)
@@ -749,8 +749,8 @@ class _App:
         if key in (10, 13):  # Enter — save
             from .parser import parse as _parse
             parsed = _parse(self._session_buf)
-            if parsed.tags or parsed.entities:
-                set_session_context(parsed.tags, parsed.entities)
+            if parsed.tags or parsed.references:
+                set_session_context(parsed.tags, parsed.references)
             else:
                 clear_session_context()
             self._exit_session()

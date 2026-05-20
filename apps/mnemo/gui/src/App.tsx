@@ -45,8 +45,8 @@ export default function App() {
   const [mode, setMode]         = useState<Mode>("view");
   const [query, setQuery]       = useState("");
   const [error, setError]       = useState("");
-  const [filterTags, setFilterTags]           = useState<string[]>([]);
-  const [filterEntities, setFilterEntities]   = useState<string[]>([]);
+  const [filterTags, setFilterTags]               = useState<string[]>([]);
+  const [filterReferences, setFilterReferences]   = useState<string[]>([]);
   const [timePeriod, setTimePeriod]           = useState("all");
   const [dateFrom, setDateFrom]               = useState("");
   const [dateTo, setDateTo]                   = useState("");
@@ -75,8 +75,8 @@ export default function App() {
   const autopushTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startupPullDone = useRef(false);
 
-  const allTags     = useMemo(() => [...new Set(notes.flatMap(n => n.tags))].sort(),     [notes]);
-  const allEntities = useMemo(() => [...new Set(notes.flatMap(n => n.entities))].sort(), [notes]);
+  const allTags        = useMemo(() => [...new Set(notes.flatMap(n => n.tags))].sort(),       [notes]);
+  const allReferences  = useMemo(() => [...new Set(notes.flatMap(n => n.references))].sort(), [notes]);
 
   const displayedNotes = useMemo(() => {
     let from: Date | null;
@@ -91,8 +91,8 @@ export default function App() {
       .filter(n => !from || new Date(n.created_at) >= from)
       .filter(n => !to   || new Date(n.created_at) <= to)
       .filter(n => filterTags.length     === 0 || n.tags.some(t => filterTags.includes(t)))
-      .filter(n => filterEntities.length === 0 || n.entities.some(e => filterEntities.includes(e)));
-  }, [notes, filterTags, filterEntities, timePeriod, dateFrom, dateTo]);
+      .filter(n => filterReferences.length === 0 || n.references.some(r => filterReferences.includes(r)));
+  }, [notes, filterTags, filterReferences, timePeriod, dateFrom, dateTo]);
 
   const loadNotes = useCallback(async (q?: string) => {
     try {
@@ -236,14 +236,14 @@ export default function App() {
 
   // ── note mutations ──────────────────────────────────────────────────────────
 
-  async function handleSave(body: string, tags: string[], entities: string[]) {
-    if (!body && tags.length === 0 && entities.length === 0) return;
+  async function handleSave(body: string, tags: string[], references: string[]) {
+    if (!body && tags.length === 0 && references.length === 0) return;
     if (mode === "add") {
-      const note = await api.notes.create(body, tags, entities);
+      const note = await api.notes.create(body, tags, references);
       await loadNotes(query);
       setSelected(note);
     } else if (mode === "edit" && selected) {
-      const note = await api.notes.update(selected.id, body, tags, entities);
+      const note = await api.notes.update(selected.id, body, tags, references);
       await loadNotes(query);
       setSelected(note);
     }
@@ -275,7 +275,7 @@ export default function App() {
         <NoteEditor
           initialBody={selected.body}
           initialTags={selected.tags}
-          initialEntities={selected.entities}
+          initialReferences={selected.references}
           onSave={handleSave}
           onCancel={() => setMode("view")}
         />
@@ -350,16 +350,16 @@ export default function App() {
             selectedId={selected?.id ?? null}
             query={query}
             filterTags={filterTags}
-            filterEntities={filterEntities}
+            filterReferences={filterReferences}
             allTags={allTags}
-            allEntities={allEntities}
+            allReferences={allReferences}
             timePeriod={timePeriod}
             dateFrom={dateFrom}
             dateTo={dateTo}
             onSelect={handleSelect}
             onQueryChange={setQuery}
             onFilterTagsChange={setFilterTags}
-            onFilterEntitiesChange={setFilterEntities}
+            onFilterReferencesChange={setFilterReferences}
             onTimePeriodChange={setTimePeriod}
             onDateFromChange={setDateFrom}
             onDateToChange={setDateTo}

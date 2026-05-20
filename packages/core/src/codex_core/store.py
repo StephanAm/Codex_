@@ -5,7 +5,7 @@ from uuid import uuid4
 
 from .dates import normalize_dates
 from .db import connect
-from .models import Entity, Note
+from .models import Reference, Note
 from .parser import normalise, parse
 
 
@@ -20,12 +20,12 @@ def _load_note(conn: sqlite3.Connection, row: sqlite3.Row) -> Note:
             (note_id,),
         )
     ]
-    entities = [
+    references = [
         r["name"]
         for r in conn.execute(
-            "SELECT e.name FROM entities e"
-            " JOIN note_entities ne ON ne.entity_id = e.id"
-            " WHERE ne.note_id = ?",
+            'SELECT r.name FROM "references" r'
+            " JOIN note_references nr ON nr.reference_id = r.id"
+            " WHERE nr.note_id = ?",
             (note_id,),
         )
     ]
@@ -37,15 +37,15 @@ def _load_note(conn: sqlite3.Connection, row: sqlite3.Row) -> Note:
         updated_at=datetime.fromisoformat(row["updated_at"]),
         time_stamp=datetime.fromisoformat(row["time_stamp"]),
         tags=tags,
-        entities=entities,
+        references=references,
     )
 
 
-def _attach_tags_entities(
+def _attach_tags_references(
     conn: sqlite3.Connection,
     note_id: int | None,
     tags: list[str],
-    entities: list[str],
+    references: list[str],
 ) -> None:
     for tag in tags:
         conn.execute("INSERT OR IGNORE INTO tags (name) VALUES (?)", (tag,))
@@ -56,28 +56,28 @@ def _attach_tags_entities(
             "INSERT OR IGNORE INTO note_tags (note_id, tag_id) VALUES (?, ?)",
             (note_id, tag_id),
         )
-    for entity in entities:
-        conn.execute("INSERT OR IGNORE INTO entities (name) VALUES (?)", (entity,))
-        entity_id = conn.execute(
-            "SELECT id FROM entities WHERE name = ?", (entity,)
+    for reference in references:
+        conn.execute('INSERT OR IGNORE INTO "references" (name) VALUES (?)', (reference,))
+        reference_id = conn.execute(
+            'SELECT id FROM "references" WHERE name = ?', (reference,)
         ).fetchone()["id"]
         conn.execute(
-            "INSERT OR IGNORE INTO note_entities (note_id, entity_id) VALUES (?, ?)",
-            (note_id, entity_id),
+            "INSERT OR IGNORE INTO note_references (note_id, reference_id) VALUES (?, ?)",
+            (note_id, reference_id),
         )
 
 
 def add_note(
     body: str,
     extra_tags: list[str] | None = None,
-    extra_entities: list[str] | None = None,
+    extra_references: list[str] | None = None,
     db_path: Path | None = None,
 ) -> Note:
     conn = connect(db_path)
     body = normalise(normalize_dates(body).text)
     parsed = parse(body)
     tags = list(dict.fromkeys(parsed.tags + [t.lower() for t in (extra_tags or [])]))
-    entities = list(dict.fromkeys(parsed.entities + [e.lower() for e in (extra_entities or [])]))
+    references = list(dict.fromkeys(parsed.references + [r.lower() for r in (extra_references or [])]))
     now = datetime.now(timezone.utc).isoformat()
 
     cur = conn.execute(
@@ -85,7 +85,7 @@ def add_note(
         (str(uuid4()), body, now, now, now),
     )
     note_id = cur.lastrowid
-    _attach_tags_entities(conn, note_id, tags, entities)
+    _attach_tags_references(conn, note_id, tags, references)
     conn.commit()
     row = conn.execute("SELECT * FROM notes WHERE id = ?", (note_id,)).fetchone()
     return _load_note(conn, row)
@@ -93,7 +93,7 @@ def add_note(
 
 def list_notes(
     tag: str | None = None,
-    entity: str | None = None,
+    reference: str | None = None,
     limit: int = 20,
     db_path: Path | None = None,
 ) -> list[Note]:
@@ -108,14 +108,14 @@ def list_notes(
             " ORDER BY n.created_at DESC LIMIT ?",
             (tag.lower(), limit),
         ).fetchall()
-    elif entity:
+    elif reference:
         rows = conn.execute(
-            "SELECT n.* FROM notes n"
-            " JOIN note_entities ne ON ne.note_id = n.id"
-            " JOIN entities e ON e.id = ne.entity_id"
-            " WHERE e.name = ?"
-            " ORDER BY n.created_at DESC LIMIT ?",
-            (entity.lower(), limit),
+            'SELECT n.* FROM notes n'
+            ' JOIN note_references nr ON nr.note_id = n.id'
+            ' JOIN "references" r ON r.id = nr.reference_id'
+            ' WHERE r.name = ?'
+            ' ORDER BY n.created_at DESC LIMIT ?',
+            (reference.lower(), limit),
         ).fetchall()
     else:
         rows = conn.execute(
@@ -146,7 +146,7 @@ def update_note(
     note_id: int,
     body: str,
     extra_tags: list[str] | None = None,
-    extra_entities: list[str] | None = None,
+    extra_references: list[str] | None = None,
     db_path: Path | None = None,
 ) -> Note | None:
     conn = connect(db_path)
@@ -161,10 +161,10 @@ def update_note(
 
     parsed = parse(body)
     tags = list(dict.fromkeys(parsed.tags + [t.lower() for t in (extra_tags or [])]))
-    entities = list(dict.fromkeys(parsed.entities + [e.lower() for e in (extra_entities or [])]))
+    references = list(dict.fromkeys(parsed.references + [r.lower() for r in (extra_references or [])]))
     conn.execute("DELETE FROM note_tags WHERE note_id = ?", (note_id,))
-    conn.execute("DELETE FROM note_entities WHERE note_id = ?", (note_id,))
-    _attach_tags_entities(conn, note_id, tags, entities)
+    conn.execute("DELETE FROM note_references WHERE note_id = ?", (note_id,))
+    _attach_tags_references(conn, note_id, tags, references)
     conn.commit()
     row = conn.execute("SELECT * FROM notes WHERE id = ?", (note_id,)).fetchone()
     return _load_note(conn, row)
@@ -191,22 +191,10 @@ def list_tags(db_path: Path | None = None) -> list[str]:
     return [r["name"] for r in rows]
 
 
-def list_entities(db_path: Path | None = None) -> list[Entity]:
+def list_references(db_path: Path | None = None) -> list[Reference]:
     conn = connect(db_path)
-    rows = conn.execute("SELECT * FROM entities ORDER BY name").fetchall()
-    return [
-        Entity(id=r["id"], name=r["name"], entity_type=r["entity_type"]) for r in rows
-    ]
-
-
-def set_entity_type(name: str, entity_type: str, db_path: Path | None = None) -> bool:
-    conn = connect(db_path)
-    cur = conn.execute(
-        "UPDATE entities SET entity_type = ? WHERE name = ?",
-        (entity_type, name.lower()),
-    )
-    conn.commit()
-    return cur.rowcount > 0
+    rows = conn.execute('SELECT * FROM "references" ORDER BY name').fetchall()
+    return [Reference(id=r["id"], name=r["name"]) for r in rows]
 
 
 def get_sync_folder(db_path: Path | None = None) -> str:

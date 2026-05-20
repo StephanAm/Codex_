@@ -62,7 +62,7 @@ def _merge(local: sqlite3.Connection, remote: sqlite3.Connection) -> MergeResult
                 "SELECT id FROM notes WHERE uuid = ?", (uuid,)
             ).fetchone()["id"]
             _copy_tags(remote, local, row["id"], local_id)
-            _copy_entities(remote, local, row["id"], local_id)
+            _copy_references(remote, local, row["id"], local_id)
             added += 1
         elif row["updated_at"] > local_row["updated_at"]:
             local.execute(
@@ -71,9 +71,9 @@ def _merge(local: sqlite3.Connection, remote: sqlite3.Connection) -> MergeResult
             )
             local_id = local_row["id"]
             local.execute("DELETE FROM note_tags WHERE note_id = ?", (local_id,))
-            local.execute("DELETE FROM note_entities WHERE note_id = ?", (local_id,))
+            local.execute("DELETE FROM note_references WHERE note_id = ?", (local_id,))
             _copy_tags(remote, local, row["id"], local_id)
-            _copy_entities(remote, local, row["id"], local_id)
+            _copy_references(remote, local, row["id"], local_id)
             updated += 1
 
     # Sync pins — last-write-wins on pins_updated_at
@@ -123,29 +123,24 @@ def _copy_tags(
         )
 
 
-def _copy_entities(
+def _copy_references(
     remote: sqlite3.Connection,
     local: sqlite3.Connection,
     remote_note_id: int,
     local_note_id: int,
 ) -> None:
     for row in remote.execute(
-        "SELECT e.name, e.entity_type FROM entities e"
-        " JOIN note_entities ne ON ne.entity_id = e.id"
-        " WHERE ne.note_id = ?",
+        'SELECT r.name FROM "references" r'
+        " JOIN note_references nr ON nr.reference_id = r.id"
+        " WHERE nr.note_id = ?",
         (remote_note_id,),
     ):
         name = row["name"]
-        local.execute("INSERT OR IGNORE INTO entities (name) VALUES (?)", (name,))
-        if row["entity_type"]:
-            local.execute(
-                "UPDATE entities SET entity_type = ? WHERE name = ? AND entity_type IS NULL",
-                (row["entity_type"], name),
-            )
-        entity_id = local.execute(
-            "SELECT id FROM entities WHERE name = ?", (name,)
+        local.execute('INSERT OR IGNORE INTO "references" (name) VALUES (?)', (name,))
+        reference_id = local.execute(
+            'SELECT id FROM "references" WHERE name = ?', (name,)
         ).fetchone()["id"]
         local.execute(
-            "INSERT OR IGNORE INTO note_entities (note_id, entity_id) VALUES (?, ?)",
-            (local_note_id, entity_id),
+            "INSERT OR IGNORE INTO note_references (note_id, reference_id) VALUES (?, ?)",
+            (local_note_id, reference_id),
         )

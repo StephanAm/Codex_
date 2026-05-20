@@ -52,7 +52,7 @@ function renderLine(line: string, li: number) {
           return <span key={si} className="highlight-date" title={seg.iso}>{formatDateToken(seg.iso)}</span>;
         return seg.value.split(/(\s+)/).map((part, pi) => {
           if (/^#\w/.test(part)) return <span key={`${si}-${pi}`} className="highlight-tag">{part}</span>;
-          if (/^@\w/.test(part)) return <span key={`${si}-${pi}`} className="highlight-entity">{part}</span>;
+          if (/^@\w/.test(part)) return <span key={`${si}-${pi}`} className="highlight-reference">{part}</span>;
           const trail = part.match(/[.,;:!?)]+$/)?.[0] ?? "";
           const url = trail ? part.slice(0, -trail.length) : part;
           if (URL_RE.test(url)) return (
@@ -86,10 +86,10 @@ export function NoteDetail({ note, onEdit, onDelete, isPinned, onPin, onUnpin }:
         </div>
       </div>
       <div className="note-detail-body">{renderBody(note.body)}</div>
-      {(note.tags.length > 0 || note.entities.length > 0) && (
+      {(note.tags.length > 0 || note.references.length > 0) && (
         <div className="note-detail-meta">
           {note.tags.map(t => <TagBadge key={t} text={t} kind="tag" />)}
-          {note.entities.map(e => <TagBadge key={e} text={e} kind="entity" />)}
+          {note.references.map(r => <TagBadge key={r} text={r} kind="reference" />)}
         </div>
       )}
       <div className="note-detail-updated">

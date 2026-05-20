@@ -5,15 +5,15 @@ import { TagEntityPicker } from "./TagEntityPicker";
 interface Props {
   initialBody?: string;
   initialTags?: string[];
-  initialEntities?: string[];
-  onSave: (body: string, tags: string[], entities: string[]) => void;
+  initialReferences?: string[];
+  onSave: (body: string, tags: string[], references: string[]) => void;
   onCancel: () => void;
 }
 
 export function NoteEditor({
   initialBody = "",
   initialTags = [],
-  initialEntities = [],
+  initialReferences = [],
   onSave,
   onCancel,
 }: Props) {
@@ -22,9 +22,9 @@ export function NoteEditor({
     return initialBody.endsWith("\n") ? initialBody : initialBody + "\n";
   });
   const [selectedTags, setSelectedTags] = useState<string[]>(initialTags);
-  const [selectedEntities, setSelectedEntities] = useState<string[]>(initialEntities);
+  const [selectedReferences, setSelectedReferences] = useState<string[]>(initialReferences);
   const [allTags, setAllTags] = useState<string[]>([]);
-  const [allEntities, setAllEntities] = useState<string[]>([]);
+  const [allReferences, setAllReferences] = useState<string[]>([]);
   const ref = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -34,13 +34,13 @@ export function NoteEditor({
       el.setSelectionRange(el.value.length, el.value.length);
     }
     api.tags.list().then(setAllTags);
-    api.entities.list().then(es => setAllEntities(es.map(e => e.name)));
+    api.references.list().then(rs => setAllReferences(rs.map(r => r.name)));
   }, []);
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
-      if (canSave) onSave(prepareBody(body), selectedTags, selectedEntities);
+      if (canSave) onSave(prepareBody(body), selectedTags, selectedReferences);
     }
     if (e.key === "Escape") {
       e.preventDefault();
@@ -53,7 +53,7 @@ export function NoteEditor({
     return trimmed ? trimmed + "\n" : trimmed;
   }
 
-  const canSave = body.trim().length > 0 || selectedTags.length > 0 || selectedEntities.length > 0;
+  const canSave = body.trim().length > 0 || selectedTags.length > 0 || selectedReferences.length > 0;
 
   return (
     <div className="note-editor">
@@ -79,14 +79,14 @@ export function NoteEditor({
         <TagEntityPicker
           label="References"
           prefix="@"
-          kind="entity"
-          allItems={allEntities}
-          selected={selectedEntities}
-          onChange={setSelectedEntities}
+          kind="reference"
+          allItems={allReferences}
+          selected={selectedReferences}
+          onChange={setSelectedReferences}
         />
       </div>
       <div className="note-editor-actions">
-        <button className="btn btn-primary" onClick={() => onSave(prepareBody(body), selectedTags, selectedEntities)} disabled={!canSave}>
+        <button className="btn btn-primary" onClick={() => onSave(prepareBody(body), selectedTags, selectedReferences)} disabled={!canSave}>
           Save
         </button>
         <button className="btn btn-secondary" onClick={onCancel}>Cancel</button>

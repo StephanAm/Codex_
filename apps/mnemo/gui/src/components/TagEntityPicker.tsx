@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 interface Props {
   label: string;
   prefix: "#" | "@";
-  kind: "tag" | "entity";
+  kind: "tag" | "reference";
   allItems: string[];
   selected: string[];
   onChange: (selected: string[]) => void;

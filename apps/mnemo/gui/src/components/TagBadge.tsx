@@ -1,6 +1,6 @@
 interface Props {
   text: string;
-  kind: "tag" | "entity";
+  kind: "tag" | "reference";
 }
 
 export function TagBadge({ text, kind }: Props) {

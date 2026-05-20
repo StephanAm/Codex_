@@ -1,7 +1,14 @@
 import os
 import sqlite3
+from datetime import datetime, timezone
+from importlib.metadata import version as _pkg_version
 from pathlib import Path
 from uuid import uuid4
+
+try:
+    _APP_VERSION = _pkg_version("note-taker")
+except Exception:
+    _APP_VERSION = "unknown"
 
 _DEFAULT_DB = Path.home() / ".note_taker" / "notes.db"
 
@@ -32,20 +39,19 @@ def _migrate(conn: sqlite3.Connection) -> None:
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE
         );
-        CREATE TABLE IF NOT EXISTS entities (
+        CREATE TABLE IF NOT EXISTS "references" (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE,
-            entity_type TEXT
+            name TEXT NOT NULL UNIQUE
         );
         CREATE TABLE IF NOT EXISTS note_tags (
             note_id INTEGER NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
             tag_id  INTEGER NOT NULL REFERENCES tags(id)  ON DELETE CASCADE,
             PRIMARY KEY (note_id, tag_id)
         );
-        CREATE TABLE IF NOT EXISTS note_entities (
-            note_id   INTEGER NOT NULL REFERENCES notes(id)    ON DELETE CASCADE,
-            entity_id INTEGER NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
-            PRIMARY KEY (note_id, entity_id)
+        CREATE TABLE IF NOT EXISTS note_references (
+            note_id      INTEGER NOT NULL REFERENCES notes(id)         ON DELETE CASCADE,
+            reference_id INTEGER NOT NULL REFERENCES "references"(id)  ON DELETE CASCADE,
+            PRIMARY KEY (note_id, reference_id)
         );
         CREATE TABLE IF NOT EXISTS config (
             key   TEXT PRIMARY KEY,
@@ -55,7 +61,19 @@ def _migrate(conn: sqlite3.Connection) -> None:
             uuid       TEXT PRIMARY KEY,
             deleted_at TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS db_meta (
+            id             INTEGER PRIMARY KEY CHECK (id = 1),
+            schema_version TEXT NOT NULL,
+            created_at     TEXT NOT NULL
+        );
     """)
+
+    # Seed db_meta on first creation
+    if not conn.execute("SELECT 1 FROM db_meta").fetchone():
+        conn.execute(
+            "INSERT INTO db_meta (id, schema_version, created_at) VALUES (1, ?, ?)",
+            (_APP_VERSION, datetime.now(timezone.utc).isoformat()),
+        )
 
     # Add uuid and updated_at to notes if this is an existing DB
     existing = {row[1] for row in conn.execute("PRAGMA table_info(notes)")}
@@ -75,5 +93,31 @@ def _migrate(conn: sqlite3.Connection) -> None:
         conn.execute("UPDATE notes SET uuid = ? WHERE id = ?", (str(uuid4()), row[0]))
     conn.execute("UPDATE notes SET updated_at = created_at WHERE updated_at IS NULL")
     conn.execute("UPDATE notes SET time_stamp = created_at WHERE time_stamp IS NULL")
+
+    # Migrate entities → references (existing DBs only)
+    has_entities = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='entities'"
+    ).fetchone()
+    if has_entities:
+        conn.executescript("""
+            CREATE TABLE IF NOT EXISTS "references" (
+                id   INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE
+            );
+            INSERT OR IGNORE INTO "references" (id, name)
+                SELECT id, name FROM entities;
+            CREATE TABLE IF NOT EXISTS note_references (
+                note_id      INTEGER NOT NULL REFERENCES notes(id)         ON DELETE CASCADE,
+                reference_id INTEGER NOT NULL REFERENCES "references"(id)  ON DELETE CASCADE,
+                PRIMARY KEY (note_id, reference_id)
+            );
+            INSERT OR IGNORE INTO note_references (note_id, reference_id)
+                SELECT note_id, entity_id FROM note_entities;
+            DROP TABLE IF EXISTS note_entities;
+            DROP TABLE IF EXISTS entities;
+        """)
+
+    # Always stamp the current app version so the DB reflects the last migration
+    conn.execute("UPDATE db_meta SET schema_version = ?", (_APP_VERSION,))
 
     conn.commit()

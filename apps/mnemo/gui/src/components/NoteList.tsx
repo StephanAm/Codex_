@@ -7,16 +7,16 @@ interface Props {
   selectedId: number | null;
   query: string;
   filterTags: string[];
-  filterEntities: string[];
+  filterReferences: string[];
   allTags: string[];
-  allEntities: string[];
+  allReferences: string[];
   timePeriod: string;
   dateFrom: string;
   dateTo: string;
   onSelect: (note: Note) => void;
   onQueryChange: (q: string) => void;
   onFilterTagsChange: (tags: string[]) => void;
-  onFilterEntitiesChange: (entities: string[]) => void;
+  onFilterReferencesChange: (references: string[]) => void;
   onTimePeriodChange: (p: string) => void;
   onDateFromChange: (d: string) => void;
   onDateToChange: (d: string) => void;
@@ -34,7 +34,7 @@ function firstLine(body: string) {
   return body.split("\n").find(l => l.trim()) ?? "";
 }
 
-export function NoteList({ notes, selectedId, query, filterTags, filterEntities, allTags, allEntities, timePeriod, dateFrom, dateTo, onSelect, onQueryChange, onFilterTagsChange, onFilterEntitiesChange, onTimePeriodChange, onDateFromChange, onDateToChange, onAdd, className }: Props) {
+export function NoteList({ notes, selectedId, query, filterTags, filterReferences, allTags, allReferences, timePeriod, dateFrom, dateTo, onSelect, onQueryChange, onFilterTagsChange, onFilterReferencesChange, onTimePeriodChange, onDateFromChange, onDateToChange, onAdd, className }: Props) {
   const selectedRef = useRef<HTMLLIElement>(null);
 
   useEffect(() => {
@@ -109,10 +109,10 @@ export function NoteList({ notes, selectedId, query, filterTags, filterEntities,
         <TagEntityPicker
           label="Refs"
           prefix="@"
-          kind="entity"
-          allItems={allEntities}
-          selected={filterEntities}
-          onChange={onFilterEntitiesChange}
+          kind="reference"
+          allItems={allReferences}
+          selected={filterReferences}
+          onChange={onFilterReferencesChange}
           allowNew={false}
           dropdownDir="down"
           compact
@@ -134,13 +134,13 @@ export function NoteList({ notes, selectedId, query, filterTags, filterEntities,
               <span className="note-id">#{note.id}</span>
               <span className="note-date">{formatDate(note.created_at)}</span>
             </div>
-            {(note.tags.length > 0 || note.entities.length > 0) && (
+            {(note.tags.length > 0 || note.references.length > 0) && (
               <div className="note-list-item-tags">
                 {note.tags.map(t => (
                   <span key={t} className="badge badge-tag">#{t}</span>
                 ))}
-                {note.entities.map(e => (
-                  <span key={e} className="badge badge-entity">@{e}</span>
+                {note.references.map(r => (
+                  <span key={r} className="badge badge-reference">@{r}</span>
                 ))}
               </div>
             )}

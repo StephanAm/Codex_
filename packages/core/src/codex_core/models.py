@@ -11,11 +11,10 @@ class Note:
     updated_at: datetime
     time_stamp: datetime
     tags: list[str] = field(default_factory=list)
-    entities: list[str] = field(default_factory=list)
+    references: list[str] = field(default_factory=list)
 
 
 @dataclass
-class Entity:
+class Reference:
     id: int
     name: str
-    entity_type: str | None
