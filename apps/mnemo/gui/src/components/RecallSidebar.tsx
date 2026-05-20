@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Note } from "../api";
 
 interface Props {
@@ -22,6 +22,7 @@ function formatDate(iso: string) {
 export function RecallSidebar({ pinnedNotes, selectedId, onSelect, onReorder, className = "" }: Props) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
+  const didDragRef = useRef(false);
 
   function reorder(from: number, to: number): Note[] {
     const arr = [...pinnedNotes];
@@ -36,7 +37,10 @@ export function RecallSidebar({ pinnedNotes, selectedId, onSelect, onReorder, cl
       {pinnedNotes.length === 0 && (
         <span className="recall-sidebar-empty">no pins yet.</span>
       )}
-      <ul className="recall-list">
+      <ul
+        className={`recall-list${dragIndex !== null ? " recall-list--dragging" : ""}`}
+        onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDropIndex(null); }}
+      >
         {pinnedNotes.map((note, i) => {
           const isActive = note.id === selectedId;
           const isDragging = dragIndex === i;
@@ -52,12 +56,12 @@ export function RecallSidebar({ pinnedNotes, selectedId, onSelect, onReorder, cl
             <li
               key={note.uuid}
               className={cls}
-              onClick={() => onSelect(note)}
+              onClick={() => { if (didDragRef.current) { didDragRef.current = false; return; } onSelect(note); }}
               draggable
-              onDragStart={() => setDragIndex(i)}
-              onDragOver={e => { e.preventDefault(); setDropIndex(i); }}
-              onDragLeave={() => setDropIndex(null)}
-              onDrop={() => {
+              onDragStart={e => { e.dataTransfer.setData("text/plain", String(i)); e.dataTransfer.effectAllowed = "move"; didDragRef.current = true; setDragIndex(i); }}
+              onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDropIndex(i); }}
+              onDrop={e => {
+                e.preventDefault();
                 if (dragIndex !== null && dragIndex !== i) {
                   onReorder(reorder(dragIndex, i));
                 }
@@ -81,6 +85,18 @@ export function RecallSidebar({ pinnedNotes, selectedId, onSelect, onReorder, cl
             </li>
           );
         })}
+        {dragIndex !== null && (
+          <li
+            className={`recall-item-sentinel${dropIndex === pinnedNotes.length ? " recall-item-sentinel--active" : ""}`}
+            onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDropIndex(pinnedNotes.length); }}
+            onDrop={e => {
+              e.preventDefault();
+              if (dragIndex !== null) onReorder(reorder(dragIndex, pinnedNotes.length));
+              setDragIndex(null);
+              setDropIndex(null);
+            }}
+          />
+        )}
       </ul>
     </div>
   );

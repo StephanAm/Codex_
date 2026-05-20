@@ -419,8 +419,10 @@ body::after {
   position: relative;
   padding: 8px 28px 8px 14px;
   cursor: pointer;
+  border-top: 1px solid transparent;
   border-bottom: 1px solid var(--border);
   border-left: 2px solid transparent;
+  transition: border-top-color 500ms ease;
 }
 
 .recall-item:hover { background: #0F0F18; color: #B0B0C8; }
@@ -432,7 +434,17 @@ body::after {
 
 .recall-item--dragging { opacity: 0.35; }
 
-.recall-item--drop-target { border-top: 1px solid var(--color-flag); }
+.recall-list--dragging .recall-item > * { pointer-events: none; }
+
+.recall-item--drop-target { border-top-color: var(--color-flag); }
+
+.recall-item-sentinel {
+  height: 16px;
+  list-style: none;
+  border-top: 1px solid transparent;
+  transition: border-top-color 500ms ease;
+}
+.recall-item-sentinel--active { border-top-color: var(--color-flag); }
 
 .recall-item-title {
   font-size: 11px;

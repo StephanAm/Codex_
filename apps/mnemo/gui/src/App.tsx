@@ -146,17 +146,18 @@ export default function App() {
       if (e.key === "Escape") setMode("view");
       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         e.preventDefault();
-        const idx = displayedNotes.findIndex(n => n.id === selected?.id);
+        const list = activeSidebar === "recall" ? pinnedNotes : displayedNotes;
+        const idx = list.findIndex(n => n.id === selected?.id);
         const next = e.key === "ArrowDown"
-          ? displayedNotes[idx + 1] ?? displayedNotes[0]
-          : displayedNotes[idx - 1] ?? displayedNotes[displayedNotes.length - 1];
+          ? list[idx + 1] ?? list[0]
+          : list[idx - 1] ?? list[list.length - 1];
         if (next) setSelected(next);
       }
       if (e.key === "Enter" && selected) { e.preventDefault(); setMode("edit"); }
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [mode, selected, displayedNotes]);
+  }, [mode, selected, displayedNotes, activeSidebar, pinnedNotes]);
 
   useEffect(() => {
     function handleSidebarKey(e: KeyboardEvent) {
