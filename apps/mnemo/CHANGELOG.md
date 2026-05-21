@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.2.5] — 2026-05-21
+
+- Enhance instance management and YAML import functionality
+
 ## [1.2.4] — 2026-05-21
 
 - Add deterministic changelog update script
