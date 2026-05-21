@@ -38,6 +38,7 @@ export interface Reference {
 export interface InstanceKind {
   id: number;
   name: string;
+  plural: string;
   description: string;
 }
 
@@ -113,10 +114,10 @@ export const api = {
   },
   instanceKinds: {
     list: () => get<InstanceKind[]>("/instance-kinds"),
-    create: (name: string, description = "") =>
-      post<InstanceKind>("/instance-kinds", { name, description }),
-    update: (id: number, name: string, description: string) =>
-      put<InstanceKind>(`/instance-kinds/${id}`, { name, description }),
+    create: (name: string, plural = "", description = "") =>
+      post<InstanceKind>("/instance-kinds", { name, plural, description }),
+    update: (id: number, name: string, plural: string, description: string) =>
+      put<InstanceKind>(`/instance-kinds/${id}`, { name, plural, description }),
     delete: (id: number) => del(`/instance-kinds/${id}`),
   },
   instances: {

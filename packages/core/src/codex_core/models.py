@@ -24,6 +24,7 @@ class Reference:
 class InstanceKind:
     id: int
     name: str
+    plural: str
     description: str
 
 

@@ -42,7 +42,7 @@ export function InstanceSidebar({ className = "" }: Props) {
                 onClick={() => toggleGroup(t.id)}
               >
                 <span className="instance-group-toggle">{isCollapsed ? "▶" : "▼"}</span>
-                <span className="instance-group-name">{t.name}</span>
+                <span className="instance-group-name">{t.plural || t.name}</span>
                 <span className="instance-group-count">{members.length}</span>
               </button>
               {!isCollapsed && (

@@ -142,11 +142,17 @@ def _migrate(conn: sqlite3.Connection) -> None:
             "ALTER TABLE instances RENAME COLUMN type_id TO instance_kind_id;"
         )
 
+    # Add plural column to instance_kinds if missing (existing DBs)
+    ik_cols = {row[1] for row in conn.execute("PRAGMA table_info(instance_kinds)")}
+    if ik_cols and "plural" not in ik_cols:
+        conn.execute("ALTER TABLE instance_kinds ADD COLUMN plural TEXT NOT NULL DEFAULT ''")
+
     # Instance kinds and instances tables
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS instance_kinds (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             name        TEXT NOT NULL UNIQUE,
+            plural      TEXT NOT NULL DEFAULT '',
             description TEXT NOT NULL DEFAULT ''
         );
         CREATE TABLE IF NOT EXISTS instances (

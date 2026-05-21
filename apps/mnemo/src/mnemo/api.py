@@ -499,6 +499,7 @@ def _do_sync() -> tuple[str, bool]:
 
 class InstanceKindPayload(BaseModel):
     name: str
+    plural: str = ""
     description: str = ""
 
 
@@ -511,7 +512,7 @@ def get_instance_kinds() -> list[dict[str, Any]]:
 @app.post("/instance-kinds", status_code=201, summary="Create an instance kind")
 def create_instance_kind_endpoint(payload: InstanceKindPayload) -> dict[str, Any]:
     """Create a new instance kind."""
-    return asdict(create_type(payload.name, payload.description))
+    return asdict(create_type(payload.name, payload.plural, payload.description))
 
 
 @app.get("/instance-kinds/{instance_kind_id}", summary="Get an instance kind")
@@ -526,7 +527,7 @@ def get_instance_kind_endpoint(instance_kind_id: int) -> dict[str, Any]:
 @app.put("/instance-kinds/{instance_kind_id}", summary="Update an instance kind")
 def update_instance_kind_endpoint(instance_kind_id: int, payload: InstanceKindPayload) -> dict[str, Any]:
     """Replace the name and description of an instance kind. Raises 404 if not found."""
-    t = update_type(instance_kind_id, payload.name, payload.description)
+    t = update_type(instance_kind_id, payload.name, payload.plural, payload.description)
     if t is None:
         raise HTTPException(status_code=404, detail=f"Instance kind #{instance_kind_id} not found")
     return asdict(t)

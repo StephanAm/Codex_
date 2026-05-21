@@ -198,7 +198,7 @@ def list_references(db_path: Path | None = None) -> list[Reference]:
 
 
 def _load_instance_kind(row: sqlite3.Row) -> InstanceKind:
-    return InstanceKind(id=row["id"], name=row["name"], description=row["description"])
+    return InstanceKind(id=row["id"], name=row["name"], plural=row["plural"], description=row["description"])
 
 
 def _load_instance(conn: sqlite3.Connection, row: sqlite3.Row) -> Instance:
@@ -214,12 +214,12 @@ def _load_instance(conn: sqlite3.Connection, row: sqlite3.Row) -> Instance:
 
 
 def create_type(
-    name: str, description: str = "", db_path: Path | None = None
+    name: str, plural: str = "", description: str = "", db_path: Path | None = None
 ) -> InstanceKind:
     conn = connect(db_path)
     cur = conn.execute(
-        "INSERT INTO instance_kinds (name, description) VALUES (?, ?)",
-        (name.strip(), description.strip()),
+        "INSERT INTO instance_kinds (name, plural, description) VALUES (?, ?, ?)",
+        (name.strip(), plural.strip(), description.strip()),
     )
     conn.commit()
     row = conn.execute(
@@ -243,13 +243,14 @@ def list_types(db_path: Path | None = None) -> list[InstanceKind]:
 def update_type(
     instance_kind_id: int,
     name: str,
+    plural: str,
     description: str,
     db_path: Path | None = None,
 ) -> InstanceKind | None:
     conn = connect(db_path)
     cur = conn.execute(
-        "UPDATE instance_kinds SET name = ?, description = ? WHERE id = ?",
-        (name.strip(), description.strip(), instance_kind_id),
+        "UPDATE instance_kinds SET name = ?, plural = ?, description = ? WHERE id = ?",
+        (name.strip(), plural.strip(), description.strip(), instance_kind_id),
     )
     conn.commit()
     if cur.rowcount == 0:
