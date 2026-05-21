@@ -30,7 +30,11 @@ fi
 # Capture version before bump
 PREV_VER="$(tr -d '[:space:]' < "$REPO_DIR/VERSION")"
 
-# Step 5: Bump version and tag
+# Step 5: Update changelog
+log "Updating changelog..."
+"$REPO_DIR/scripts/update_changelog.sh" "$BUMP_ARG"
+
+# Step 6: Bump version and tag
 log "Bumping version ($BUMP_ARG)..."
 "$REPO_DIR/scripts/bump_version.sh" "$BUMP_ARG"
 
