@@ -9,7 +9,8 @@
       "Bash(./gui/gui.sh build *)",
       "Bash(./scripts/bump_version.sh *)",
       "Skill(update-config:*)",
-      "Bash(./scripts/release.sh)"
+      "Bash(./scripts/release.sh)",
+      "Bash(./scripts/release.sh minor *)"
     ],
     "additionalDirectories": [
       "/home/stephan/.claude/commands"
