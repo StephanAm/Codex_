@@ -43,10 +43,14 @@ def cleanup_test_device(adapter: GoogleDriveAdapter) -> "Generator[None, None, N
         svc = adapter._get_service()
         folder_id = adapter._get_folder_id()
         filename = f"{_TEST_DEVICE}.db"
-        results = svc.files().list(
-            q=f"name='{filename}' and '{folder_id}' in parents and trashed=false",
-            fields="files(id)",
-        ).execute()
+        results = (
+            svc.files()
+            .list(
+                q=f"name='{filename}' and '{folder_id}' in parents and trashed=false",
+                fields="files(id)",
+            )
+            .execute()
+        )
         for f in results.get("files", []):
             svc.files().delete(fileId=f["id"]).execute()
     except Exception:
@@ -58,9 +62,7 @@ def test_list_devices_returns_list(adapter: GoogleDriveAdapter) -> None:
     assert isinstance(devices, list)
 
 
-def test_upload_then_download_roundtrip(
-    adapter: GoogleDriveAdapter, tmp_path: Path
-) -> None:
+def test_upload_then_download_roundtrip(adapter: GoogleDriveAdapter, tmp_path: Path) -> None:
     from note_taker.db import connect
     from note_taker.store import add_note
 
@@ -84,9 +86,7 @@ def test_download_nonexistent_device_raises(adapter: GoogleDriveAdapter) -> None
         adapter.download("__device_that_does_not_exist__")
 
 
-def test_upload_overwrites_previous_version(
-    adapter: GoogleDriveAdapter, tmp_path: Path
-) -> None:
+def test_upload_overwrites_previous_version(adapter: GoogleDriveAdapter, tmp_path: Path) -> None:
     from note_taker.db import connect
     from note_taker.store import add_note
 

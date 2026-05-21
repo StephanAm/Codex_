@@ -174,9 +174,7 @@ def test_update_type_advances_updated_at(db: Path) -> None:
 def test_delete_type_writes_tombstone(db: Path) -> None:
     k = create_type("Ghost", db_path=db)
     delete_type(k.id, db_path=db)
-    row = connect(db).execute(
-        "SELECT * FROM deleted_instance_kinds WHERE uuid = ?", (k.uuid,)
-    ).fetchone()
+    row = connect(db).execute("SELECT * FROM deleted_instance_kinds WHERE uuid = ?", (k.uuid,)).fetchone()
     assert row is not None
 
 
@@ -216,9 +214,7 @@ def test_delete_instance_writes_tombstone(db: Path) -> None:
     k = create_type("People", db_path=db)
     inst = create_instance("Alice", k.id, db_path=db)
     delete_instance(inst.id, db_path=db)
-    row = connect(db).execute(
-        "SELECT * FROM deleted_instances WHERE uuid = ?", (inst.uuid,)
-    ).fetchone()
+    row = connect(db).execute("SELECT * FROM deleted_instances WHERE uuid = ?", (inst.uuid,)).fetchone()
     assert row is not None
 
 

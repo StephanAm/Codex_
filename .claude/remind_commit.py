@@ -19,7 +19,9 @@ if MSG_FILE.exists():
 
 result = subprocess.run(
     ["git", "status", "--porcelain"],
-    cwd=REPO, capture_output=True, text=True,
+    cwd=REPO,
+    capture_output=True,
+    text=True,
 )
 if not result.stdout.strip():
     sys.exit(0)

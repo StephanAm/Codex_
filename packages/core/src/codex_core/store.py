@@ -14,18 +14,14 @@ def _load_note(conn: sqlite3.Connection, row: sqlite3.Row) -> Note:
     tags = [
         r["name"]
         for r in conn.execute(
-            "SELECT t.name FROM tags t"
-            " JOIN note_tags nt ON nt.tag_id = t.id"
-            " WHERE nt.note_id = ?",
+            "SELECT t.name FROM tags t JOIN note_tags nt ON nt.tag_id = t.id WHERE nt.note_id = ?",
             (note_id,),
         )
     ]
     references = [
         r["name"]
         for r in conn.execute(
-            'SELECT r.name FROM "references" r'
-            " JOIN note_references nr ON nr.reference_id = r.id"
-            " WHERE nr.note_id = ?",
+            'SELECT r.name FROM "references" r JOIN note_references nr ON nr.reference_id = r.id WHERE nr.note_id = ?',
             (note_id,),
         )
     ]
@@ -49,18 +45,14 @@ def _attach_tags_references(
 ) -> None:
     for tag in tags:
         conn.execute("INSERT OR IGNORE INTO tags (name) VALUES (?)", (tag,))
-        tag_id = conn.execute(
-            "SELECT id FROM tags WHERE name = ?", (tag,)
-        ).fetchone()["id"]
+        tag_id = conn.execute("SELECT id FROM tags WHERE name = ?", (tag,)).fetchone()["id"]
         conn.execute(
             "INSERT OR IGNORE INTO note_tags (note_id, tag_id) VALUES (?, ?)",
             (note_id, tag_id),
         )
     for reference in references:
         conn.execute('INSERT OR IGNORE INTO "references" (name) VALUES (?)', (reference,))
-        reference_id = conn.execute(
-            'SELECT id FROM "references" WHERE name = ?', (reference,)
-        ).fetchone()["id"]
+        reference_id = conn.execute('SELECT id FROM "references" WHERE name = ?', (reference,)).fetchone()["id"]
         conn.execute(
             "INSERT OR IGNORE INTO note_references (note_id, reference_id) VALUES (?, ?)",
             (note_id, reference_id),
@@ -110,17 +102,15 @@ def list_notes(
         ).fetchall()
     elif reference:
         rows = conn.execute(
-            'SELECT n.* FROM notes n'
-            ' JOIN note_references nr ON nr.note_id = n.id'
+            "SELECT n.* FROM notes n"
+            " JOIN note_references nr ON nr.note_id = n.id"
             ' JOIN "references" r ON r.id = nr.reference_id'
-            ' WHERE r.name = ?'
-            ' ORDER BY n.created_at DESC LIMIT ?',
+            " WHERE r.name = ?"
+            " ORDER BY n.created_at DESC LIMIT ?",
             (reference.lower(), limit),
         ).fetchall()
     else:
-        rows = conn.execute(
-            "SELECT * FROM notes ORDER BY created_at DESC LIMIT ?", (limit,)
-        ).fetchall()
+        rows = conn.execute("SELECT * FROM notes ORDER BY created_at DESC LIMIT ?", (limit,)).fetchall()
 
     return [_load_note(conn, r) for r in rows]
 
@@ -152,9 +142,7 @@ def update_note(
     conn = connect(db_path)
     body = normalise(normalize_dates(body).text)
     now = datetime.now(UTC).isoformat()
-    cur = conn.execute(
-        "UPDATE notes SET body = ?, updated_at = ? WHERE id = ?", (body, now, note_id)
-    )
+    cur = conn.execute("UPDATE notes SET body = ?, updated_at = ? WHERE id = ?", (body, now, note_id))
     if cur.rowcount == 0:
         conn.commit()
         return None
@@ -210,9 +198,7 @@ def _load_instance_kind(row: sqlite3.Row) -> InstanceKind:
 
 
 def _load_instance(conn: sqlite3.Connection, row: sqlite3.Row) -> Instance:
-    kind_row = conn.execute(
-        "SELECT * FROM instance_kinds WHERE id = ?", (row["instance_kind_id"],)
-    ).fetchone()
+    kind_row = conn.execute("SELECT * FROM instance_kinds WHERE id = ?", (row["instance_kind_id"],)).fetchone()
     refs = [
         r["name"]
         for r in conn.execute(
@@ -234,24 +220,18 @@ def _load_instance(conn: sqlite3.Connection, row: sqlite3.Row) -> Instance:
     )
 
 
-def _attach_instance_references(
-    conn: sqlite3.Connection, instance_id: int, references: list[str]
-) -> None:
+def _attach_instance_references(conn: sqlite3.Connection, instance_id: int, references: list[str]) -> None:
     conn.execute("DELETE FROM instance_references WHERE instance_id = ?", (instance_id,))
     for ref in references:
         conn.execute('INSERT OR IGNORE INTO "references" (name) VALUES (?)', (ref,))
-        ref_id = conn.execute(
-            'SELECT id FROM "references" WHERE name = ?', (ref,)
-        ).fetchone()["id"]
+        ref_id = conn.execute('SELECT id FROM "references" WHERE name = ?', (ref,)).fetchone()["id"]
         conn.execute(
             "INSERT OR IGNORE INTO instance_references (instance_id, reference_id) VALUES (?, ?)",
             (instance_id, ref_id),
         )
 
 
-def create_type(
-    name: str, plural: str = "", description: str = "", db_path: Path | None = None
-) -> InstanceKind:
+def create_type(name: str, plural: str = "", description: str = "", db_path: Path | None = None) -> InstanceKind:
     conn = connect(db_path)
     now = datetime.now(UTC).isoformat()
     cur = conn.execute(
@@ -260,9 +240,7 @@ def create_type(
         (name.strip(), plural.strip(), description.strip(), str(uuid4()), now, now),
     )
     conn.commit()
-    row = conn.execute(
-        "SELECT * FROM instance_kinds WHERE id = ?", (cur.lastrowid,)
-    ).fetchone()
+    row = conn.execute("SELECT * FROM instance_kinds WHERE id = ?", (cur.lastrowid,)).fetchone()
     return _load_instance_kind(row)
 
 
@@ -288,8 +266,7 @@ def update_type(
     conn = connect(db_path)
     now = datetime.now(UTC).isoformat()
     cur = conn.execute(
-        "UPDATE instance_kinds SET name = ?, plural = ?, description = ?, updated_at = ?"
-        " WHERE id = ?",
+        "UPDATE instance_kinds SET name = ?, plural = ?, description = ?, updated_at = ? WHERE id = ?",
         (name.strip(), plural.strip(), description.strip(), now, instance_kind_id),
     )
     conn.commit()
@@ -301,9 +278,7 @@ def update_type(
 
 def delete_type(instance_kind_id: int, db_path: Path | None = None) -> bool:
     conn = connect(db_path)
-    row = conn.execute(
-        "SELECT uuid FROM instance_kinds WHERE id = ?", (instance_kind_id,)
-    ).fetchone()
+    row = conn.execute("SELECT uuid FROM instance_kinds WHERE id = ?", (instance_kind_id,)).fetchone()
     if row is None:
         return False
     kind_uuid = row["uuid"]
@@ -336,9 +311,7 @@ def create_instance(
     all_refs = list(dict.fromkeys([auto_ref] + [r.lower() for r in (references or [])]))
     _attach_instance_references(conn, cur.lastrowid, all_refs)  # type: ignore[arg-type]
     conn.commit()
-    row = conn.execute(
-        "SELECT * FROM instances WHERE id = ?", (cur.lastrowid,)
-    ).fetchone()
+    row = conn.execute("SELECT * FROM instances WHERE id = ?", (cur.lastrowid,)).fetchone()
     return _load_instance(conn, row)
 
 
@@ -348,9 +321,7 @@ def get_instance(instance_id: int, db_path: Path | None = None) -> Instance | No
     return _load_instance(conn, row) if row else None
 
 
-def list_instances(
-    instance_kind_id: int | None = None, db_path: Path | None = None
-) -> list[Instance]:
+def list_instances(instance_kind_id: int | None = None, db_path: Path | None = None) -> list[Instance]:
     conn = connect(db_path)
     if instance_kind_id is not None:
         rows = conn.execute(
@@ -373,8 +344,7 @@ def update_instance(
     conn = connect(db_path)
     now = datetime.now(UTC).isoformat()
     cur = conn.execute(
-        "UPDATE instances SET name = ?, description = ?, instance_kind_id = ?, updated_at = ?"
-        " WHERE id = ?",
+        "UPDATE instances SET name = ?, description = ?, instance_kind_id = ?, updated_at = ? WHERE id = ?",
         (name.strip(), description.strip(), instance_kind_id, now, instance_id),
     )
     if cur.rowcount == 0:
@@ -388,9 +358,7 @@ def update_instance(
 
 def delete_instance(instance_id: int, db_path: Path | None = None) -> bool:
     conn = connect(db_path)
-    row = conn.execute(
-        "SELECT uuid FROM instances WHERE id = ?", (instance_id,)
-    ).fetchone()
+    row = conn.execute("SELECT uuid FROM instances WHERE id = ?", (instance_id,)).fetchone()
     if row is None:
         return False
     inst_uuid = row["uuid"]
@@ -407,9 +375,7 @@ def delete_instance(instance_id: int, db_path: Path | None = None) -> bool:
 
 def get_sync_folder(db_path: Path | None = None) -> str:
     conn = connect(db_path)
-    row = conn.execute(
-        "SELECT value FROM config WHERE key = 'sync_google_drive_folder'"
-    ).fetchone()
+    row = conn.execute("SELECT value FROM config WHERE key = 'sync_google_drive_folder'").fetchone()
     return str(row["value"]) if row else "note-taker-sync"
 
 
@@ -425,9 +391,7 @@ def set_sync_folder(name: str, db_path: Path | None = None) -> None:
 
 def get_sync_adapter(db_path: Path | None = None) -> str:
     conn = connect(db_path)
-    row = conn.execute(
-        "SELECT value FROM config WHERE key = 'sync_adapter'"
-    ).fetchone()
+    row = conn.execute("SELECT value FROM config WHERE key = 'sync_adapter'").fetchone()
     return str(row["value"]) if row else "google_drive"
 
 
@@ -445,9 +409,7 @@ def set_sync_adapter(adapter: str, db_path: Path | None = None) -> None:
 
 def get_sync_local_path(db_path: Path | None = None) -> str:
     conn = connect(db_path)
-    row = conn.execute(
-        "SELECT value FROM config WHERE key = 'sync_local_folder_path'"
-    ).fetchone()
+    row = conn.execute("SELECT value FROM config WHERE key = 'sync_local_folder_path'").fetchone()
     return str(row["value"]) if row else ""
 
 
@@ -463,9 +425,7 @@ def set_sync_local_path(path: str, db_path: Path | None = None) -> None:
 
 def get_autosync_debounce_ms(db_path: Path | None = None) -> int:
     conn = connect(db_path)
-    row = conn.execute(
-        "SELECT value FROM config WHERE key = 'autosync_debounce_ms'"
-    ).fetchone()
+    row = conn.execute("SELECT value FROM config WHERE key = 'autosync_debounce_ms'").fetchone()
     return int(row["value"]) if row else 600_000
 
 
@@ -483,9 +443,7 @@ def set_autosync_debounce_ms(ms: int, db_path: Path | None = None) -> None:
 
 def get_default_tags(db_path: Path | None = None) -> list[str]:
     conn = connect(db_path)
-    row = conn.execute(
-        "SELECT value FROM config WHERE key = 'default_tags'"
-    ).fetchone()
+    row = conn.execute("SELECT value FROM config WHERE key = 'default_tags'").fetchone()
     if row is None or not row["value"]:
         return []
     return [t for t in row["value"].split(",") if t]
@@ -512,9 +470,7 @@ def get_pins(db_path: Path | None = None) -> list[str]:
 
 def get_pins_updated_at(db_path: Path | None = None) -> str:
     conn = connect(db_path)
-    row = conn.execute(
-        "SELECT value FROM config WHERE key = 'pins_updated_at'"
-    ).fetchone()
+    row = conn.execute("SELECT value FROM config WHERE key = 'pins_updated_at'").fetchone()
     return str(row["value"]) if row else ""
 
 
@@ -524,8 +480,7 @@ def set_pins(uuids: list[str], db_path: Path | None = None) -> None:
     now = datetime.now(UTC).isoformat()
     conn = connect(db_path)
     conn.execute(
-        "INSERT INTO config (key, value) VALUES ('pins', ?)"
-        " ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        "INSERT INTO config (key, value) VALUES ('pins', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
         (",".join(uuids),),
     )
     conn.execute(

@@ -13,9 +13,7 @@ _PORT = 8765
 
 
 def _find_pid_on_port() -> str:
-    result = subprocess.run(
-        ["lsof", "-ti", f":{_PORT}"], capture_output=True, text=True
-    )
+    result = subprocess.run(["lsof", "-ti", f":{_PORT}"], capture_output=True, text=True)
     return result.stdout.strip()
 
 
@@ -51,18 +49,20 @@ def main() -> None:
     elif cmd == "api":
         pid = _find_pid_on_port()
         if pid:
-            proc = subprocess.run(
-                ["ps", "-p", pid, "-o", "comm="], capture_output=True, text=True
-            ).stdout.strip()
+            proc = subprocess.run(["ps", "-p", pid, "-o", "comm="], capture_output=True, text=True).stdout.strip()
             print(f"Port {_PORT} is held by '{proc}' (pid {pid}) — stopping it.")
             os.kill(int(pid), signal.SIGTERM)
             time.sleep(0.5)
         subprocess.run(
             [
-                sys.executable, "-m", "uvicorn",
+                sys.executable,
+                "-m",
+                "uvicorn",
                 "note_taker.api:app",
-                "--host", "127.0.0.1",
-                "--port", str(_PORT),
+                "--host",
+                "127.0.0.1",
+                "--port",
+                str(_PORT),
                 "--reload",
             ],
             cwd=_REPO_DIR,

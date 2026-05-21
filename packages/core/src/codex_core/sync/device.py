@@ -12,8 +12,6 @@ def get_device_id(db_path: Path | None = None) -> str:
         return str(row["value"])
     host = socket.gethostname().split(".")[0][:16]
     device_id = f"{host}-{str(uuid4())[:8]}"
-    conn.execute(
-        "INSERT INTO config (key, value) VALUES ('device_id', ?)", (device_id,)
-    )
+    conn.execute("INSERT INTO config (key, value) VALUES ('device_id', ?)", (device_id,))
     conn.commit()
     return device_id

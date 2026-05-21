@@ -10,8 +10,7 @@ try:
     from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 except ImportError as exc:  # pragma: no cover
     raise ImportError(
-        "Google Drive support requires the google-drive extra: "
-        "uv pip install 'note_taker[google-drive]'"
+        "Google Drive support requires the google-drive extra: uv pip install 'note_taker[google-drive]'"
     ) from exc
 
 from .adapter import AuthRequired
@@ -52,18 +51,13 @@ class GoogleDriveAdapter:
             return self._service
         creds: Any = None
         if self._token_path.exists():
-            creds = Credentials.from_authorized_user_file(
-                str(self._token_path), _SCOPES
-            )
+            creds = Credentials.from_authorized_user_file(str(self._token_path), _SCOPES)  # type: ignore[no-untyped-call]
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
                 self._token_path.write_text(creds.to_json())
             else:
-                raise AuthRequired(
-                    "Google Drive authorization required. "
-                    "Use the GUI to complete the OAuth flow."
-                )
+                raise AuthRequired("Google Drive authorization required. Use the GUI to complete the OAuth flow.")
         self._service = build("drive", "v3", credentials=creds)
         return self._service
 
@@ -71,10 +65,14 @@ class GoogleDriveAdapter:
         if self._folder_id:
             return self._folder_id
         svc = self._get_service()
-        results = svc.files().list(
-            q=f"name='{self._folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false",
-            fields="files(id)",
-        ).execute()
+        results = (
+            svc.files()
+            .list(
+                q=f"name='{self._folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false",
+                fields="files(id)",
+            )
+            .execute()
+        )
         files = results.get("files", [])
         if files:
             self._folder_id = files[0]["id"]
@@ -92,10 +90,14 @@ class GoogleDriveAdapter:
         svc = self._get_service()
         folder_id = self._get_folder_id()
         filename = f"{device_id}.db"
-        results = svc.files().list(
-            q=f"name='{filename}' and '{folder_id}' in parents and trashed=false",
-            fields="files(id)",
-        ).execute()
+        results = (
+            svc.files()
+            .list(
+                q=f"name='{filename}' and '{folder_id}' in parents and trashed=false",
+                fields="files(id)",
+            )
+            .execute()
+        )
         files = results.get("files", [])
         media = MediaFileUpload(str(local_db), mimetype="application/octet-stream")
         if files:
@@ -107,27 +109,33 @@ class GoogleDriveAdapter:
     def list_devices(self) -> list[str]:
         svc = self._get_service()
         folder_id = self._get_folder_id()
-        results = svc.files().list(
-            q=f"'{folder_id}' in parents and name contains '.db' and trashed=false",
-            fields="files(name)",
-        ).execute()
+        results = (
+            svc.files()
+            .list(
+                q=f"'{folder_id}' in parents and name contains '.db' and trashed=false",
+                fields="files(name)",
+            )
+            .execute()
+        )
         return [f["name"].removesuffix(".db") for f in results.get("files", [])]
 
     def download(self, device_id: str) -> bytes:
         svc = self._get_service()
         folder_id = self._get_folder_id()
         filename = f"{device_id}.db"
-        results = svc.files().list(
-            q=f"name='{filename}' and '{folder_id}' in parents and trashed=false",
-            fields="files(id)",
-        ).execute()
+        results = (
+            svc.files()
+            .list(
+                q=f"name='{filename}' and '{folder_id}' in parents and trashed=false",
+                fields="files(id)",
+            )
+            .execute()
+        )
         files = results.get("files", [])
         if not files:
             raise FileNotFoundError(f"No remote DB for device {device_id!r}")
         buf = io.BytesIO()
-        downloader = MediaIoBaseDownload(
-            buf, svc.files().get_media(fileId=files[0]["id"])
-        )
+        downloader = MediaIoBaseDownload(buf, svc.files().get_media(fileId=files[0]["id"]))
         done = False
         while not done:
             _, done = downloader.next_chunk()

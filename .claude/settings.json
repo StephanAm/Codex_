@@ -31,6 +31,11 @@
             "type": "command",
             "command": "uv run ruff check 2>&1 || true",
             "statusMessage": "Running ruff check..."
+          },
+          {
+            "type": "command",
+            "command": "uv run ruff format --check 2>&1 || true",
+            "statusMessage": "Running ruff format check..."
           }
         ]
       }

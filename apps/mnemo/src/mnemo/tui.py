@@ -30,21 +30,21 @@ from .sync.adapter import StorageAdapter
 # ── colour pair indices ───────────────────────────────────────────────────────
 _C_HEADER = 1  # white on blue
 _C_STATUS = 2  # black on white
-_C_SEL    = 3  # black on cyan  (selected list row)
-_C_TAG    = 4  # yellow         (#tags)
+_C_SEL = 3  # black on cyan  (selected list row)
+_C_TAG = 4  # yellow         (#tags)
 _C_REFERENCE = 5  # cyan           (@references)
 
 _MIN_W, _MIN_H = 60, 10
 
 
 class _Mode(Enum):
-    BROWSE      = auto()
-    ADD         = auto()
-    EDIT        = auto()
-    SEARCH      = auto()
+    BROWSE = auto()
+    ADD = auto()
+    EDIT = auto()
+    SEARCH = auto()
     CONFIRM_DEL = auto()
-    CONFIG      = auto()
-    SESSION     = auto()
+    CONFIG = auto()
+    SESSION = auto()
     SYNC_RESULT = auto()
 
 
@@ -61,6 +61,7 @@ class _CfgField:
 
 
 # ── editor buffer ─────────────────────────────────────────────────────────────
+
 
 class _Editor:
     """Minimal multi-line editor backed by a list of strings."""
@@ -141,14 +142,15 @@ class _Editor:
 
 # ── main application ──────────────────────────────────────────────────────────
 
+
 class _App:
     def __init__(self, stdscr: curses.window) -> None:
         self.scr = stdscr
         self.notes: list[Note] = []
-        self.sel    = 0   # index into self.notes
-        self.scroll = 0   # first visible row in list pane
-        self.mode   = _Mode.BROWSE
-        self.query  = ""  # live search filter
+        self.sel = 0  # index into self.notes
+        self.scroll = 0  # first visible row in list pane
+        self.mode = _Mode.BROWSE
+        self.query = ""  # live search filter
         self.ed: _Editor | None = None
         self._edit_id: int | None = None
         self._cfg_fields: list[_CfgField] = []
@@ -162,18 +164,18 @@ class _App:
     def _init_colors(self) -> None:
         curses.start_color()
         curses.use_default_colors()
-        curses.init_pair(_C_HEADER, curses.COLOR_WHITE,  curses.COLOR_BLUE)
-        curses.init_pair(_C_STATUS, curses.COLOR_BLACK,  curses.COLOR_WHITE)
-        curses.init_pair(_C_SEL,    curses.COLOR_BLACK,  curses.COLOR_CYAN)
-        curses.init_pair(_C_TAG,    curses.COLOR_YELLOW, -1)
-        curses.init_pair(_C_REFERENCE, curses.COLOR_CYAN,   -1)
+        curses.init_pair(_C_HEADER, curses.COLOR_WHITE, curses.COLOR_BLUE)
+        curses.init_pair(_C_STATUS, curses.COLOR_BLACK, curses.COLOR_WHITE)
+        curses.init_pair(_C_SEL, curses.COLOR_BLACK, curses.COLOR_CYAN)
+        curses.init_pair(_C_TAG, curses.COLOR_YELLOW, -1)
+        curses.init_pair(_C_REFERENCE, curses.COLOR_CYAN, -1)
 
     # ── run loop ──────────────────────────────────────────────────────────────
 
     def run(self) -> None:
         self._init_colors()
         self.scr.keypad(True)
-        curses.raw()          # disable flow control so Ctrl+S reaches the app
+        curses.raw()  # disable flow control so Ctrl+S reaches the app
         curses.set_escdelay(25)  # don't wait 1s after ESC before dispatching it
         try:
             curses.curs_set(0)
@@ -231,7 +233,7 @@ class _App:
 
     def _draw(self, h: int, w: int) -> None:
         lw = max(w // 3, 22)  # list pane width
-        dw = w - lw - 1       # detail pane width
+        dw = w - lw - 1  # detail pane width
 
         self._draw_header(w)
 
@@ -292,21 +294,21 @@ class _App:
 
         for i in range(rows):
             idx = i + self.scroll
-            y   = i + 1
+            y = i + 1
             if idx >= len(self.notes):
                 self._put(y, 0, " " * w)
                 continue
-            note   = self.notes[idx]
+            note = self.notes[idx]
             is_sel = idx == self.sel
-            attr   = curses.color_pair(_C_SEL) | curses.A_BOLD if is_sel else curses.A_NORMAL
+            attr = curses.color_pair(_C_SEL) | curses.A_BOLD if is_sel else curses.A_NORMAL
             prefix = "> " if is_sel else "  "
-            ts     = note.created_at.astimezone().strftime("%m-%d %H:%M")
-            first  = note.body.splitlines()[0] if note.body else ""
-            meta   = f"#{note.id:<3} {ts}"
-            gap    = w - len(prefix) - len(meta) - 2
+            ts = note.created_at.astimezone().strftime("%m-%d %H:%M")
+            first = note.body.splitlines()[0] if note.body else ""
+            meta = f"#{note.id:<3} {ts}"
+            gap = w - len(prefix) - len(meta) - 2
             if gap > 4:
                 meta += "  " + first[:gap]
-            self._put(y, 0, (prefix + meta)[: w].ljust(w), attr)
+            self._put(y, 0, (prefix + meta)[:w].ljust(w), attr)
 
     # ── detail pane ───────────────────────────────────────────────────────────
 
@@ -341,7 +343,7 @@ class _App:
 
     def _draw_body(self, start_y: int, x: int, w: int, h: int, body: str) -> int:
         """Render body text with coloured #tags and @references. Returns next free y."""
-        y     = start_y
+        y = start_y
         right = x + w - 1
         for raw_line in body.splitlines():
             if y >= h - 2:
@@ -524,14 +526,14 @@ class _App:
             ),
             _Mode.SYNC_RESULT: "  Press any key to continue",
             _Mode.CONFIRM_DEL: "  Delete this note?   y yes   n / Esc no",
-            _Mode.SEARCH:      f"  Search: {self.query}▌   Enter keep   Esc clear",
-            _Mode.EDIT:        "  Ctrl+S save   Esc cancel",
-            _Mode.ADD:         "  Ctrl+S save   Esc cancel",
-            _Mode.CONFIG:      "  up/down select field   Ctrl+S save   Esc cancel",
-            _Mode.SESSION:     "  Enter save   Esc cancel   Ctrl+X clear session",
+            _Mode.SEARCH: f"  Search: {self.query}▌   Enter keep   Esc clear",
+            _Mode.EDIT: "  Ctrl+S save   Esc cancel",
+            _Mode.ADD: "  Ctrl+S save   Esc cancel",
+            _Mode.CONFIG: "  up/down select field   Ctrl+S save   Esc cancel",
+            _Mode.SESSION: "  Enter save   Esc cancel   Ctrl+X clear session",
         }
         bar = bars.get(self.mode, "")
-        self._put(y, 0, bar.ljust(w)[: w], curses.color_pair(_C_STATUS))
+        self._put(y, 0, bar.ljust(w)[:w], curses.color_pair(_C_STATUS))
 
     # ── input dispatch ────────────────────────────────────────────────────────
 
@@ -622,9 +624,7 @@ class _App:
                 note = add_note(text)
                 self._reload()
                 try:
-                    self.sel = next(
-                        i for i, n in enumerate(self.notes) if n.id == note.id
-                    )
+                    self.sel = next(i for i, n in enumerate(self.notes) if n.id == note.id)
                 except StopIteration:
                     self.sel = 0
             else:
@@ -691,16 +691,19 @@ class _App:
         from .db import connect, get_db_path
         from .sync.device import get_device_id
         from .sync.merge import merge_remote
+
         try:
             sync_adapter = get_sync_adapter()
             if sync_adapter == "local_folder":
                 from .sync.local_folder import LocalFolderAdapter
+
                 raw = get_sync_local_path()
                 if not raw:
                     return "Sync failed: local folder path is not configured."
                 adapter: StorageAdapter = LocalFolderAdapter(Path(raw))
             else:
                 from .sync.google_drive import GoogleDriveAdapter
+
                 config_dir = Path.home() / ".note_taker"
                 adapter = GoogleDriveAdapter(
                     config_dir / "credentials.json",
@@ -762,6 +765,7 @@ class _App:
     def _session_input(self, key: int) -> bool:
         if key in (10, 13):  # Enter — save
             from .parser import parse as _parse
+
             parsed = _parse(self._session_buf)
             if parsed.tags or parsed.references:
                 set_session_context(parsed.tags, parsed.references)
@@ -837,6 +841,7 @@ class _App:
 
 
 # ── entry point ───────────────────────────────────────────────────────────────
+
 
 def launch() -> None:
     """Start the interactive TUI."""

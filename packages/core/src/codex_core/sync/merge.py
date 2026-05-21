@@ -52,27 +52,21 @@ def _merge(local: sqlite3.Connection, remote: sqlite3.Connection) -> MergeResult
             (uuid, deleted_at),
         )
 
-    tombstoned = {
-        r["uuid"] for r in local.execute("SELECT uuid FROM deleted_notes")
-    }
+    tombstoned = {r["uuid"] for r in local.execute("SELECT uuid FROM deleted_notes")}
 
     for row in remote.execute("SELECT * FROM notes"):
         uuid = row["uuid"]
         if uuid in tombstoned:
             continue
 
-        local_row = local.execute(
-            "SELECT id, updated_at FROM notes WHERE uuid = ?", (uuid,)
-        ).fetchone()
+        local_row = local.execute("SELECT id, updated_at FROM notes WHERE uuid = ?", (uuid,)).fetchone()
 
         if local_row is None:
             local.execute(
                 "INSERT INTO notes (uuid, body, created_at, updated_at) VALUES (?, ?, ?, ?)",
                 (uuid, row["body"], row["created_at"], row["updated_at"]),
             )
-            local_id = local.execute(
-                "SELECT id FROM notes WHERE uuid = ?", (uuid,)
-            ).fetchone()["id"]
+            local_id = local.execute("SELECT id FROM notes WHERE uuid = ?", (uuid,)).fetchone()["id"]
             _copy_tags(remote, local, row["id"], local_id)
             _copy_references(remote, local, row["id"], local_id)
             result.added += 1
@@ -89,18 +83,12 @@ def _merge(local: sqlite3.Connection, remote: sqlite3.Connection) -> MergeResult
             result.updated += 1
 
     # Sync pins — last-write-wins on pins_updated_at
-    remote_pins_ts = remote.execute(
-        "SELECT value FROM config WHERE key = 'pins_updated_at'"
-    ).fetchone()
+    remote_pins_ts = remote.execute("SELECT value FROM config WHERE key = 'pins_updated_at'").fetchone()
     if remote_pins_ts:
-        local_pins_ts = local.execute(
-            "SELECT value FROM config WHERE key = 'pins_updated_at'"
-        ).fetchone()
+        local_pins_ts = local.execute("SELECT value FROM config WHERE key = 'pins_updated_at'").fetchone()
         if local_pins_ts is None or remote_pins_ts["value"] > local_pins_ts["value"]:
             for key in ("pins", "pins_updated_at"):
-                row = remote.execute(
-                    "SELECT value FROM config WHERE key = ?", (key,)
-                ).fetchone()
+                row = remote.execute("SELECT value FROM config WHERE key = ?", (key,)).fetchone()
                 if row:
                     local.execute(
                         "INSERT INTO config (key, value) VALUES (?, ?)"
@@ -157,21 +145,16 @@ def _merge_instance_kinds(
         if not uuid or uuid in tombstoned:
             continue
 
-        local_row = local.execute(
-            "SELECT id, updated_at FROM instance_kinds WHERE uuid = ?", (uuid,)
-        ).fetchone()
+        local_row = local.execute("SELECT id, updated_at FROM instance_kinds WHERE uuid = ?", (uuid,)).fetchone()
 
         if local_row is None:
-            name_conflict = local.execute(
-                "SELECT 1 FROM instance_kinds WHERE name = ?", (row["name"],)
-            ).fetchone()
+            name_conflict = local.execute("SELECT 1 FROM instance_kinds WHERE name = ?", (row["name"],)).fetchone()
             safe_name = f"{row['name']}_{uuid[:8]}" if name_conflict else row["name"]
             local.execute(
                 "INSERT INTO instance_kinds"
                 " (uuid, name, plural, description, created_at, updated_at)"
                 " VALUES (?, ?, ?, ?, ?, ?)",
-                (uuid, safe_name, row["plural"], row["description"],
-                 row["created_at"], row["updated_at"]),
+                (uuid, safe_name, row["plural"], row["description"], row["created_at"], row["updated_at"]),
             )
             result.kinds_added += 1
         elif row["updated_at"] > local_row["updated_at"]:
@@ -181,8 +164,7 @@ def _merge_instance_kinds(
             ).fetchone()
             safe_name = f"{row['name']}_{uuid[:8]}" if name_conflict else row["name"]
             local.execute(
-                "UPDATE instance_kinds SET name = ?, plural = ?, description = ?, updated_at = ?"
-                " WHERE uuid = ?",
+                "UPDATE instance_kinds SET name = ?, plural = ?, description = ?, updated_at = ? WHERE uuid = ?",
                 (safe_name, row["plural"], row["description"], row["updated_at"], uuid),
             )
             result.kinds_updated += 1
@@ -206,35 +188,27 @@ def _merge_instances(
         ).fetchone()
         if not remote_kind:
             continue  # orphaned instance; skip
-        local_kind = local.execute(
-            "SELECT id FROM instance_kinds WHERE uuid = ?", (remote_kind["uuid"],)
-        ).fetchone()
+        local_kind = local.execute("SELECT id FROM instance_kinds WHERE uuid = ?", (remote_kind["uuid"],)).fetchone()
         if not local_kind:
             continue  # kind not present locally (e.g. name conflict prevented insert); skip
         local_kind_id = local_kind["id"]
 
-        local_row = local.execute(
-            "SELECT id, updated_at FROM instances WHERE uuid = ?", (uuid,)
-        ).fetchone()
+        local_row = local.execute("SELECT id, updated_at FROM instances WHERE uuid = ?", (uuid,)).fetchone()
 
         if local_row is None:
             local.execute(
                 "INSERT INTO instances"
                 " (uuid, name, description, instance_kind_id, created_at, updated_at)"
                 " VALUES (?, ?, ?, ?, ?, ?)",
-                (uuid, row["name"], row["description"], local_kind_id,
-                 row["created_at"], row["updated_at"]),
+                (uuid, row["name"], row["description"], local_kind_id, row["created_at"], row["updated_at"]),
             )
-            local_id = local.execute(
-                "SELECT id FROM instances WHERE uuid = ?", (uuid,)
-            ).fetchone()["id"]
+            local_id = local.execute("SELECT id FROM instances WHERE uuid = ?", (uuid,)).fetchone()["id"]
             _copy_instance_references(remote, local, row["id"], local_id)
             result.instances_added += 1
         elif row["updated_at"] > local_row["updated_at"]:
             local_id = local_row["id"]
             local.execute(
-                "UPDATE instances SET name = ?, description = ?, instance_kind_id = ?,"
-                " updated_at = ? WHERE uuid = ?",
+                "UPDATE instances SET name = ?, description = ?, instance_kind_id = ?, updated_at = ? WHERE uuid = ?",
                 (row["name"], row["description"], local_kind_id, row["updated_at"], uuid),
             )
             local.execute("DELETE FROM instance_references WHERE instance_id = ?", (local_id,))
@@ -256,9 +230,7 @@ def _copy_instance_references(
     ):
         name = row["name"]
         local.execute('INSERT OR IGNORE INTO "references" (name) VALUES (?)', (name,))
-        ref_id = local.execute(
-            'SELECT id FROM "references" WHERE name = ?', (name,)
-        ).fetchone()["id"]
+        ref_id = local.execute('SELECT id FROM "references" WHERE name = ?', (name,)).fetchone()["id"]
         local.execute(
             "INSERT OR IGNORE INTO instance_references (instance_id, reference_id) VALUES (?, ?)",
             (local_instance_id, ref_id),
@@ -272,16 +244,12 @@ def _copy_tags(
     local_note_id: int,
 ) -> None:
     for row in remote.execute(
-        "SELECT t.name FROM tags t"
-        " JOIN note_tags nt ON nt.tag_id = t.id"
-        " WHERE nt.note_id = ?",
+        "SELECT t.name FROM tags t JOIN note_tags nt ON nt.tag_id = t.id WHERE nt.note_id = ?",
         (remote_note_id,),
     ):
         name = row["name"]
         local.execute("INSERT OR IGNORE INTO tags (name) VALUES (?)", (name,))
-        tag_id = local.execute(
-            "SELECT id FROM tags WHERE name = ?", (name,)
-        ).fetchone()["id"]
+        tag_id = local.execute("SELECT id FROM tags WHERE name = ?", (name,)).fetchone()["id"]
         local.execute(
             "INSERT OR IGNORE INTO note_tags (note_id, tag_id) VALUES (?, ?)",
             (local_note_id, tag_id),
@@ -295,16 +263,12 @@ def _copy_references(
     local_note_id: int,
 ) -> None:
     for row in remote.execute(
-        'SELECT r.name FROM "references" r'
-        " JOIN note_references nr ON nr.reference_id = r.id"
-        " WHERE nr.note_id = ?",
+        'SELECT r.name FROM "references" r JOIN note_references nr ON nr.reference_id = r.id WHERE nr.note_id = ?',
         (remote_note_id,),
     ):
         name = row["name"]
         local.execute('INSERT OR IGNORE INTO "references" (name) VALUES (?)', (name,))
-        reference_id = local.execute(
-            'SELECT id FROM "references" WHERE name = ?', (name,)
-        ).fetchone()["id"]
+        reference_id = local.execute('SELECT id FROM "references" WHERE name = ?', (name,)).fetchone()["id"]
         local.execute(
             "INSERT OR IGNORE INTO note_references (note_id, reference_id) VALUES (?, ?)",
             (local_note_id, reference_id),

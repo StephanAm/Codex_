@@ -17,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 try:
     from importlib.metadata import version as _pkg_version
+
     _VERSION = _pkg_version("note-taker")
 except Exception:
     _VERSION = "unknown"
@@ -98,6 +99,7 @@ app.add_middleware(
 
 # ── health ────────────────────────────────────────────────────────────────────
 
+
 @app.get("/health", summary="Health check")
 def health() -> dict[str, Any]:
     """Return the API status, process ID, and running version."""
@@ -113,6 +115,7 @@ def shutdown() -> dict[str, str]:
 
 # ── serialisation ─────────────────────────────────────────────────────────────
 
+
 def _note_dict(note: Note) -> dict[str, Any]:
     d = asdict(note)
     d["created_at"] = note.created_at.isoformat()
@@ -122,6 +125,7 @@ def _note_dict(note: Note) -> dict[str, Any]:
 
 
 # ── response models ───────────────────────────────────────────────────────────
+
 
 class NoteResponse(BaseModel):
     id: int = Field(..., description="Auto-incrementing integer primary key")
@@ -157,6 +161,7 @@ class NoteResponse(BaseModel):
 
 
 # ── notes ─────────────────────────────────────────────────────────────────────
+
 
 @app.get("/notes", summary="List or search notes", response_model=list[NoteResponse])
 def get_notes(
@@ -237,6 +242,7 @@ def remove_note(note_id: int) -> None:
 
 # ── tags & references ─────────────────────────────────────────────────────────
 
+
 @app.get("/tags", summary="List all tags")
 def get_tags() -> list[str]:
     """Return a sorted list of all tags that appear on at least one note."""
@@ -250,6 +256,7 @@ def get_references() -> list[dict[str, Any]]:
 
 
 # ── config ────────────────────────────────────────────────────────────────────
+
 
 @app.get("/config", summary="Get configuration")
 def get_config() -> dict[str, Any]:
@@ -304,6 +311,7 @@ def set_config(payload: ConfigPayload) -> dict[str, Any]:
 
 # ── pins ──────────────────────────────────────────────────────────────────────
 
+
 class PinsPayload(BaseModel):
     uuids: list[str]
 
@@ -335,6 +343,7 @@ def put_pins_endpoint(payload: PinsPayload) -> dict[str, Any]:
 
 
 # ── session ───────────────────────────────────────────────────────────────────
+
 
 @app.get("/session", summary="Get session context")
 def get_session() -> dict[str, Any]:
@@ -371,6 +380,7 @@ def delete_session() -> None:
 
 # ── sync ──────────────────────────────────────────────────────────────────────
 
+
 @app.post("/sync", summary="Push and pull (full sync)")
 def run_sync() -> dict[str, Any]:
     """Upload the local database to the configured sync target, then pull and merge changes from all other devices.
@@ -404,14 +414,17 @@ def run_pull() -> dict[str, Any]:
 
 def _build_adapter() -> Any:
     from .sync.adapter import StorageAdapter  # noqa: F401
+
     sync_adapter = get_sync_adapter()
     if sync_adapter == "local_folder":
         from .sync.local_folder import LocalFolderAdapter
+
         raw = get_sync_local_path()
         if not raw:
             raise ValueError("Sync failed: local folder path is not configured.")
         return LocalFolderAdapter(Path(raw))
     from .sync.google_drive import GoogleDriveAdapter
+
     config_dir = Path.home() / ".note_taker"
     return GoogleDriveAdapter(
         config_dir / "credentials.json",
@@ -424,6 +437,7 @@ def _do_push() -> tuple[str, bool]:
     from .db import get_db_path
     from .sync.adapter import AuthRequired
     from .sync.device import get_device_id
+
     try:
         adapter = _build_adapter()
         adapter.upload(get_device_id(), get_db_path())
@@ -439,6 +453,7 @@ def _do_pull() -> tuple[str, bool]:
     from .sync.adapter import AuthRequired
     from .sync.device import get_device_id
     from .sync.merge import merge_remote
+
     try:
         adapter = _build_adapter()
         device_id = get_device_id()
@@ -467,16 +482,19 @@ def _do_sync() -> tuple[str, bool]:
 
     try:
         from .sync.adapter import StorageAdapter
+
         sync_adapter = get_sync_adapter()
         adapter: StorageAdapter
         if sync_adapter == "local_folder":
             from .sync.local_folder import LocalFolderAdapter
+
             raw = get_sync_local_path()
             if not raw:
                 return "Sync failed: local folder path is not configured.", False
             adapter = LocalFolderAdapter(Path(raw))
         else:
             from .sync.google_drive import GoogleDriveAdapter
+
             config_dir = Path.home() / ".note_taker"
             adapter = GoogleDriveAdapter(
                 config_dir / "credentials.json",
@@ -504,6 +522,7 @@ def _do_sync() -> tuple[str, bool]:
 
 
 # ── instance kinds ────────────────────────────────────────────────────────────
+
 
 class InstanceKindPayload(BaseModel):
     name: str
@@ -549,6 +568,7 @@ def delete_instance_kind_endpoint(instance_kind_id: int) -> None:
 
 
 # ── instances ─────────────────────────────────────────────────────────────────
+
 
 class InstancePayload(BaseModel):
     name: str
@@ -596,6 +616,7 @@ def delete_instance_endpoint(instance_id: int) -> None:
 
 # ── auth ───────────────────────────────────────────────────────────────────────
 
+
 @app.post("/auth/google", summary="Authorise Google Drive")
 async def auth_google() -> dict[str, str]:
     """Run the Google Drive OAuth flow to obtain and store an access token.
@@ -607,6 +628,7 @@ async def auth_google() -> dict[str, str]:
     Raises **400** if `credentials.json` is missing, **500** if the flow fails.
     """
     import asyncio
+
     config_dir = Path.home() / ".note_taker"
     creds_path = config_dir / "credentials.json"
     token_path = config_dir / "token.json"
@@ -621,6 +643,7 @@ async def auth_google() -> dict[str, str]:
         )
     try:
         from .sync.google_drive import run_auth_flow
+
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, run_auth_flow, creds_path, token_path)
     except Exception as exc:
@@ -630,6 +653,7 @@ async def auth_google() -> dict[str, str]:
 
 
 # ── entry point ───────────────────────────────────────────────────────────────
+
 
 def serve() -> None:
     uvicorn.run(app, host="127.0.0.1", port=PORT, reload=False)

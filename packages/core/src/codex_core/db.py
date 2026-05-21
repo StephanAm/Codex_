@@ -92,9 +92,7 @@ def _migrate(conn: sqlite3.Connection) -> None:
     if "time_stamp" not in existing:
         conn.execute("ALTER TABLE notes ADD COLUMN time_stamp TEXT")
 
-    conn.execute(
-        "CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_uuid ON notes(uuid)"
-    )
+    conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_uuid ON notes(uuid)")
 
     # Backfill any rows that predate this migration
     for row in conn.execute("SELECT id FROM notes WHERE uuid IS NULL").fetchall():
@@ -104,9 +102,7 @@ def _migrate(conn: sqlite3.Connection) -> None:
 
     # Migrate entities → references (existing DBs only; keyed on note_entities, not entities,
     # so the new entities table added later doesn't re-trigger this block)
-    has_entities = conn.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='note_entities'"
-    ).fetchone()
+    has_entities = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='note_entities'").fetchone()
     if has_entities:
         conn.executescript("""
             CREATE TABLE IF NOT EXISTS "references" (
@@ -137,18 +133,14 @@ def _migrate(conn: sqlite3.Connection) -> None:
         """)
 
     # Rename types → instance_kinds on existing DBs
-    has_types = conn.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='types'"
-    ).fetchone()
+    has_types = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='types'").fetchone()
     if has_types:
         conn.executescript("ALTER TABLE types RENAME TO instance_kinds;")
 
     # Rename type_id → instance_kind_id on existing DBs
     instances_cols = {row[1] for row in conn.execute("PRAGMA table_info(instances)")}
     if "type_id" in instances_cols:
-        conn.executescript(
-            "ALTER TABLE instances RENAME COLUMN type_id TO instance_kind_id;"
-        )
+        conn.executescript("ALTER TABLE instances RENAME COLUMN type_id TO instance_kind_id;")
 
     # Add plural column to instance_kinds if missing (existing DBs)
     ik_cols = {row[1] for row in conn.execute("PRAGMA table_info(instance_kinds)")}

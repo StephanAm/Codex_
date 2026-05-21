@@ -57,6 +57,7 @@ def add(text: str | None) -> None:
     all_extra_tags = list(dict.fromkeys(defaults + session_tags))
     if all_extra_tags or session_references:
         from .parser import parse as _parse
+
         parsed = _parse(text)
         missing_tags = [t for t in all_extra_tags if t not in parsed.tags]
         missing_references = [r for r in session_references if r not in parsed.references]
@@ -195,6 +196,7 @@ def session_clear() -> None:
 
 # ── kinds ─────────────────────────────────────────────────────────────────────
 
+
 @cli.group()
 def kinds() -> None:
     """Manage Kinds and their Instances."""
@@ -257,9 +259,7 @@ def kinds_import(file: Path) -> None:
 
         for inst in entry.get("instances") or []:
             if not isinstance(inst, dict) or not inst.get("name"):
-                raise click.ClickException(
-                    f"Each instance must have a 'name' field: {inst!r}"
-                )
+                raise click.ClickException(f"Each instance must have a 'name' field: {inst!r}")
             inst_name = str(inst["name"]).strip()
             if inst_name.lower() in existing_instance_names:
                 instances_skipped += 1
@@ -284,19 +284,19 @@ def kinds_import(file: Path) -> None:
 
 # ── sync ──────────────────────────────────────────────────────────────────────
 
+
 def _get_adapter() -> object:
     adapter = get_sync_adapter()
     if adapter == "local_folder":
         from .sync.local_folder import LocalFolderAdapter
+
         raw = get_sync_local_path()
         if not raw:
-            raise click.ClickException(
-                "Local folder path is not configured. "
-                "Run: note sync config local-path <PATH>"
-            )
+            raise click.ClickException("Local folder path is not configured. Run: note sync config local-path <PATH>")
         return LocalFolderAdapter(Path(raw))
     # default: google_drive
     from .sync.google_drive import GoogleDriveAdapter
+
     config_dir = Path.home() / ".note_taker"
     return GoogleDriveAdapter(
         config_dir / "credentials.json",
@@ -315,6 +315,7 @@ def sync_push() -> None:
     """Upload this device's DB to remote storage."""
     from .db import get_db_path
     from .sync.device import get_device_id
+
     adapter = _get_adapter()
     device_id = get_device_id()
     db_path = get_db_path()
@@ -329,6 +330,7 @@ def sync_pull() -> None:
     from .db import connect, get_db_path
     from .sync.device import get_device_id
     from .sync.merge import merge_remote
+
     adapter = _get_adapter()
     device_id = get_device_id()
     devices = [d for d in adapter.list_devices() if d != device_id]  # type: ignore[attr-defined]
@@ -344,15 +346,14 @@ def sync_pull() -> None:
         total_added += result.added
         total_updated += result.updated
         total_deleted += result.deleted
-    click.echo(
-        f"Sync complete — {total_added} added, {total_updated} updated, {total_deleted} deleted."
-    )
+    click.echo(f"Sync complete — {total_added} added, {total_updated} updated, {total_deleted} deleted.")
 
 
 @sync.command("status")
 def sync_status() -> None:
     """Show this device's ID and sync configuration."""
     from .sync.device import get_device_id
+
     adapter = get_sync_adapter()
     click.echo(f"Device ID:     {get_device_id()}")
     click.echo(f"Adapter:       {adapter}")

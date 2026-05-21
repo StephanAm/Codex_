@@ -45,9 +45,7 @@ def test_merge_adds_new_notes(local_db: Path, remote_db: Path) -> None:
     assert notes[0].body == "remote note #sync"
 
 
-def test_merge_skips_existing_note_with_older_timestamp(
-    local_db: Path, remote_db: Path
-) -> None:
+def test_merge_skips_existing_note_with_older_timestamp(local_db: Path, remote_db: Path) -> None:
     # Add to remote first, then copy to local (same uuid, same timestamp)
     add_note("original body", db_path=remote_db)
     shutil.copy(remote_db, local_db)
@@ -58,19 +56,17 @@ def test_merge_skips_existing_note_with_older_timestamp(
     assert result.updated == 0
 
 
-def test_merge_updates_note_when_remote_is_newer(
-    local_db: Path, remote_db: Path
-) -> None:
+def test_merge_updates_note_when_remote_is_newer(local_db: Path, remote_db: Path) -> None:
     import time
+
     add_note("original", db_path=local_db)
     # Give remote a newer timestamp by adding then updating
     add_note("original", db_path=remote_db)
     time.sleep(0.01)
     from note_taker.store import update_note
+
     update_note(
-        connect(remote_db).execute(
-            "SELECT id FROM notes ORDER BY created_at"
-        ).fetchone()["id"],
+        connect(remote_db).execute("SELECT id FROM notes ORDER BY created_at").fetchone()["id"],
         "updated body",
         db_path=remote_db,
     )
@@ -85,9 +81,7 @@ def test_merge_tombstone_deletes_local_note(local_db: Path, remote_db: Path) -> 
     add_note("to be deleted", db_path=local_db)
     shutil.copy(local_db, remote_db)
     # Delete on remote
-    remote_note_id = connect(remote_db).execute(
-        "SELECT id FROM notes"
-    ).fetchone()["id"]
+    remote_note_id = connect(remote_db).execute("SELECT id FROM notes").fetchone()["id"]
     delete_note(remote_note_id, db_path=remote_db)
 
     local_conn = connect(local_db)
@@ -99,9 +93,7 @@ def test_merge_tombstone_deletes_local_note(local_db: Path, remote_db: Path) -> 
 def test_merge_tombstone_prevents_reimport(local_db: Path, remote_db: Path) -> None:
     add_note("zombie note", db_path=local_db)
     shutil.copy(local_db, remote_db)
-    remote_note_id = connect(remote_db).execute(
-        "SELECT id FROM notes"
-    ).fetchone()["id"]
+    remote_note_id = connect(remote_db).execute("SELECT id FROM notes").fetchone()["id"]
     delete_note(remote_note_id, db_path=remote_db)
 
     local_conn = connect(local_db)

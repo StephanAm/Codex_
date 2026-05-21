@@ -13,28 +13,46 @@ from datetime import date, timedelta
 # ── week helpers ──────────────────────────────────────────────────────────────
 
 _WEEKDAYS: dict[str, int] = {
-    "monday": 0, "mon": 0,
-    "tuesday": 1, "tue": 1,
-    "wednesday": 2, "wed": 2,
-    "thursday": 3, "thu": 3,
-    "friday": 4, "fri": 4,
-    "saturday": 5, "sat": 5,
-    "sunday": 6, "sun": 6,
+    "monday": 0,
+    "mon": 0,
+    "tuesday": 1,
+    "tue": 1,
+    "wednesday": 2,
+    "wed": 2,
+    "thursday": 3,
+    "thu": 3,
+    "friday": 4,
+    "fri": 4,
+    "saturday": 5,
+    "sat": 5,
+    "sunday": 6,
+    "sun": 6,
 }
 
 _MONTHS: dict[str, int] = {
-    "january": 1,  "jan": 1,
-    "february": 2, "feb": 2,
-    "march": 3,    "mar": 3,
-    "april": 4,    "apr": 4,
+    "january": 1,
+    "jan": 1,
+    "february": 2,
+    "feb": 2,
+    "march": 3,
+    "mar": 3,
+    "april": 4,
+    "apr": 4,
     "may": 5,
-    "june": 6,     "jun": 6,
-    "july": 7,     "jul": 7,
-    "august": 8,   "aug": 8,
-    "september": 9, "sep": 9,
-    "october": 10, "oct": 10,
-    "november": 11, "nov": 11,
-    "december": 12, "dec": 12,
+    "june": 6,
+    "jun": 6,
+    "july": 7,
+    "jul": 7,
+    "august": 8,
+    "aug": 8,
+    "september": 9,
+    "sep": 9,
+    "october": 10,
+    "oct": 10,
+    "november": 11,
+    "nov": 11,
+    "december": 12,
+    "dec": 12,
 }
 
 _COB_TIME = "17:00"
@@ -46,20 +64,20 @@ def _week_monday(today: date) -> date:
 
 # ── regex ─────────────────────────────────────────────────────────────────────
 
-_DAY       = r"(?:monday|mon|tuesday|tue|wednesday|wed|thursday|thu|friday|fri|saturday|sat|sunday|sun)"
-_TIME      = r"\d{1,2}:\d{2}"
-_AMPM_PAT  = r"\d{1,2}(?::\d{2})?(?:am|pm)"
-_COB       = r"(?:cob|c\.o\.b)"
-_EOW_EOM   = r"(?:eow|e\.o\.w|eom|e\.o\.m)"
+_DAY = r"(?:monday|mon|tuesday|tue|wednesday|wed|thursday|thu|friday|fri|saturday|sat|sunday|sun)"
+_TIME = r"\d{1,2}:\d{2}"
+_AMPM_PAT = r"\d{1,2}(?::\d{2})?(?:am|pm)"
+_COB = r"(?:cob|c\.o\.b)"
+_EOW_EOM = r"(?:eow|e\.o\.w|eom|e\.o\.m)"
 _TIME_PART = rf"(?:{_AMPM_PAT}|{_TIME}|{_COB}|noon|midnight)"
-_MONTH_NAME    = (
+_MONTH_NAME = (
     r"(?:january|jan|february|feb|march|mar|april|apr|may|june|jun"
     r"|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)"
 )
-_DAY_NUM       = r"\d{1,2}(?:st|nd|rd|th)?"
-_MONTH_DAY     = rf"(?:{_MONTH_NAME}\s+{_DAY_NUM}|{_DAY_NUM}[-\s]{_MONTH_NAME})"
-_EXPLICIT_YMD  = r"\d{4}[-/]\d{1,2}[-/]\d{1,2}"
-_EXPLICIT_DMY  = r"\d{1,2}[-/]\d{1,2}[-/]\d{4}"
+_DAY_NUM = r"\d{1,2}(?:st|nd|rd|th)?"
+_MONTH_DAY = rf"(?:{_MONTH_NAME}\s+{_DAY_NUM}|{_DAY_NUM}[-\s]{_MONTH_NAME})"
+_EXPLICIT_YMD = r"\d{4}[-/]\d{1,2}[-/]\d{1,2}"
+_EXPLICIT_DMY = r"\d{1,2}[-/]\d{1,2}[-/]\d{4}"
 _EXPLICIT_DATE = rf"(?:{_EXPLICIT_YMD}|{_EXPLICIT_DMY})"
 _DATE_PART = (
     rf"(?:today|tomm?orrow|yesterday"
@@ -104,10 +122,11 @@ _ORDINAL_OF_MONTH_RE = re.compile(
     re.IGNORECASE,
 )
 _FUTURE_OFFSET_RE = re.compile(r"^in\s+(\d+)\s+(days?|weeks?)$", re.IGNORECASE)
-_PAST_OFFSET_RE   = re.compile(r"^(\d+)\s+(days?|weeks?)\s+ago$", re.IGNORECASE)
+_PAST_OFFSET_RE = re.compile(r"^(\d+)\s+(days?|weeks?)\s+ago$", re.IGNORECASE)
 _AMPM_RE = re.compile(r"^(\d{1,2})(?::(\d{2}))?([ap]m)$", re.IGNORECASE)
 
 # ── date resolution ───────────────────────────────────────────────────────────
+
 
 def _resolve_date(expr: str, today: date) -> date | None:
     expr = expr.strip().lower()
@@ -245,6 +264,7 @@ def _parse_expr(raw: str, today: date) -> str | None:
 
 # ── public API ────────────────────────────────────────────────────────────────
 
+
 @dataclass
 class NormalizeResult:
     text: str
@@ -262,7 +282,7 @@ def normalize_dates(text: str, today: date | None = None) -> NormalizeResult:
     unresolved: list[str] = []
 
     def replace(m: re.Match[str]) -> str:
-        if m.group(1) is not None:   # already-normalised ~~ISO — pass through
+        if m.group(1) is not None:  # already-normalised ~~ISO — pass through
             return m.group(1)
         raw = m.group(2)
         result = _parse_expr(raw, today)
