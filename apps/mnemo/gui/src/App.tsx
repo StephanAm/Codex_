@@ -318,6 +318,7 @@ export default function App() {
     if (mode === "config") return <ConfigPanel onClose={() => setMode("view")} />;
     if (mode === "add") return <NoteEditor onSave={handleSave} onCancel={() => setMode("view")} />;
     if (mode === "edit" && selected) {
+      const isPinned = pinnedNotes.some(n => n.uuid === selected.uuid);
       return (
         <NoteEditor
           initialBody={selected.body}
@@ -325,19 +326,18 @@ export default function App() {
           initialReferences={selected.references}
           onSave={handleSave}
           onCancel={() => setMode("view")}
+          isPinned={isPinned}
+          onPin={() => handlePin(selected)}
+          onUnpin={() => handleUnpin(selected)}
         />
       );
     }
     if (selected) {
-      const isPinned = pinnedNotes.some(n => n.uuid === selected.uuid);
       return (
         <NoteDetail
           note={selected}
           onEdit={() => setMode("edit")}
           onDelete={handleDelete}
-          isPinned={isPinned}
-          onPin={() => handlePin(selected)}
-          onUnpin={() => handleUnpin(selected)}
         />
       );
     }
@@ -379,65 +379,64 @@ export default function App() {
       </header>
 
       <div className="app-body">
-        <div className="rail">
-          <span
-            className={`rail-glyph rail-glyph--log${activeSidebar === "log" ? " rail-glyph--active" : ""}`}
-            data-label="log"
-            onClick={() => { setActiveSidebar("log"); if (narrow) setSidebarOpen(true); }}
-          >≡</span>
-          <span
-            className={`rail-glyph rail-glyph--recall${activeSidebar === "recall" ? " rail-glyph--active" : ""}`}
-            data-label="recall"
-            onClick={() => { setActiveSidebar("recall"); if (narrow) setSidebarOpen(true); }}
-          >◎</span>
-          <span
-            className={`rail-glyph rail-glyph--instances${activeSidebar === "instances" ? " rail-glyph--active" : ""}`}
-            data-label="instances"
-            onClick={() => { setActiveSidebar("instances"); if (narrow) setSidebarOpen(true); }}
-          >◈</span>
+        <div className={`sidebar-container${narrow ? (sidebarOpen ? " sidebar-container--overlay" : " sidebar-container--hidden") : ""}`}>
+          <div className="rail">
+            <span
+              className={`rail-glyph rail-glyph--log${activeSidebar === "log" ? " rail-glyph--active" : ""}`}
+              data-label="log"
+              onClick={() => setActiveSidebar("log")}
+            >≡</span>
+            <span
+              className={`rail-glyph rail-glyph--recall${activeSidebar === "recall" ? " rail-glyph--active" : ""}`}
+              data-label="recall"
+              onClick={() => setActiveSidebar("recall")}
+            >★</span>
+            <span
+              className={`rail-glyph rail-glyph--instances${activeSidebar === "instances" ? " rail-glyph--active" : ""}`}
+              data-label="instances"
+              onClick={() => setActiveSidebar("instances")}
+            >◈</span>
+          </div>
+          {activeSidebar === "log" && (
+            <NoteList
+              notes={displayedNotes}
+              selectedId={selected?.id ?? null}
+              query={query}
+              filterTags={filterTags}
+              filterReferences={filterReferences}
+              allTags={allTags}
+              allReferences={allReferences}
+              timePeriod={timePeriod}
+              dateFrom={dateFrom}
+              dateTo={dateTo}
+              onSelect={handleSelect}
+              onQueryChange={setQuery}
+              onFilterTagsChange={setFilterTags}
+              onFilterReferencesChange={setFilterReferences}
+              onTimePeriodChange={setTimePeriod}
+              onDateFromChange={setDateFrom}
+              onDateToChange={setDateTo}
+              onAdd={() => setMode("add")}
+            />
+          )}
+          {activeSidebar === "instances" && (
+            <InstanceSidebar
+              selectedId={selectedInstance?.id ?? null}
+              selectedKindId={selectedKind?.id ?? null}
+              onSelect={handleSelectInstance}
+              onSelectKind={handleSelectKind}
+              reloadKey={kindsVersion}
+            />
+          )}
+          {activeSidebar === "recall" && (
+            <RecallSidebar
+              pinnedNotes={pinnedNotes}
+              selectedId={selected?.id ?? null}
+              onSelect={handleSelect}
+              onReorder={handlePinReorder}
+            />
+          )}
         </div>
-        {activeSidebar === "log" && (
-          <NoteList
-            notes={displayedNotes}
-            selectedId={selected?.id ?? null}
-            query={query}
-            filterTags={filterTags}
-            filterReferences={filterReferences}
-            allTags={allTags}
-            allReferences={allReferences}
-            timePeriod={timePeriod}
-            dateFrom={dateFrom}
-            dateTo={dateTo}
-            onSelect={handleSelect}
-            onQueryChange={setQuery}
-            onFilterTagsChange={setFilterTags}
-            onFilterReferencesChange={setFilterReferences}
-            onTimePeriodChange={setTimePeriod}
-            onDateFromChange={setDateFrom}
-            onDateToChange={setDateTo}
-            onAdd={() => setMode("add")}
-            className={narrow ? (sidebarOpen ? "note-list-panel--overlay" : "note-list-panel--hidden") : ""}
-          />
-        )}
-        {activeSidebar === "instances" && (
-          <InstanceSidebar
-            selectedId={selectedInstance?.id ?? null}
-            selectedKindId={selectedKind?.id ?? null}
-            onSelect={handleSelectInstance}
-            onSelectKind={handleSelectKind}
-            reloadKey={kindsVersion}
-            className={narrow ? (sidebarOpen ? "note-list-panel--overlay" : "note-list-panel--hidden") : ""}
-          />
-        )}
-        {activeSidebar === "recall" && (
-          <RecallSidebar
-            pinnedNotes={pinnedNotes}
-            selectedId={selected?.id ?? null}
-            onSelect={handleSelect}
-            onReorder={handlePinReorder}
-            className={narrow ? (sidebarOpen ? "note-list-panel--overlay" : "note-list-panel--hidden") : ""}
-          />
-        )}
         <main className="main-panel">
           <div className="mnemo-watermark" aria-hidden="true">
             <div className="mnemo-watermark__inner">

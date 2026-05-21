@@ -10,7 +10,8 @@
       "Bash(./scripts/bump_version.sh *)",
       "Skill(update-config:*)",
       "Bash(./scripts/release.sh)",
-      "Bash(./scripts/release.sh minor *)"
+      "Bash(./scripts/release.sh minor *)",
+      "Bash(grep -E '\\\\.\\(tsx|ts\\)$')"
     ],
     "additionalDirectories": [
       "/home/stephan/.claude/commands"

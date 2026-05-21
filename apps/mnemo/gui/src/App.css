@@ -310,9 +310,16 @@ body::after {
   overflow: hidden;
 }
 
-.note-list-panel--hidden  { display: none; }
+/* ── sidebar container (rail + active panel) ──────────────────────────────── */
 
-.note-list-panel--overlay {
+.sidebar-container {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.sidebar-container--hidden { display: none; }
+
+.sidebar-container--overlay {
   position: absolute;
   top: 44px;
   left: 0;
@@ -720,7 +727,8 @@ body::after {
 }
 
 .note-editor-pickers { display: flex; gap: 10px; flex-wrap: wrap; }
-.note-editor-actions { display: flex; gap: 8px; }
+.note-editor-actions { display: flex; gap: 8px; align-items: center; }
+.note-editor-pin { margin-left: auto; }
 
 /* ── tag / reference picker ──────────────────────────────────────────────── */
 

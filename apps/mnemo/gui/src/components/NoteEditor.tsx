@@ -8,6 +8,9 @@ interface Props {
   initialReferences?: string[];
   onSave: (body: string, tags: string[], references: string[]) => void;
   onCancel: () => void;
+  isPinned?: boolean;
+  onPin?: () => void;
+  onUnpin?: () => void;
 }
 
 export function NoteEditor({
@@ -16,6 +19,9 @@ export function NoteEditor({
   initialReferences = [],
   onSave,
   onCancel,
+  isPinned,
+  onPin,
+  onUnpin,
 }: Props) {
   const [body, setBody] = useState(() => {
     if (!initialBody) return initialBody;
@@ -90,6 +96,11 @@ export function NoteEditor({
           Save
         </button>
         <button className="btn btn-secondary" onClick={onCancel}>Cancel</button>
+        {onPin && (
+          <button className="btn-icon btn-icon--flag note-editor-pin" title={isPinned ? "unpin" : "pin"} onClick={isPinned ? onUnpin : onPin}>
+            {isPinned ? "★" : "☆"}
+          </button>
+        )}
       </div>
     </div>
   );
