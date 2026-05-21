@@ -36,6 +36,16 @@
             "type": "command",
             "command": "uv run ruff format --check 2>&1 || true",
             "statusMessage": "Running ruff format check..."
+          },
+          {
+            "type": "command",
+            "command": "uv run mypy 2>&1 || true",
+            "statusMessage": "Running mypy..."
+          },
+          {
+            "type": "command",
+            "command": "uv run pytest 2>&1 || true",
+            "statusMessage": "Running pytest..."
           }
         ]
       }
