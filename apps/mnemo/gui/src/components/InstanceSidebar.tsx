@@ -27,7 +27,7 @@ export function InstanceSidebar({ className = "" }: Props) {
 
   return (
     <div className={`instance-sidebar${className ? " " + className : ""}`}>
-      <div className="instance-section-label">instances</div>
+      <div className="instance-section-label">kinds</div>
       {types.length === 0 && (
         <span className="instance-sidebar-empty">no types yet.</span>
       )}
