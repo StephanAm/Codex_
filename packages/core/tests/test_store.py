@@ -222,6 +222,19 @@ def test_delete_instance_writes_tombstone(db: Path) -> None:
     assert row is not None
 
 
+def test_create_instance_auto_references(db: Path) -> None:
+    k = create_type("Person", db_path=db)
+    inst = create_instance("John Smith", k.id, db_path=db)
+    assert "johnsmith" in inst.references
+
+
+def test_create_instance_auto_references_merged_with_explicit(db: Path) -> None:
+    k = create_type("Team", db_path=db)
+    inst = create_instance("Red Team", k.id, references=["custom"], db_path=db)
+    assert "redteam" in inst.references
+    assert "custom" in inst.references
+
+
 def test_delete_nonexistent_instance_returns_false(db: Path) -> None:
     assert delete_instance(9999, db_path=db) is False
 

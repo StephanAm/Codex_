@@ -7,13 +7,17 @@ from .models import Note
 from .session import clear_session_context, get_session_context, set_session_context
 from .store import (
     add_note,
+    create_instance,
+    create_type,
     delete_note,
     get_default_tags,
     get_sync_adapter,
     get_sync_folder,
     get_sync_local_path,
-    list_references,
+    list_instances,
     list_notes,
+    list_references,
+    list_types,
     search_notes,
     set_default_tags,
     set_sync_adapter,
@@ -187,6 +191,95 @@ def session_clear() -> None:
     """Clear the active session context."""
     clear_session_context()
     click.echo("Session context cleared.")
+
+
+# ── kinds ─────────────────────────────────────────────────────────────────────
+
+@cli.group()
+def kinds() -> None:
+    """Manage Kinds and their Instances."""
+
+
+@kinds.command("import")
+@click.argument("file", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+def kinds_import(file: Path) -> None:
+    """Bulk-import Kinds and Instances from a YAML file.
+
+    \b
+    Expected format:
+      kinds:
+        - name: Person
+          plural: People
+          description: Optional description
+          instances:
+            - name: John Smith
+              description: Optional
+              references:
+                - AcmeCorp
+    """
+    import yaml  # noqa: PLC0415
+
+    try:
+        data = yaml.safe_load(file.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
+        raise click.ClickException(f"Invalid YAML: {exc}") from exc
+
+    if not isinstance(data, dict) or "kinds" not in data:
+        raise click.ClickException("File must have a top-level 'kinds' list.")
+
+    raw_kinds = data.get("kinds") or []
+    if not isinstance(raw_kinds, list):
+        raise click.ClickException("'kinds' must be a list.")
+
+    existing_kinds = {k.name.lower(): k for k in list_types()}
+    kinds_created = kinds_skipped = instances_created = instances_skipped = 0
+
+    for entry in raw_kinds:
+        if not isinstance(entry, dict) or not entry.get("name"):
+            raise click.ClickException(f"Each kind must have a 'name' field: {entry!r}")
+
+        kind_name = str(entry["name"]).strip()
+        kind_key = kind_name.lower()
+
+        if kind_key in existing_kinds:
+            kind = existing_kinds[kind_key]
+            kinds_skipped += 1
+        else:
+            kind = create_type(
+                name=kind_name,
+                plural=str(entry.get("plural") or ""),
+                description=str(entry.get("description") or ""),
+            )
+            existing_kinds[kind_key] = kind
+            kinds_created += 1
+
+        existing_instance_names = {i.name.lower() for i in list_instances(kind.id)}
+
+        for inst in entry.get("instances") or []:
+            if not isinstance(inst, dict) or not inst.get("name"):
+                raise click.ClickException(
+                    f"Each instance must have a 'name' field: {inst!r}"
+                )
+            inst_name = str(inst["name"]).strip()
+            if inst_name.lower() in existing_instance_names:
+                instances_skipped += 1
+            else:
+                raw_refs = inst.get("references") or []
+                refs = [str(r).lstrip("@").lower() for r in raw_refs]
+                create_instance(
+                    name=inst_name,
+                    instance_kind_id=kind.id,
+                    description=str(inst.get("description") or ""),
+                    references=refs,
+                )
+                existing_instance_names.add(inst_name.lower())
+                instances_created += 1
+
+    click.echo(
+        f"Import complete — "
+        f"{kinds_created} kind(s) created, {kinds_skipped} skipped; "
+        f"{instances_created} instance(s) created, {instances_skipped} skipped."
+    )
 
 
 # ── sync ──────────────────────────────────────────────────────────────────────

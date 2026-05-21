@@ -68,7 +68,7 @@ export function KindDetail({ kind, onUpdated, onDeleted, onSelectInstance }: Pro
         {!editing && (
           <div className="kind-detail-actions">
             <button className="btn-icon" title="edit" onClick={() => setEditing(true)}>✎</button>
-            <button className="btn-icon btn-icon--danger" title="delete" onClick={handleDelete}>✕</button>
+            <button className="btn-icon btn-icon--danger" title="delete" onClick={handleDelete}>🗑</button>
           </div>
         )}
       </div>

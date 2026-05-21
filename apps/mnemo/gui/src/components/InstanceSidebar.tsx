@@ -22,11 +22,16 @@ export function InstanceSidebar({ selectedId, selectedKindId, onSelect, onSelect
 
   const kindInputRef = useRef<HTMLInputElement>(null);
   const instanceInputRef = useRef<HTMLInputElement>(null);
+  const initializedRef = useRef(false);
 
   async function reload() {
     const [t, i] = await Promise.all([api.instanceKinds.list(), api.instances.list()]);
     setTypes(t);
     setInstances(i);
+    if (!initializedRef.current) {
+      setCollapsed(new Set(t.map(kind => kind.id)));
+      initializedRef.current = true;
+    }
   }
 
   useEffect(() => { reload(); }, [reloadKey]);

@@ -27,6 +27,7 @@ app.log
 
 # Generated
 new_python_project.py
+notion-exports/
 
 # Type checking
 .mypy_cache/

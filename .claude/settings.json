@@ -11,10 +11,12 @@
       "Skill(update-config:*)",
       "Bash(./scripts/release.sh)",
       "Bash(./scripts/release.sh minor *)",
-      "Bash(grep -E '\\\\.\\(tsx|ts\\)$')"
+      "Bash(grep -E '\\\\.\\(tsx|ts\\)$')",
+      "Bash(cat > *)"
     ],
     "additionalDirectories": [
-      "/home/stephan/.claude/commands"
+      "/home/stephan/.claude/commands",
+      "/tmp"
     ]
   },
   "hooks": {

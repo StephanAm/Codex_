@@ -332,7 +332,9 @@ def create_instance(
         " VALUES (?, ?, ?, ?, ?, ?)",
         (name.strip(), description.strip(), instance_kind_id, str(uuid4()), now, now),
     )
-    _attach_instance_references(conn, cur.lastrowid, references or [])  # type: ignore[arg-type]
+    auto_ref = name.strip().replace(" ", "").lower()
+    all_refs = list(dict.fromkeys([auto_ref] + [r.lower() for r in (references or [])]))
+    _attach_instance_references(conn, cur.lastrowid, all_refs)  # type: ignore[arg-type]
     conn.commit()
     row = conn.execute(
         "SELECT * FROM instances WHERE id = ?", (cur.lastrowid,)

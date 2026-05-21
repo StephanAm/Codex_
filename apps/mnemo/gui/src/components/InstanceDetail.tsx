@@ -65,7 +65,7 @@ export function InstanceDetail({ instance, onUpdated, onDeleted }: Props) {
         {!editing && (
           <div className="instance-detail-actions">
             <button className="btn-icon" title="edit" onClick={() => void enterEdit()}>✎</button>
-            <button className="btn-icon btn-icon--danger" title="delete" onClick={() => void handleDelete()}>✕</button>
+            <button className="btn-icon btn-icon--danger" title="delete" onClick={() => void handleDelete()}>🗑</button>
           </div>
         )}
       </div>
