@@ -26,6 +26,9 @@ class InstanceKind:
     name: str
     plural: str
     description: str
+    uuid: str = ""
+    created_at: str = ""
+    updated_at: str = ""
 
 
 @dataclass
@@ -35,3 +38,6 @@ class Instance:
     description: str
     type: InstanceKind
     references: list[str] = field(default_factory=list)
+    uuid: str = ""
+    created_at: str = ""
+    updated_at: str = ""

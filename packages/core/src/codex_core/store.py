@@ -198,7 +198,15 @@ def list_references(db_path: Path | None = None) -> list[Reference]:
 
 
 def _load_instance_kind(row: sqlite3.Row) -> InstanceKind:
-    return InstanceKind(id=row["id"], name=row["name"], plural=row["plural"], description=row["description"])
+    return InstanceKind(
+        id=row["id"],
+        name=row["name"],
+        plural=row["plural"],
+        description=row["description"],
+        uuid=row["uuid"] or "",
+        created_at=row["created_at"] or "",
+        updated_at=row["updated_at"] or "",
+    )
 
 
 def _load_instance(conn: sqlite3.Connection, row: sqlite3.Row) -> Instance:
@@ -220,6 +228,9 @@ def _load_instance(conn: sqlite3.Connection, row: sqlite3.Row) -> Instance:
         description=row["description"],
         type=_load_instance_kind(kind_row),
         references=refs,
+        uuid=row["uuid"] or "",
+        created_at=row["created_at"] or "",
+        updated_at=row["updated_at"] or "",
     )
 
 
@@ -242,9 +253,11 @@ def create_type(
     name: str, plural: str = "", description: str = "", db_path: Path | None = None
 ) -> InstanceKind:
     conn = connect(db_path)
+    now = datetime.now(timezone.utc).isoformat()
     cur = conn.execute(
-        "INSERT INTO instance_kinds (name, plural, description) VALUES (?, ?, ?)",
-        (name.strip(), plural.strip(), description.strip()),
+        "INSERT INTO instance_kinds (name, plural, description, uuid, created_at, updated_at)"
+        " VALUES (?, ?, ?, ?, ?, ?)",
+        (name.strip(), plural.strip(), description.strip(), str(uuid4()), now, now),
     )
     conn.commit()
     row = conn.execute(
@@ -273,9 +286,11 @@ def update_type(
     db_path: Path | None = None,
 ) -> InstanceKind | None:
     conn = connect(db_path)
+    now = datetime.now(timezone.utc).isoformat()
     cur = conn.execute(
-        "UPDATE instance_kinds SET name = ?, plural = ?, description = ? WHERE id = ?",
-        (name.strip(), plural.strip(), description.strip(), instance_kind_id),
+        "UPDATE instance_kinds SET name = ?, plural = ?, description = ?, updated_at = ?"
+        " WHERE id = ?",
+        (name.strip(), plural.strip(), description.strip(), now, instance_kind_id),
     )
     conn.commit()
     if cur.rowcount == 0:
@@ -286,7 +301,19 @@ def update_type(
 
 def delete_type(instance_kind_id: int, db_path: Path | None = None) -> bool:
     conn = connect(db_path)
+    row = conn.execute(
+        "SELECT uuid FROM instance_kinds WHERE id = ?", (instance_kind_id,)
+    ).fetchone()
+    if row is None:
+        return False
+    kind_uuid = row["uuid"]
+    now = datetime.now(timezone.utc).isoformat()
     cur = conn.execute("DELETE FROM instance_kinds WHERE id = ?", (instance_kind_id,))
+    if cur.rowcount and kind_uuid:
+        conn.execute(
+            "INSERT OR IGNORE INTO deleted_instance_kinds (uuid, deleted_at) VALUES (?, ?)",
+            (kind_uuid, now),
+        )
     conn.commit()
     return cur.rowcount > 0
 
@@ -299,9 +326,11 @@ def create_instance(
     db_path: Path | None = None,
 ) -> Instance:
     conn = connect(db_path)
+    now = datetime.now(timezone.utc).isoformat()
     cur = conn.execute(
-        "INSERT INTO instances (name, description, instance_kind_id) VALUES (?, ?, ?)",
-        (name.strip(), description.strip(), instance_kind_id),
+        "INSERT INTO instances (name, description, instance_kind_id, uuid, created_at, updated_at)"
+        " VALUES (?, ?, ?, ?, ?, ?)",
+        (name.strip(), description.strip(), instance_kind_id, str(uuid4()), now, now),
     )
     _attach_instance_references(conn, cur.lastrowid, references or [])  # type: ignore[arg-type]
     conn.commit()
@@ -340,9 +369,11 @@ def update_instance(
     db_path: Path | None = None,
 ) -> Instance | None:
     conn = connect(db_path)
+    now = datetime.now(timezone.utc).isoformat()
     cur = conn.execute(
-        "UPDATE instances SET name = ?, description = ?, instance_kind_id = ? WHERE id = ?",
-        (name.strip(), description.strip(), instance_kind_id, instance_id),
+        "UPDATE instances SET name = ?, description = ?, instance_kind_id = ?, updated_at = ?"
+        " WHERE id = ?",
+        (name.strip(), description.strip(), instance_kind_id, now, instance_id),
     )
     if cur.rowcount == 0:
         conn.commit()
@@ -355,7 +386,19 @@ def update_instance(
 
 def delete_instance(instance_id: int, db_path: Path | None = None) -> bool:
     conn = connect(db_path)
+    row = conn.execute(
+        "SELECT uuid FROM instances WHERE id = ?", (instance_id,)
+    ).fetchone()
+    if row is None:
+        return False
+    inst_uuid = row["uuid"]
+    now = datetime.now(timezone.utc).isoformat()
     cur = conn.execute("DELETE FROM instances WHERE id = ?", (instance_id,))
+    if cur.rowcount and inst_uuid:
+        conn.execute(
+            "INSERT OR IGNORE INTO deleted_instances (uuid, deleted_at) VALUES (?, ?)",
+            (inst_uuid, now),
+        )
     conn.commit()
     return cur.rowcount > 0
 

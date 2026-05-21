@@ -1,10 +1,22 @@
 import shutil
+import time
 from pathlib import Path
 
 import pytest
 
 from note_taker.db import connect
-from note_taker.store import add_note, delete_note, list_notes
+from note_taker.store import (
+    add_note,
+    create_instance,
+    create_type,
+    delete_instance,
+    delete_note,
+    delete_type,
+    list_instances,
+    list_notes,
+    list_types,
+    update_type,
+)
 from note_taker.sync.merge import merge_remote
 
 
@@ -117,3 +129,167 @@ def test_merge_is_idempotent(local_db: Path, remote_db: Path) -> None:
     result = merge_remote(local_conn, _db_bytes(remote_db))
     assert result.added == 0
     assert len(list_notes(db_path=local_db)) == 1
+
+
+# ---------------------------------------------------------------------------
+# Kind merge tests
+# ---------------------------------------------------------------------------
+
+
+def test_merge_adds_new_kind(local_db: Path, remote_db: Path) -> None:
+    create_type("People", plural="People", db_path=remote_db)
+    local_conn = connect(local_db)
+    result = merge_remote(local_conn, _db_bytes(remote_db))
+    assert result.kinds_added == 1
+    kinds = list_types(db_path=local_db)
+    assert len(kinds) == 1
+    assert kinds[0].name == "People"
+
+
+def test_merge_skips_kind_when_not_newer(local_db: Path, remote_db: Path) -> None:
+    create_type("People", db_path=remote_db)
+    shutil.copy(remote_db, local_db)
+    local_conn = connect(local_db)
+    result = merge_remote(local_conn, _db_bytes(remote_db))
+    assert result.kinds_added == 0
+    assert result.kinds_updated == 0
+    assert len(list_types(db_path=local_db)) == 1
+
+
+def test_merge_updates_kind_when_remote_is_newer(local_db: Path, remote_db: Path) -> None:
+    create_type("People", db_path=remote_db)
+    shutil.copy(remote_db, local_db)
+    kind_id = connect(remote_db).execute("SELECT id FROM instance_kinds").fetchone()["id"]
+    time.sleep(0.01)
+    update_type(kind_id, "People", "Folks", "Updated desc", db_path=remote_db)
+    local_conn = connect(local_db)
+    result = merge_remote(local_conn, _db_bytes(remote_db))
+    assert result.kinds_updated == 1
+    kinds = list_types(db_path=local_db)
+    assert kinds[0].plural == "Folks"
+    assert kinds[0].description == "Updated desc"
+
+
+def test_merge_kind_tombstone_deletes_local(local_db: Path, remote_db: Path) -> None:
+    create_type("Temporary", db_path=local_db)
+    shutil.copy(local_db, remote_db)
+    kind_id = connect(remote_db).execute("SELECT id FROM instance_kinds").fetchone()["id"]
+    delete_type(kind_id, db_path=remote_db)
+    local_conn = connect(local_db)
+    result = merge_remote(local_conn, _db_bytes(remote_db))
+    assert result.kinds_deleted == 1
+    assert list_types(db_path=local_db) == []
+
+
+def test_merge_kind_tombstone_prevents_reimport(local_db: Path, remote_db: Path) -> None:
+    create_type("Ghost", db_path=local_db)
+    shutil.copy(local_db, remote_db)
+    kind_id = connect(remote_db).execute("SELECT id FROM instance_kinds").fetchone()["id"]
+    delete_type(kind_id, db_path=remote_db)
+    local_conn = connect(local_db)
+    merge_remote(local_conn, _db_bytes(remote_db))
+    result = merge_remote(local_conn, _db_bytes(remote_db))
+    assert result.kinds_added == 0
+    assert list_types(db_path=local_db) == []
+
+
+def test_merge_kind_name_conflict_renames_incoming(local_db: Path, remote_db: Path) -> None:
+    # Both devices independently create a kind with the same name → different UUIDs
+    create_type("People", db_path=local_db)
+    create_type("People", db_path=remote_db)
+    local_conn = connect(local_db)
+    result = merge_remote(local_conn, _db_bytes(remote_db))
+    assert result.kinds_added == 1
+    names = [k.name for k in list_types(db_path=local_db)]
+    assert "People" in names
+    assert any(n.startswith("People_") for n in names)
+
+
+# ---------------------------------------------------------------------------
+# Instance merge tests
+# ---------------------------------------------------------------------------
+
+
+def test_merge_adds_new_instance(local_db: Path, remote_db: Path) -> None:
+    k = create_type("People", db_path=remote_db)
+    create_instance("Alice", k.id, db_path=remote_db)
+    local_conn = connect(local_db)
+    result = merge_remote(local_conn, _db_bytes(remote_db))
+    assert result.kinds_added == 1
+    assert result.instances_added == 1
+    instances = list_instances(db_path=local_db)
+    assert len(instances) == 1
+    assert instances[0].name == "Alice"
+
+
+def test_merge_instance_fk_remapping(local_db: Path, remote_db: Path) -> None:
+    k = create_type("People", db_path=remote_db)
+    create_instance("Alice", k.id, db_path=remote_db)
+    local_conn = connect(local_db)
+    merge_remote(local_conn, _db_bytes(remote_db))
+    instances = list_instances(db_path=local_db)
+    assert instances[0].type.name == "People"
+
+
+def test_merge_skips_instance_when_not_newer(local_db: Path, remote_db: Path) -> None:
+    k = create_type("People", db_path=remote_db)
+    create_instance("Alice", k.id, db_path=remote_db)
+    shutil.copy(remote_db, local_db)
+    local_conn = connect(local_db)
+    result = merge_remote(local_conn, _db_bytes(remote_db))
+    assert result.instances_added == 0
+    assert result.instances_updated == 0
+
+
+def test_merge_instance_tombstone_deletes_local(local_db: Path, remote_db: Path) -> None:
+    k = create_type("People", db_path=local_db)
+    create_instance("Alice", k.id, db_path=local_db)
+    shutil.copy(local_db, remote_db)
+    inst_id = connect(remote_db).execute("SELECT id FROM instances").fetchone()["id"]
+    delete_instance(inst_id, db_path=remote_db)
+    local_conn = connect(local_db)
+    result = merge_remote(local_conn, _db_bytes(remote_db))
+    assert result.instances_deleted == 1
+    assert list_instances(db_path=local_db) == []
+
+
+def test_merge_instance_preserves_references(local_db: Path, remote_db: Path) -> None:
+    k = create_type("People", db_path=remote_db)
+    create_instance("Alice", k.id, references=["project-x"], db_path=remote_db)
+    local_conn = connect(local_db)
+    merge_remote(local_conn, _db_bytes(remote_db))
+    instances = list_instances(db_path=local_db)
+    assert "project-x" in instances[0].references
+
+
+def test_merge_kinds_and_instances_idempotent(local_db: Path, remote_db: Path) -> None:
+    k = create_type("People", db_path=remote_db)
+    create_instance("Alice", k.id, db_path=remote_db)
+    local_conn = connect(local_db)
+    merge_remote(local_conn, _db_bytes(remote_db))
+    result = merge_remote(local_conn, _db_bytes(remote_db))
+    assert result.kinds_added == 0
+    assert result.instances_added == 0
+    assert len(list_instances(db_path=local_db)) == 1
+
+
+# ---------------------------------------------------------------------------
+# Order-of-operations: instance tombstone before kind tombstone
+# ---------------------------------------------------------------------------
+
+
+def test_merge_instance_then_kind_tombstones(local_db: Path, remote_db: Path) -> None:
+    k = create_type("Temp", db_path=local_db)
+    inst = create_instance("X", k.id, db_path=local_db)
+    shutil.copy(local_db, remote_db)
+    # Delete instance first, then kind on remote
+    remote_inst_id = connect(remote_db).execute("SELECT id FROM instances").fetchone()["id"]
+    delete_instance(remote_inst_id, db_path=remote_db)
+    remote_kind_id = connect(remote_db).execute("SELECT id FROM instance_kinds").fetchone()["id"]
+    delete_type(remote_kind_id, db_path=remote_db)
+    local_conn = connect(local_db)
+    result = merge_remote(local_conn, _db_bytes(remote_db))
+    assert result.instances_deleted == 1
+    assert result.kinds_deleted == 1
+    assert list_types(db_path=local_db) == []
+    assert list_instances(db_path=local_db) == []

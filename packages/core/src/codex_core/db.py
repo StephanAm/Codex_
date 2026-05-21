@@ -61,6 +61,14 @@ def _migrate(conn: sqlite3.Connection) -> None:
             uuid       TEXT PRIMARY KEY,
             deleted_at TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS deleted_instance_kinds (
+            uuid       TEXT PRIMARY KEY,
+            deleted_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS deleted_instances (
+            uuid       TEXT PRIMARY KEY,
+            deleted_at TEXT NOT NULL
+        );
         CREATE TABLE IF NOT EXISTS db_meta (
             id             INTEGER PRIMARY KEY CHECK (id = 1),
             schema_version TEXT NOT NULL,
@@ -167,6 +175,34 @@ def _migrate(conn: sqlite3.Connection) -> None:
             PRIMARY KEY (instance_id, reference_id)
         );
     """)
+
+    # Add sync columns to instance_kinds
+    ik_cols = {row[1] for row in conn.execute("PRAGMA table_info(instance_kinds)")}
+    if "uuid" not in ik_cols:
+        conn.execute("ALTER TABLE instance_kinds ADD COLUMN uuid TEXT")
+    if "created_at" not in ik_cols:
+        conn.execute("ALTER TABLE instance_kinds ADD COLUMN created_at TEXT")
+    if "updated_at" not in ik_cols:
+        conn.execute("ALTER TABLE instance_kinds ADD COLUMN updated_at TEXT")
+    conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_ik_uuid ON instance_kinds(uuid)")
+    for row in conn.execute("SELECT id FROM instance_kinds WHERE uuid IS NULL").fetchall():
+        conn.execute("UPDATE instance_kinds SET uuid = ? WHERE id = ?", (str(uuid4()), row[0]))
+    conn.execute("UPDATE instance_kinds SET created_at = datetime('now') WHERE created_at IS NULL")
+    conn.execute("UPDATE instance_kinds SET updated_at = created_at WHERE updated_at IS NULL")
+
+    # Add sync columns to instances
+    inst_cols = {row[1] for row in conn.execute("PRAGMA table_info(instances)")}
+    if "uuid" not in inst_cols:
+        conn.execute("ALTER TABLE instances ADD COLUMN uuid TEXT")
+    if "created_at" not in inst_cols:
+        conn.execute("ALTER TABLE instances ADD COLUMN created_at TEXT")
+    if "updated_at" not in inst_cols:
+        conn.execute("ALTER TABLE instances ADD COLUMN updated_at TEXT")
+    conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_inst_uuid ON instances(uuid)")
+    for row in conn.execute("SELECT id FROM instances WHERE uuid IS NULL").fetchall():
+        conn.execute("UPDATE instances SET uuid = ? WHERE id = ?", (str(uuid4()), row[0]))
+    conn.execute("UPDATE instances SET created_at = datetime('now') WHERE created_at IS NULL")
+    conn.execute("UPDATE instances SET updated_at = created_at WHERE updated_at IS NULL")
 
     # Always stamp the current app version so the DB reflects the last migration
     conn.execute("UPDATE db_meta SET schema_version = ?", (_APP_VERSION,))

@@ -1,16 +1,24 @@
+import time
 from pathlib import Path
 
 import pytest
 
+from note_taker.db import connect
 from note_taker.store import (
     add_note,
+    create_instance,
+    create_type,
+    delete_instance,
     delete_note,
+    delete_type,
     get_default_tags,
     list_notes,
     list_references,
     search_notes,
     set_default_tags,
+    update_instance,
     update_note,
+    update_type,
 )
 
 
@@ -136,6 +144,86 @@ def test_set_default_tags_overwrites(db: Path) -> None:
 def test_set_default_tags_lowercases(db: Path) -> None:
     set_default_tags(["Work", "DAILY"], db_path=db)
     assert get_default_tags(db_path=db) == ["work", "daily"]
+
+
+# ---------------------------------------------------------------------------
+# Kind (InstanceKind) sync field tests
+# ---------------------------------------------------------------------------
+
+
+def test_create_type_generates_uuid(db: Path) -> None:
+    k = create_type("People", db_path=db)
+    assert len(k.uuid) == 36
+
+
+def test_create_type_sets_timestamps(db: Path) -> None:
+    k = create_type("People", db_path=db)
+    assert k.created_at != ""
+    assert k.updated_at != ""
+    assert k.created_at == k.updated_at
+
+
+def test_update_type_advances_updated_at(db: Path) -> None:
+    k = create_type("People", db_path=db)
+    time.sleep(0.01)
+    k2 = update_type(k.id, "Persons", "", "", db_path=db)
+    assert k2 is not None
+    assert k2.updated_at > k2.created_at
+
+
+def test_delete_type_writes_tombstone(db: Path) -> None:
+    k = create_type("Ghost", db_path=db)
+    delete_type(k.id, db_path=db)
+    row = connect(db).execute(
+        "SELECT * FROM deleted_instance_kinds WHERE uuid = ?", (k.uuid,)
+    ).fetchone()
+    assert row is not None
+
+
+def test_delete_nonexistent_type_returns_false(db: Path) -> None:
+    assert delete_type(9999, db_path=db) is False
+
+
+# ---------------------------------------------------------------------------
+# Instance sync field tests
+# ---------------------------------------------------------------------------
+
+
+def test_create_instance_generates_uuid(db: Path) -> None:
+    k = create_type("People", db_path=db)
+    inst = create_instance("Alice", k.id, db_path=db)
+    assert len(inst.uuid) == 36
+
+
+def test_create_instance_sets_timestamps(db: Path) -> None:
+    k = create_type("People", db_path=db)
+    inst = create_instance("Alice", k.id, db_path=db)
+    assert inst.created_at != ""
+    assert inst.updated_at != ""
+    assert inst.created_at == inst.updated_at
+
+
+def test_update_instance_advances_updated_at(db: Path) -> None:
+    k = create_type("People", db_path=db)
+    inst = create_instance("Alice", k.id, db_path=db)
+    time.sleep(0.01)
+    inst2 = update_instance(inst.id, "Alicia", "", k.id, db_path=db)
+    assert inst2 is not None
+    assert inst2.updated_at > inst2.created_at
+
+
+def test_delete_instance_writes_tombstone(db: Path) -> None:
+    k = create_type("People", db_path=db)
+    inst = create_instance("Alice", k.id, db_path=db)
+    delete_instance(inst.id, db_path=db)
+    row = connect(db).execute(
+        "SELECT * FROM deleted_instances WHERE uuid = ?", (inst.uuid,)
+    ).fetchone()
+    assert row is not None
+
+
+def test_delete_nonexistent_instance_returns_false(db: Path) -> None:
+    assert delete_instance(9999, db_path=db) is False
 
 
 def test_set_default_tags_clear(db: Path) -> None:

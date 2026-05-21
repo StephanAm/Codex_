@@ -2,7 +2,6 @@ import os
 import sqlite3
 import tempfile
 from dataclasses import dataclass
-from pathlib import Path
 
 
 @dataclass
@@ -10,6 +9,12 @@ class MergeResult:
     added: int
     updated: int
     deleted: int
+    kinds_added: int = 0
+    kinds_updated: int = 0
+    kinds_deleted: int = 0
+    instances_added: int = 0
+    instances_updated: int = 0
+    instances_deleted: int = 0
 
 
 def merge_remote(local_conn: sqlite3.Connection, remote_bytes: bytes) -> MergeResult:
@@ -27,14 +32,21 @@ def merge_remote(local_conn: sqlite3.Connection, remote_bytes: bytes) -> MergeRe
 
 
 def _merge(local: sqlite3.Connection, remote: sqlite3.Connection) -> MergeResult:
-    added = updated = deleted = 0
+    result = MergeResult(added=0, updated=0, deleted=0)
 
-    # Apply tombstones first so we never re-import a deleted note
+    # Apply instance tombstones first — RESTRICT FK means instances must be removed
+    # before their kinds can be deleted.
+    _apply_instance_tombstones(local, remote, result)
+    _apply_kind_tombstones(local, remote, result)
+    _merge_instance_kinds(local, remote, result)
+    _merge_instances(local, remote, result)
+
+    # Apply note tombstones so we never re-import a deleted note
     for row in remote.execute("SELECT uuid, deleted_at FROM deleted_notes"):
         uuid, deleted_at = row["uuid"], row["deleted_at"]
         cur = local.execute("DELETE FROM notes WHERE uuid = ?", (uuid,))
         if cur.rowcount:
-            deleted += 1
+            result.deleted += 1
         local.execute(
             "INSERT OR IGNORE INTO deleted_notes (uuid, deleted_at) VALUES (?, ?)",
             (uuid, deleted_at),
@@ -63,7 +75,7 @@ def _merge(local: sqlite3.Connection, remote: sqlite3.Connection) -> MergeResult
             ).fetchone()["id"]
             _copy_tags(remote, local, row["id"], local_id)
             _copy_references(remote, local, row["id"], local_id)
-            added += 1
+            result.added += 1
         elif row["updated_at"] > local_row["updated_at"]:
             local.execute(
                 "UPDATE notes SET body = ?, updated_at = ? WHERE uuid = ?",
@@ -74,7 +86,7 @@ def _merge(local: sqlite3.Connection, remote: sqlite3.Connection) -> MergeResult
             local.execute("DELETE FROM note_references WHERE note_id = ?", (local_id,))
             _copy_tags(remote, local, row["id"], local_id)
             _copy_references(remote, local, row["id"], local_id)
-            updated += 1
+            result.updated += 1
 
     # Sync pins — last-write-wins on pins_updated_at
     remote_pins_ts = remote.execute(
@@ -97,7 +109,160 @@ def _merge(local: sqlite3.Connection, remote: sqlite3.Connection) -> MergeResult
                     )
 
     local.commit()
-    return MergeResult(added=added, updated=updated, deleted=deleted)
+    return result
+
+
+def _apply_instance_tombstones(
+    local: sqlite3.Connection,
+    remote: sqlite3.Connection,
+    result: MergeResult,
+) -> None:
+    for row in remote.execute("SELECT uuid, deleted_at FROM deleted_instances"):
+        cur = local.execute("DELETE FROM instances WHERE uuid = ?", (row["uuid"],))
+        if cur.rowcount:
+            result.instances_deleted += 1
+        local.execute(
+            "INSERT OR IGNORE INTO deleted_instances (uuid, deleted_at) VALUES (?, ?)",
+            (row["uuid"], row["deleted_at"]),
+        )
+
+
+def _apply_kind_tombstones(
+    local: sqlite3.Connection,
+    remote: sqlite3.Connection,
+    result: MergeResult,
+) -> None:
+    for row in remote.execute("SELECT uuid, deleted_at FROM deleted_instance_kinds"):
+        try:
+            cur = local.execute("DELETE FROM instance_kinds WHERE uuid = ?", (row["uuid"],))
+            if cur.rowcount:
+                result.kinds_deleted += 1
+            local.execute(
+                "INSERT OR IGNORE INTO deleted_instance_kinds (uuid, deleted_at) VALUES (?, ?)",
+                (row["uuid"], row["deleted_at"]),
+            )
+        except sqlite3.IntegrityError:
+            pass  # local instances still reference this kind; skip
+
+
+def _merge_instance_kinds(
+    local: sqlite3.Connection,
+    remote: sqlite3.Connection,
+    result: MergeResult,
+) -> None:
+    tombstoned = {r["uuid"] for r in local.execute("SELECT uuid FROM deleted_instance_kinds")}
+
+    for row in remote.execute("SELECT * FROM instance_kinds"):
+        uuid = row["uuid"]
+        if not uuid or uuid in tombstoned:
+            continue
+
+        local_row = local.execute(
+            "SELECT id, updated_at FROM instance_kinds WHERE uuid = ?", (uuid,)
+        ).fetchone()
+
+        if local_row is None:
+            name_conflict = local.execute(
+                "SELECT 1 FROM instance_kinds WHERE name = ?", (row["name"],)
+            ).fetchone()
+            safe_name = f"{row['name']}_{uuid[:8]}" if name_conflict else row["name"]
+            local.execute(
+                "INSERT INTO instance_kinds"
+                " (uuid, name, plural, description, created_at, updated_at)"
+                " VALUES (?, ?, ?, ?, ?, ?)",
+                (uuid, safe_name, row["plural"], row["description"],
+                 row["created_at"], row["updated_at"]),
+            )
+            result.kinds_added += 1
+        elif row["updated_at"] > local_row["updated_at"]:
+            name_conflict = local.execute(
+                "SELECT 1 FROM instance_kinds WHERE name = ? AND uuid != ?",
+                (row["name"], uuid),
+            ).fetchone()
+            safe_name = f"{row['name']}_{uuid[:8]}" if name_conflict else row["name"]
+            local.execute(
+                "UPDATE instance_kinds SET name = ?, plural = ?, description = ?, updated_at = ?"
+                " WHERE uuid = ?",
+                (safe_name, row["plural"], row["description"], row["updated_at"], uuid),
+            )
+            result.kinds_updated += 1
+
+
+def _merge_instances(
+    local: sqlite3.Connection,
+    remote: sqlite3.Connection,
+    result: MergeResult,
+) -> None:
+    tombstoned = {r["uuid"] for r in local.execute("SELECT uuid FROM deleted_instances")}
+
+    for row in remote.execute("SELECT * FROM instances"):
+        uuid = row["uuid"]
+        if not uuid or uuid in tombstoned:
+            continue
+
+        # Remap remote instance_kind_id → local instance_kind_id via kind UUID
+        remote_kind = remote.execute(
+            "SELECT uuid FROM instance_kinds WHERE id = ?", (row["instance_kind_id"],)
+        ).fetchone()
+        if not remote_kind:
+            continue  # orphaned instance; skip
+        local_kind = local.execute(
+            "SELECT id FROM instance_kinds WHERE uuid = ?", (remote_kind["uuid"],)
+        ).fetchone()
+        if not local_kind:
+            continue  # kind not present locally (e.g. name conflict prevented insert); skip
+        local_kind_id = local_kind["id"]
+
+        local_row = local.execute(
+            "SELECT id, updated_at FROM instances WHERE uuid = ?", (uuid,)
+        ).fetchone()
+
+        if local_row is None:
+            local.execute(
+                "INSERT INTO instances"
+                " (uuid, name, description, instance_kind_id, created_at, updated_at)"
+                " VALUES (?, ?, ?, ?, ?, ?)",
+                (uuid, row["name"], row["description"], local_kind_id,
+                 row["created_at"], row["updated_at"]),
+            )
+            local_id = local.execute(
+                "SELECT id FROM instances WHERE uuid = ?", (uuid,)
+            ).fetchone()["id"]
+            _copy_instance_references(remote, local, row["id"], local_id)
+            result.instances_added += 1
+        elif row["updated_at"] > local_row["updated_at"]:
+            local_id = local_row["id"]
+            local.execute(
+                "UPDATE instances SET name = ?, description = ?, instance_kind_id = ?,"
+                " updated_at = ? WHERE uuid = ?",
+                (row["name"], row["description"], local_kind_id, row["updated_at"], uuid),
+            )
+            local.execute("DELETE FROM instance_references WHERE instance_id = ?", (local_id,))
+            _copy_instance_references(remote, local, row["id"], local_id)
+            result.instances_updated += 1
+
+
+def _copy_instance_references(
+    remote: sqlite3.Connection,
+    local: sqlite3.Connection,
+    remote_instance_id: int,
+    local_instance_id: int,
+) -> None:
+    for row in remote.execute(
+        'SELECT r.name FROM "references" r'
+        " JOIN instance_references ir ON ir.reference_id = r.id"
+        " WHERE ir.instance_id = ?",
+        (remote_instance_id,),
+    ):
+        name = row["name"]
+        local.execute('INSERT OR IGNORE INTO "references" (name) VALUES (?)', (name,))
+        ref_id = local.execute(
+            'SELECT id FROM "references" WHERE name = ?', (name,)
+        ).fetchone()["id"]
+        local.execute(
+            "INSERT OR IGNORE INTO instance_references (instance_id, reference_id) VALUES (?, ?)",
+            (local_instance_id, ref_id),
+        )
 
 
 def _copy_tags(
