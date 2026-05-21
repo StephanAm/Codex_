@@ -14,6 +14,15 @@ This application is called **Mnemo**. Always capitalised, never with a full stop
 
 Tagline: *"Remember everything."*
 
+## Sync architecture
+
+The full spec lives in [`designdocs/sync.md`](designdocs/sync.md). **Read it before working on any sync, merge, or storage-adapter feature.** Key points:
+
+- Each device owns its own SQLite DB; sync is peer-to-peer via a shared storage location.
+- The `StorageAdapter` protocol has two implementations: `GoogleDriveAdapter` and `LocalFolderAdapter`.
+- Merge is tombstone-first, last-write-wins on `updated_at`.
+- Instance Kinds and Instances sync fully — UUID + timestamp merge with tombstone tables, same pattern as notes.
+
 ## Kind and Instance domain model
 
 The full spec lives in [`designdocs/things-and-instances.md`](designdocs/things-and-instances.md). **Read it before working on any Kind/Instance feature.** Key points:
