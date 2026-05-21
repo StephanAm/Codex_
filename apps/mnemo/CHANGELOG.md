@@ -1,80 +1,53 @@
 # Changelog
 
-All notable changes to Mnemo are documented here. Versions follow [Semantic Versioning](https://semver.org/).
+## [1.2.4] — 2026-05-21
 
----
+- Add CHANGELOG.md
 
 ## [1.2.3] — 2026-05-21
 
-### Added
-- Kinds and Instances now sync across devices. Each record gets a stable UUID and timestamps; merge is tombstone-first, last-write-wins on `updated_at`. Name collisions between independently-created kinds are resolved with a UUID suffix.
-- `designdocs/sync.md` — full sync architecture reference doc.
-
----
+- Sync kinds and instances across devices
+- Add sync architecture doc and update CLAUDE.md
 
 ## [1.2.2] — 2026-05-21
 
-### Fixed
-- Pinned notes are now reloaded correctly after a sync pull.
-
----
+- Load pinned notes during sync state updates in App component
 
 ## [1.2.1] — 2026-05-16
 
-### Added
-- Pin/unpin notes directly from the note editor and note detail view.
-
----
+- Enhance note management features by adding pinning functionality to NoteEditor and NoteDetail components, and update sidebar layout in App component.
 
 ## [1.2.0] — 2026-05-14
 
-### Added
-- **Kinds and Instances** — define named categories (Kinds) and the specific people, teams, or things that belong to them (Instances). Accessible from a new KINDS section in the sidebar.
-- Instance detail view with Kind metadata label.
-- Create affordances for new kinds and instances from the sidebar.
-- Instances link to notes via `@reference` tokens through the `instance_references` join table.
-- Plural field on Kind, used for sidebar group headings (e.g. "People", "Teams").
-- Recall sidebar with drag-and-drop reordering and arrow-key navigation.
-- Pinned notes with drag-and-drop reordering in the recall sidebar.
-
-### Changed
-- Note entities renamed to references throughout (UI, API, DB).
-- Note detail actions refactored to icon buttons.
-
-### Fixed
-- Sidebar section heading now reads "KINDS" per spec.
-- Empty state copy uses "kinds" rather than "types".
-
----
+- Add KindDetail component and integrate with InstanceDetail and InstanceSidebar
+- Add instance detail view with Kind metadata label
+- Add create affordances for kinds and instances in the sidebar
+- Associate instances with @reference tokens via instance_references join table
+- Use Kind name in empty group copy rather than generic "instances"
+- Fix empty state copy to use "kinds" not "types"
+- Add plural field to InstanceKind and use it for sidebar group headings
+- Fix sidebar section heading to read "kinds" per spec
+- Add Kind/Instance domain model with sidebar, API, and DB schema
+- Refactor note entities to references across the application
+- Refactor note detail actions with icon buttons and improve accessibility
+- Enhance recall sidebar with drag-and-drop functionality and arrow key navigation
+- Implement pinned notes feature with drag-and-drop reordering in recall sidebar
+- Add recall sidebar component and enhance sidebar navigation shortcuts
 
 ## [1.1.1] — 2026-04-22
 
-### Added
-- Release script (`scripts/release.sh`) to automate build, version bump, and push.
-- Backend lifecycle config flags exposed to the GUI.
-
-### Fixed
-- NoteEditor now ensures note body ends with a newline; cursor positioned correctly on edit.
-
----
+- Add backend lifecycle config flags to GUI
+- Add release script to automate build, version bump, and push process
+- Refactor NoteEditor to ensure body ends with a newline; add cursor positioning on edit
 
 ## [1.1.0] — 2026-04-18
 
-### Added
-- `#TODO` tag parsing and normalisation.
-- Watermark and version display in the app interface.
-- Clear button on the tag/entity picker.
-
-### Changed
-- Time period handling and filter dropdown options refactored.
-
----
+- Refactor time period handling and update dropdown options for filtering notes
+- Implement TODO tag parsing and normalization; update related tests
+- Add clear button to TagEntityPicker and style adjustments for picker
+- Add watermark and version display to the app interface
+- Add watermark component to the editor background
 
 ## [1.0.0] — 2026-04-10
 
-### Changed
-- Removed sync-on-exit behaviour.
-
----
-
-*Earlier versions (0.x) were pre-release development iterations.*
+- Remove sync-on-exit behaviour
