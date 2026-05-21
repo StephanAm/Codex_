@@ -1244,5 +1244,51 @@ body::after {
   margin-top: 1px;
 }
 
-.rail-glyph--entities.rail-glyph--active { color: var(--accent-ice); }
-.rail-glyph--entities:hover { color: var(--accent-ice); text-shadow: 0 0 10px rgba(127, 223, 255, 0.45); }
+.rail-glyph--instances.rail-glyph--active { color: var(--accent-ice); }
+.rail-glyph--instances:hover { color: var(--accent-ice); text-shadow: 0 0 10px rgba(127, 223, 255, 0.45); }
+
+.instance-item--active { background: var(--bg); border-left: 2px solid var(--accent-ice); padding-left: 26px; }
+.instance-item--active .instance-item-name { color: var(--text); }
+
+/* ── instance detail ──────────────────────────────────────────────────────── */
+
+.instance-detail {
+  padding: 24px 28px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.instance-detail-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.instance-detail-kind {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--accent-ice);
+}
+
+.instance-detail-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.instance-detail-desc {
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.instance-detail-refs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}

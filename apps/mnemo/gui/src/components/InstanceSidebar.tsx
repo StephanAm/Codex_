@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { api, Instance, InstanceKind } from "../api";
 
 interface Props {
+  selectedId: number | null;
+  onSelect: (instance: Instance) => void;
   className?: string;
 }
 
-export function InstanceSidebar({ className = "" }: Props) {
+export function InstanceSidebar({ selectedId, onSelect, className = "" }: Props) {
   const [types, setTypes] = useState<InstanceKind[]>([]);
   const [instances, setInstances] = useState<Instance[]>([]);
   const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
@@ -108,7 +110,11 @@ export function InstanceSidebar({ className = "" }: Props) {
                     <li className="instance-list-empty">no {kindLabel.toLowerCase()}.</li>
                   ) : (
                     members.map(i => (
-                      <li key={i.id} className="instance-item">
+                      <li
+                        key={i.id}
+                        className={`instance-item${i.id === selectedId ? " instance-item--active" : ""}`}
+                        onClick={() => onSelect(i)}
+                      >
                         <span className="instance-item-name">{i.name}</span>
                         {i.description && (
                           <span className="instance-item-desc">{i.description}</span>

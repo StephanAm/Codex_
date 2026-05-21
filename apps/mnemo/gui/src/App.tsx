@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api, Note } from "./api";
+import { api, Instance, Note } from "./api";
 import { ConfigPanel } from "./components/ConfigPanel";
+import { InstanceDetail } from "./components/InstanceDetail";
 import { InstanceSidebar } from "./components/InstanceSidebar";
 import { NoteDetail } from "./components/NoteDetail";
 import { NoteEditor } from "./components/NoteEditor";
@@ -52,6 +53,7 @@ export default function App() {
   const [dateFrom, setDateFrom]               = useState("");
   const [dateTo, setDateTo]                   = useState("");
   const [pinnedNotes, setPinnedNotes]         = useState<Note[]>([]);
+  const [selectedInstance, setSelectedInstance] = useState<Instance | null>(null);
 
   // ── responsive layout ───────────────────────────────────────────────────────
   const SIDEBAR_BREAKPOINT = 640;
@@ -270,6 +272,9 @@ export default function App() {
   }
 
   const mainContent = () => {
+    if (activeSidebar === "instances" && selectedInstance) {
+      return <InstanceDetail instance={selectedInstance} />;
+    }
     if (mode === "config") return <ConfigPanel onClose={() => setMode("view")} />;
     if (mode === "add") return <NoteEditor onSave={handleSave} onCancel={() => setMode("view")} />;
     if (mode === "edit" && selected) {
@@ -376,6 +381,8 @@ export default function App() {
         )}
         {activeSidebar === "instances" && (
           <InstanceSidebar
+            selectedId={selectedInstance?.id ?? null}
+            onSelect={setSelectedInstance}
             className={narrow ? (sidebarOpen ? "note-list-panel--overlay" : "note-list-panel--hidden") : ""}
           />
         )}
