@@ -29,7 +29,7 @@ export function InstanceSidebar({ className = "" }: Props) {
     <div className={`instance-sidebar${className ? " " + className : ""}`}>
       <div className="instance-section-label">kinds</div>
       {types.length === 0 && (
-        <span className="instance-sidebar-empty">no types yet.</span>
+        <span className="instance-sidebar-empty">no kinds yet.</span>
       )}
       <div className="instance-group-list">
         {types.map(t => {
