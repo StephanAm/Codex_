@@ -52,7 +52,7 @@
     "/notes": {
       "get": {
         "summary": "List or search notes",
-        "description": "Return a list of notes, optionally filtered or searched.\n\n- **q** \u2014 full-text search query; when provided, `tag` and `reference` are ignored\n- **tag** \u2014 filter by tag (lowercase, e.g. `work`)\n- **reference** \u2014 filter by reference (lowercase, e.g. `alice`)\n\nReturns up to 500 notes ordered by creation date descending.",
+        "description": "Return a list of notes, optionally filtered or searched.\n\n- **q** \u2014 full-text search query; when provided, `tag` and `reference` are ignored\n- **tag** \u2014 filter by tag (lowercase, e.g. `work`)\n- **reference** \u2014 filter by referenced name (lowercase, e.g. `alice`)\n\nReturns up to 500 notes ordered by creation date descending.",
         "operationId": "get_notes_notes_get",
         "parameters": [
           {
@@ -395,6 +395,66 @@
         }
       }
     },
+    "/pins": {
+      "get": {
+        "summary": "Get pinned notes in order",
+        "description": "Return the ordered list of pinned notes as full note objects.",
+        "operationId": "get_pins_endpoint_pins_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Pins Endpoint Pins Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Set pinned note order",
+        "description": "Replace the ordered list of pinned note UUIDs and persist with a new timestamp.",
+        "operationId": "put_pins_endpoint_pins_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PinsPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Put Pins Endpoint Pins Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/session": {
       "get": {
         "summary": "Get session context",
@@ -528,6 +588,406 @@
         }
       }
     },
+    "/instance-kinds": {
+      "get": {
+        "summary": "List all instance kinds",
+        "description": "Return all instance kinds ordered by name.",
+        "operationId": "get_instance_kinds_instance_kinds_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "title": "Response Get Instance Kinds Instance Kinds Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create an instance kind",
+        "description": "Create a new instance kind.",
+        "operationId": "create_instance_kind_endpoint_instance_kinds_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstanceKindPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Create Instance Kind Endpoint Instance Kinds Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/instance-kinds/{instance_kind_id}": {
+      "get": {
+        "summary": "Get an instance kind",
+        "description": "Return a single instance kind by ID. Raises 404 if not found.",
+        "operationId": "get_instance_kind_endpoint_instance_kinds__instance_kind_id__get",
+        "parameters": [
+          {
+            "name": "instance_kind_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Instance Kind Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Instance Kind Endpoint Instance Kinds  Instance Kind Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update an instance kind",
+        "description": "Replace the name and description of an instance kind. Raises 404 if not found.",
+        "operationId": "update_instance_kind_endpoint_instance_kinds__instance_kind_id__put",
+        "parameters": [
+          {
+            "name": "instance_kind_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Instance Kind Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstanceKindPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Update Instance Kind Endpoint Instance Kinds  Instance Kind Id  Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete an instance kind",
+        "description": "Delete an instance kind. Raises 404 if not found.",
+        "operationId": "delete_instance_kind_endpoint_instance_kinds__instance_kind_id__delete",
+        "parameters": [
+          {
+            "name": "instance_kind_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Instance Kind Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/instances": {
+      "get": {
+        "summary": "List all instances",
+        "description": "Return all instances, optionally filtered by instance_kind_id, ordered by name.",
+        "operationId": "get_instances_instances_get",
+        "parameters": [
+          {
+            "name": "instance_kind_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Instance Kind Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "title": "Response Get Instances Instances Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create an instance",
+        "description": "Create a new instance belonging to the given instance kind.",
+        "operationId": "create_instance_endpoint_instances_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstancePayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Create Instance Endpoint Instances Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/instances/{instance_id}": {
+      "get": {
+        "summary": "Get an instance",
+        "description": "Return a single instance by ID. Raises 404 if not found.",
+        "operationId": "get_instance_endpoint_instances__instance_id__get",
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Instance Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Instance Endpoint Instances  Instance Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update an instance",
+        "description": "Replace the name, description, and kind of an instance. Raises 404 if not found.",
+        "operationId": "update_instance_endpoint_instances__instance_id__put",
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Instance Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstancePayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Update Instance Endpoint Instances  Instance Id  Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete an instance",
+        "description": "Delete an instance by ID. Raises 404 if not found.",
+        "operationId": "delete_instance_endpoint_instances__instance_id__delete",
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Instance Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/google": {
       "post": {
         "summary": "Authorise Google Drive",
@@ -631,6 +1091,60 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "InstanceKindPayload": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "plural": {
+            "type": "string",
+            "title": "Plural",
+            "default": ""
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "InstanceKindPayload"
+      },
+      "InstancePayload": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "instance_kind_id": {
+            "type": "integer",
+            "title": "Instance Kind Id"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "references": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "References",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "instance_kind_id"
+        ],
+        "title": "InstancePayload"
+      },
       "NoteBody": {
         "properties": {
           "body": {
@@ -724,10 +1238,10 @@
         "example": {
           "body": "Discussed caching strategy with @Alice \u2014 going with Redis. #Backend #Architecture ~{2026-05-18}",
           "created_at": "2026-05-18T09:30:00+00:00",
+          "id": 42,
           "references": [
             "alice"
           ],
-          "id": 42,
           "tags": [
             "backend",
             "architecture"
@@ -736,6 +1250,22 @@
           "updated_at": "2026-05-18T09:30:00+00:00",
           "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
         }
+      },
+      "PinsPayload": {
+        "properties": {
+          "uuids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Uuids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "uuids"
+        ],
+        "title": "PinsPayload"
       },
       "SessionPayload": {
         "properties": {
