@@ -198,13 +198,13 @@ export default function App() {
       } else {
         setSyncState("idle");
         setSyncMsg(res.message);
-        if (mode !== "push") await loadNotes(query);
+        if (mode !== "push") { await loadNotes(query); await loadPins(); }
       }
     } catch (err) {
       setSyncState("idle");
       setSyncMsg(String(err));
     }
-  }, [syncState, loadNotes, query]);
+  }, [syncState, loadNotes, loadPins, query]);
 
   const handleConnect = useCallback(async () => {
     setSyncState("connecting");
