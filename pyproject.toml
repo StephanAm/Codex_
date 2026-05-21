@@ -67,3 +67,7 @@ files = ["src"]
 [[tool.mypy.overrides]]
 module = ["google.*", "google_auth_oauthlib.*", "googleapiclient.*"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["note_taker.sync.google_drive"]
+disallow_untyped_calls = false

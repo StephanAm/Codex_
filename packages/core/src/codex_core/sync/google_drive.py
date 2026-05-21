@@ -51,7 +51,7 @@ class GoogleDriveAdapter:
             return self._service
         creds: Any = None
         if self._token_path.exists():
-            creds = Credentials.from_authorized_user_file(str(self._token_path), _SCOPES)  # type: ignore[no-untyped-call]
+            creds = Credentials.from_authorized_user_file(str(self._token_path), _SCOPES)
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
