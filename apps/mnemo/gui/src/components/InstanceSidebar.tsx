@@ -48,7 +48,7 @@ export function InstanceSidebar({ className = "" }: Props) {
               {!isCollapsed && (
                 <ul className="instance-list">
                   {members.length === 0 ? (
-                    <li className="instance-list-empty">no instances.</li>
+                    <li className="instance-list-empty">no {t.plural || t.name.toLowerCase()}.</li>
                   ) : (
                     members.map(i => (
                       <li key={i.id} className="instance-item">
