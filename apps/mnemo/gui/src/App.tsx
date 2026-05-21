@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api, Instance, Note } from "./api";
+import { api, Instance, InstanceKind, Note } from "./api";
 import { ConfigPanel } from "./components/ConfigPanel";
 import { InstanceDetail } from "./components/InstanceDetail";
 import { InstanceSidebar } from "./components/InstanceSidebar";
+import { KindDetail } from "./components/KindDetail";
 import { NoteDetail } from "./components/NoteDetail";
 import { NoteEditor } from "./components/NoteEditor";
 import { NoteList } from "./components/NoteList";
@@ -54,6 +55,8 @@ export default function App() {
   const [dateTo, setDateTo]                   = useState("");
   const [pinnedNotes, setPinnedNotes]         = useState<Note[]>([]);
   const [selectedInstance, setSelectedInstance] = useState<Instance | null>(null);
+  const [selectedKind, setSelectedKind] = useState<InstanceKind | null>(null);
+  const [kindsVersion, setKindsVersion] = useState(0);
 
   // ── responsive layout ───────────────────────────────────────────────────────
   const SIDEBAR_BREAKPOINT = 640;
@@ -271,9 +274,46 @@ export default function App() {
     if (narrow) setSidebarOpen(false);
   }
 
+  function handleSelectKind(kind: InstanceKind) {
+    setSelectedKind(kind);
+    setSelectedInstance(null);
+    if (narrow) setSidebarOpen(false);
+  }
+
+  function handleSelectInstance(instance: Instance) {
+    setSelectedInstance(instance);
+    if (narrow) setSidebarOpen(false);
+  }
+
+  function handleKindUpdated(kind: InstanceKind) {
+    setSelectedKind(kind);
+    setKindsVersion(v => v + 1);
+  }
+
+  function handleKindDeleted(id: number) {
+    if (selectedKind?.id === id) setSelectedKind(null);
+    setKindsVersion(v => v + 1);
+  }
+
   const mainContent = () => {
     if (activeSidebar === "instances" && selectedInstance) {
-      return <InstanceDetail instance={selectedInstance} />;
+      return (
+        <InstanceDetail
+          instance={selectedInstance}
+          onUpdated={instance => { setSelectedInstance(instance); setKindsVersion(v => v + 1); }}
+          onDeleted={() => { setSelectedInstance(null); setKindsVersion(v => v + 1); }}
+        />
+      );
+    }
+    if (activeSidebar === "instances" && selectedKind) {
+      return (
+        <KindDetail
+          kind={selectedKind}
+          onUpdated={handleKindUpdated}
+          onDeleted={handleKindDeleted}
+          onSelectInstance={handleSelectInstance}
+        />
+      );
     }
     if (mode === "config") return <ConfigPanel onClose={() => setMode("view")} />;
     if (mode === "add") return <NoteEditor onSave={handleSave} onCancel={() => setMode("view")} />;
@@ -382,7 +422,10 @@ export default function App() {
         {activeSidebar === "instances" && (
           <InstanceSidebar
             selectedId={selectedInstance?.id ?? null}
-            onSelect={setSelectedInstance}
+            selectedKindId={selectedKind?.id ?? null}
+            onSelect={handleSelectInstance}
+            onSelectKind={handleSelectKind}
+            reloadKey={kindsVersion}
             className={narrow ? (sidebarOpen ? "note-list-panel--overlay" : "note-list-panel--hidden") : ""}
           />
         )}

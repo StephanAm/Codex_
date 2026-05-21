@@ -1174,9 +1174,8 @@ body::after {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
+  padding: 6px 14px 6px 8px;
   background: transparent;
-  border: none;
   border-bottom: 1px solid var(--border);
   color: var(--accent-ice);
   font-family: inherit;
@@ -1190,11 +1189,25 @@ body::after {
 
 .instance-group-header:hover { background: var(--bg-hover); }
 
-.instance-group-toggle {
+.instance-group-header--active {
+  background: var(--bg);
+  border-left: 2px solid var(--accent-ice);
+  padding-left: 6px;
+}
+
+.instance-group-toggle-btn {
+  background: transparent;
+  border: none;
+  font-family: inherit;
   font-size: 7px;
   color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 4px;
   flex-shrink: 0;
+  line-height: 1;
 }
+
+.instance-group-toggle-btn:hover { color: var(--accent-ice); }
 
 .instance-group-name { flex: 1; }
 
@@ -1260,11 +1273,22 @@ body::after {
 
 .instance-detail-header {
   display: flex;
-  align-items: baseline;
-  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 16px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border);
+}
+
+.instance-detail-header-left {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.instance-detail-actions {
+  display: flex;
+  gap: 6px;
 }
 
 .instance-detail-kind {
@@ -1291,4 +1315,218 @@ body::after {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
+}
+
+/* ── instance edit form ───────────────────────────────────────────────────── */
+
+.instance-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.instance-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.instance-edit-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+}
+
+.instance-edit-input {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  background: var(--bg-surface);
+  color: var(--text);
+}
+
+.instance-edit-input:focus { border-color: var(--accent); }
+
+.instance-edit-textarea {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  background: var(--bg-surface);
+  color: var(--text);
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.6;
+}
+
+.instance-edit-textarea:focus { border-color: var(--accent); }
+
+.instance-edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ── kind detail ──────────────────────────────────────────────────────────── */
+
+.kind-detail {
+  padding: 24px 28px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.kind-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.kind-detail-header-left {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.kind-detail-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--accent-ice);
+}
+
+.kind-detail-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.kind-detail-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.kind-detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kind-detail-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.kind-detail-row-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  width: 56px;
+  flex-shrink: 0;
+}
+
+.kind-detail-row-value {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.kind-detail-muted {
+  color: var(--text-muted);
+}
+
+.kind-detail-description {
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--text-muted);
+}
+
+.kind-detail-count {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+.kind-detail-instance-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 4px;
+}
+
+.kind-detail-instance-item {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 5px 10px;
+  border-left: 2px solid transparent;
+  cursor: pointer;
+}
+
+.kind-detail-instance-item:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+  border-left-color: var(--accent-ice);
+}
+
+/* kind edit form */
+
+.kind-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.kind-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kind-edit-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+}
+
+.kind-edit-input {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  background: var(--bg-surface);
+  color: var(--text);
+}
+
+.kind-edit-input:focus { border-color: var(--accent); }
+
+.kind-edit-textarea {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  background: var(--bg-surface);
+  color: var(--text);
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.6;
+}
+
+.kind-edit-textarea:focus { border-color: var(--accent); }
+
+.kind-edit-actions {
+  display: flex;
+  gap: 8px;
 }

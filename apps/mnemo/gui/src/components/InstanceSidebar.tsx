@@ -3,11 +3,14 @@ import { api, Instance, InstanceKind } from "../api";
 
 interface Props {
   selectedId: number | null;
+  selectedKindId: number | null;
   onSelect: (instance: Instance) => void;
+  onSelectKind: (kind: InstanceKind) => void;
+  reloadKey?: number;
   className?: string;
 }
 
-export function InstanceSidebar({ selectedId, onSelect, className = "" }: Props) {
+export function InstanceSidebar({ selectedId, selectedKindId, onSelect, onSelectKind, reloadKey, className = "" }: Props) {
   const [types, setTypes] = useState<InstanceKind[]>([]);
   const [instances, setInstances] = useState<Instance[]>([]);
   const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
@@ -26,7 +29,7 @@ export function InstanceSidebar({ selectedId, onSelect, className = "" }: Props)
     setInstances(i);
   }
 
-  useEffect(() => { reload(); }, []);
+  useEffect(() => { reload(); }, [reloadKey]);
 
   useEffect(() => { if (addingKind) kindInputRef.current?.focus(); }, [addingKind]);
   useEffect(() => { if (addingInstanceFor !== null) instanceInputRef.current?.focus(); }, [addingInstanceFor]);
@@ -81,6 +84,7 @@ export function InstanceSidebar({ selectedId, onSelect, className = "" }: Props)
               if (e.key === "Enter") submitKind();
               if (e.key === "Escape") { setAddingKind(false); setNewKindName(""); }
             }}
+            onBlur={() => { setAddingKind(false); setNewKindName(""); }}
           />
         </div>
       )}
@@ -96,14 +100,20 @@ export function InstanceSidebar({ selectedId, onSelect, className = "" }: Props)
           const kindLabel = t.plural || t.name;
           return (
             <div key={t.id} className="instance-group">
-              <button
-                className="instance-group-header"
-                onClick={() => toggleGroup(t.id)}
+              <div
+                className={`instance-group-header${selectedKindId === t.id ? " instance-group-header--active" : ""}`}
+                onClick={() => onSelectKind(t)}
               >
-                <span className="instance-group-toggle">{isCollapsed ? "▶" : "▼"}</span>
+                <button
+                  className="instance-group-toggle-btn"
+                  onClick={e => { e.stopPropagation(); toggleGroup(t.id); }}
+                  title={isCollapsed ? "expand" : "collapse"}
+                >
+                  {isCollapsed ? "▶" : "▼"}
+                </button>
                 <span className="instance-group-name">{kindLabel}</span>
                 <span className="instance-group-count">{members.length}</span>
-              </button>
+              </div>
               {!isCollapsed && (
                 <ul className="instance-list">
                   {members.length === 0 ? (
@@ -134,6 +144,7 @@ export function InstanceSidebar({ selectedId, onSelect, className = "" }: Props)
                           if (e.key === "Enter") submitInstance(t.id);
                           if (e.key === "Escape") { setAddingInstanceFor(null); setNewInstanceName(""); }
                         }}
+                        onBlur={() => { setAddingInstanceFor(null); setNewInstanceName(""); }}
                       />
                     </li>
                   ) : (
