@@ -26,6 +26,11 @@
           {
             "type": "command",
             "command": "python3 .claude/commit_on_stop.py"
+          },
+          {
+            "type": "command",
+            "command": "uv run ruff check 2>&1 || true",
+            "statusMessage": "Running ruff check..."
           }
         ]
       }

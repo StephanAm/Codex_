@@ -10,7 +10,6 @@ from enum import Enum, auto
 
 from .models import Note
 from .session import clear_session_context, get_session_context, set_session_context
-from .sync.adapter import StorageAdapter
 from .store import (
     add_note,
     delete_note,
@@ -18,14 +17,15 @@ from .store import (
     get_sync_adapter,
     get_sync_folder,
     get_sync_local_path,
-    set_sync_adapter,
-    set_sync_local_path,
     list_notes,
     search_notes,
     set_default_tags,
+    set_sync_adapter,
     set_sync_folder,
+    set_sync_local_path,
     update_note,
 )
+from .sync.adapter import StorageAdapter
 
 # ── colour pair indices ───────────────────────────────────────────────────────
 _C_HEADER = 1  # white on blue
@@ -518,7 +518,10 @@ class _App:
 
     def _draw_status(self, y: int, w: int) -> None:
         bars: dict[_Mode, str] = {
-            _Mode.BROWSE:      "  up/down navigate   Enter/e edit   a add   d delete   / search   c config   s session   S sync   q quit",
+            _Mode.BROWSE: (
+                "  up/down navigate   Enter/e edit   a add   d delete"
+                "   / search   c config   s session   S sync   q quit"
+            ),
             _Mode.SYNC_RESULT: "  Press any key to continue",
             _Mode.CONFIRM_DEL: "  Delete this note?   y yes   n / Esc no",
             _Mode.SEARCH:      f"  Search: {self.query}▌   Enter keep   Esc clear",
@@ -639,16 +642,26 @@ class _App:
         elif key == 27:  # Esc — cancel
             self._exit_editor()
 
-        elif key == curses.KEY_UP:       self.ed.up()
-        elif key == curses.KEY_DOWN:     self.ed.down()
-        elif key == curses.KEY_LEFT:     self.ed.left()
-        elif key == curses.KEY_RIGHT:    self.ed.right()
-        elif key == curses.KEY_HOME:     self.ed.home()
-        elif key == curses.KEY_END:      self.ed.end()
-        elif key in (curses.KEY_BACKSPACE, 127, 8): self.ed.backspace()
-        elif key == curses.KEY_DC:       self.ed.delete()
-        elif key in (10, 13):            self.ed.newline()
-        elif 32 <= key <= 126:           self.ed.insert(chr(key))
+        elif key == curses.KEY_UP:
+            self.ed.up()
+        elif key == curses.KEY_DOWN:
+            self.ed.down()
+        elif key == curses.KEY_LEFT:
+            self.ed.left()
+        elif key == curses.KEY_RIGHT:
+            self.ed.right()
+        elif key == curses.KEY_HOME:
+            self.ed.home()
+        elif key == curses.KEY_END:
+            self.ed.end()
+        elif key in (curses.KEY_BACKSPACE, 127, 8):
+            self.ed.backspace()
+        elif key == curses.KEY_DC:
+            self.ed.delete()
+        elif key in (10, 13):
+            self.ed.newline()
+        elif 32 <= key <= 126:
+            self.ed.insert(chr(key))
 
         return True
 
@@ -674,6 +687,7 @@ class _App:
 
     def _do_sync(self) -> str:
         from pathlib import Path
+
         from .db import connect, get_db_path
         from .sync.device import get_device_id
         from .sync.merge import merge_remote

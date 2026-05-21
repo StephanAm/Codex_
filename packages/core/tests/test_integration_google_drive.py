@@ -11,6 +11,7 @@ Prerequisites:
   - The google-drive extra installed: uv pip install 'note_taker[google-drive]'
 """
 
+from collections.abc import Generator
 from pathlib import Path
 
 import pytest
@@ -37,7 +38,6 @@ def adapter() -> GoogleDriveAdapter:
 
 @pytest.fixture(autouse=True)
 def cleanup_test_device(adapter: GoogleDriveAdapter) -> "Generator[None, None, None]":
-    from typing import Generator
     yield
     try:
         svc = adapter._get_service()

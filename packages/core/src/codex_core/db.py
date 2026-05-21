@@ -1,6 +1,6 @@
 import os
 import sqlite3
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from importlib.metadata import version as _pkg_version
 from pathlib import Path
 from uuid import uuid4
@@ -80,7 +80,7 @@ def _migrate(conn: sqlite3.Connection) -> None:
     if not conn.execute("SELECT 1 FROM db_meta").fetchone():
         conn.execute(
             "INSERT INTO db_meta (id, schema_version, created_at) VALUES (1, ?, ?)",
-            (_APP_VERSION, datetime.now(timezone.utc).isoformat()),
+            (_APP_VERSION, datetime.now(UTC).isoformat()),
         )
 
     # Add uuid and updated_at to notes if this is an existing DB

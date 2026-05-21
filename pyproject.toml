@@ -54,7 +54,7 @@ markers = ["integration: requires external services (deselected by default)"]
 source = ["src"]
 
 [tool.ruff]
-line-length = 88
+line-length = 120
 src = ["src"]
 
 [tool.ruff.lint]

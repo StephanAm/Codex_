@@ -49,7 +49,7 @@ def test_merge_skips_existing_note_with_older_timestamp(
     local_db: Path, remote_db: Path
 ) -> None:
     # Add to remote first, then copy to local (same uuid, same timestamp)
-    remote_note = add_note("original body", db_path=remote_db)
+    add_note("original body", db_path=remote_db)
     shutil.copy(remote_db, local_db)
 
     local_conn = connect(local_db)
@@ -62,7 +62,7 @@ def test_merge_updates_note_when_remote_is_newer(
     local_db: Path, remote_db: Path
 ) -> None:
     import time
-    note = add_note("original", db_path=local_db)
+    add_note("original", db_path=local_db)
     # Give remote a newer timestamp by adding then updating
     add_note("original", db_path=remote_db)
     time.sleep(0.01)
@@ -280,7 +280,7 @@ def test_merge_kinds_and_instances_idempotent(local_db: Path, remote_db: Path) -
 
 def test_merge_instance_then_kind_tombstones(local_db: Path, remote_db: Path) -> None:
     k = create_type("Temp", db_path=local_db)
-    inst = create_instance("X", k.id, db_path=local_db)
+    create_instance("X", k.id, db_path=local_db)
     shutil.copy(local_db, remote_db)
     # Delete instance first, then kind on remote
     remote_inst_id = connect(remote_db).execute("SELECT id FROM instances").fetchone()["id"]

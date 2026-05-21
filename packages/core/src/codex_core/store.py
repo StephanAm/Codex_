@@ -1,11 +1,11 @@
 import sqlite3
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
 from .dates import normalize_dates
 from .db import connect
-from .models import Instance, InstanceKind, Reference, Note
+from .models import Instance, InstanceKind, Note, Reference
 from .parser import normalise, parse
 
 
@@ -78,7 +78,7 @@ def add_note(
     parsed = parse(body)
     tags = list(dict.fromkeys(parsed.tags + [t.lower() for t in (extra_tags or [])]))
     references = list(dict.fromkeys(parsed.references + [r.lower() for r in (extra_references or [])]))
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
 
     cur = conn.execute(
         "INSERT INTO notes (uuid, body, created_at, updated_at, time_stamp) VALUES (?, ?, ?, ?, ?)",
@@ -151,7 +151,7 @@ def update_note(
 ) -> Note | None:
     conn = connect(db_path)
     body = normalise(normalize_dates(body).text)
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     cur = conn.execute(
         "UPDATE notes SET body = ?, updated_at = ? WHERE id = ?", (body, now, note_id)
     )
@@ -175,7 +175,7 @@ def delete_note(note_id: int, db_path: Path | None = None) -> bool:
     row = conn.execute("SELECT uuid FROM notes WHERE id = ?", (note_id,)).fetchone()
     if row is None:
         return False
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     conn.execute("DELETE FROM notes WHERE id = ?", (note_id,))
     conn.execute(
         "INSERT OR IGNORE INTO deleted_notes (uuid, deleted_at) VALUES (?, ?)",
@@ -253,7 +253,7 @@ def create_type(
     name: str, plural: str = "", description: str = "", db_path: Path | None = None
 ) -> InstanceKind:
     conn = connect(db_path)
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     cur = conn.execute(
         "INSERT INTO instance_kinds (name, plural, description, uuid, created_at, updated_at)"
         " VALUES (?, ?, ?, ?, ?, ?)",
@@ -286,7 +286,7 @@ def update_type(
     db_path: Path | None = None,
 ) -> InstanceKind | None:
     conn = connect(db_path)
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     cur = conn.execute(
         "UPDATE instance_kinds SET name = ?, plural = ?, description = ?, updated_at = ?"
         " WHERE id = ?",
@@ -307,7 +307,7 @@ def delete_type(instance_kind_id: int, db_path: Path | None = None) -> bool:
     if row is None:
         return False
     kind_uuid = row["uuid"]
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     cur = conn.execute("DELETE FROM instance_kinds WHERE id = ?", (instance_kind_id,))
     if cur.rowcount and kind_uuid:
         conn.execute(
@@ -326,7 +326,7 @@ def create_instance(
     db_path: Path | None = None,
 ) -> Instance:
     conn = connect(db_path)
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     cur = conn.execute(
         "INSERT INTO instances (name, description, instance_kind_id, uuid, created_at, updated_at)"
         " VALUES (?, ?, ?, ?, ?, ?)",
@@ -371,7 +371,7 @@ def update_instance(
     db_path: Path | None = None,
 ) -> Instance | None:
     conn = connect(db_path)
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     cur = conn.execute(
         "UPDATE instances SET name = ?, description = ?, instance_kind_id = ?, updated_at = ?"
         " WHERE id = ?",
@@ -394,7 +394,7 @@ def delete_instance(instance_id: int, db_path: Path | None = None) -> bool:
     if row is None:
         return False
     inst_uuid = row["uuid"]
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     cur = conn.execute("DELETE FROM instances WHERE id = ?", (instance_id,))
     if cur.rowcount and inst_uuid:
         conn.execute(
@@ -519,9 +519,9 @@ def get_pins_updated_at(db_path: Path | None = None) -> str:
 
 
 def set_pins(uuids: list[str], db_path: Path | None = None) -> None:
-    from datetime import datetime, timezone
+    from datetime import datetime
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     conn = connect(db_path)
     conn.execute(
         "INSERT INTO config (key, value) VALUES ('pins', ?)"

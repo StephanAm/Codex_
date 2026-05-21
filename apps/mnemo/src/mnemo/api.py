@@ -20,36 +20,37 @@ try:
     _VERSION = _pkg_version("note-taker")
 except Exception:
     _VERSION = "unknown"
+import truststore
 from pydantic import BaseModel, Field
 
 from .models import Note
-import truststore
+
 truststore.inject_into_ssl()
 
-from .logger import get_logger
-from .session import clear_session_context, get_session_context, set_session_context
-from .store import (
+from .logger import get_logger  # noqa: E402
+from .session import clear_session_context, get_session_context, set_session_context  # noqa: E402
+from .store import (  # noqa: E402
     add_note,
     create_instance,
     create_type,
     delete_instance,
-    delete_type,
     delete_note,
+    delete_type,
     get_autosync_debounce_ms,
-    get_instance,
-    get_type,
-    get_note,
     get_default_tags,
+    get_instance,
+    get_note,
     get_pins,
     get_pins_updated_at,
     get_sync_adapter,
     get_sync_folder,
     get_sync_local_path,
+    get_type,
     list_instances,
-    list_types,
-    list_references,
     list_notes,
+    list_references,
     list_tags,
+    list_types,
     search_notes,
     set_autosync_debounce_ms,
     set_default_tags,
@@ -58,8 +59,8 @@ from .store import (
     set_sync_folder,
     set_sync_local_path,
     update_instance,
-    update_type,
     update_note,
+    update_type,
 )
 
 PORT = 8765
@@ -126,18 +127,25 @@ class NoteResponse(BaseModel):
     id: int = Field(..., description="Auto-incrementing integer primary key")
     uuid: str = Field(..., description="Stable UUID used for sync and conflict resolution")
     body: str = Field(..., description="Full plain-text note body, including any inline tags and references")
-    tags: list[str] = Field(..., description="Tags parsed from the body (`#Tag`) plus any injected at creation, stored lowercase")
-    references: list[str] = Field(..., description="References parsed from the body (`@Name`) plus any injected at creation, stored lowercase")
+    tags: list[str] = Field(
+        ..., description="Tags parsed from the body (`#Tag`) plus any injected at creation, stored lowercase"
+    )
+    references: list[str] = Field(
+        ..., description="References parsed from the body (`@Name`) plus any injected at creation, stored lowercase"
+    )
     created_at: str = Field(..., description="ISO 8601 UTC timestamp of when the note was created")
     updated_at: str = Field(..., description="ISO 8601 UTC timestamp of the most recent edit")
-    time_stamp: str = Field(..., description="ISO 8601 timestamp of the `~{date}` expression in the body, or equal to `created_at` if none was specified")
+    time_stamp: str = Field(
+        ...,
+        description="ISO 8601 timestamp of the `~{date}` expression in the body, or equal to `created_at` if absent",
+    )
 
     model_config = {
         "json_schema_extra": {
             "example": {
                 "id": 42,
                 "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-                "body": "Discussed caching strategy with @Alice — going with Redis. #Backend #Architecture ~{2026-05-18}",
+                "body": "Discussed caching strategy with @Alice. #Backend #Architecture ~{2026-05-18}",
                 "tags": ["backend", "architecture"],
                 "references": ["alice"],
                 "created_at": "2026-05-18T09:30:00+00:00",
@@ -413,9 +421,9 @@ def _build_adapter() -> Any:
 
 
 def _do_push() -> tuple[str, bool]:
+    from .db import get_db_path
     from .sync.adapter import AuthRequired
     from .sync.device import get_device_id
-    from .db import get_db_path
     try:
         adapter = _build_adapter()
         adapter.upload(get_device_id(), get_db_path())

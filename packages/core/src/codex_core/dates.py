@@ -52,7 +52,10 @@ _AMPM_PAT  = r"\d{1,2}(?::\d{2})?(?:am|pm)"
 _COB       = r"(?:cob|c\.o\.b)"
 _EOW_EOM   = r"(?:eow|e\.o\.w|eom|e\.o\.m)"
 _TIME_PART = rf"(?:{_AMPM_PAT}|{_TIME}|{_COB}|noon|midnight)"
-_MONTH_NAME    = r"(?:january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)"
+_MONTH_NAME    = (
+    r"(?:january|jan|february|feb|march|mar|april|apr|may|june|jun"
+    r"|july|jul|august|aug|september|sep|october|oct|november|nov|december|dec)"
+)
 _DAY_NUM       = r"\d{1,2}(?:st|nd|rd|th)?"
 _MONTH_DAY     = rf"(?:{_MONTH_NAME}\s+{_DAY_NUM}|{_DAY_NUM}[-\s]{_MONTH_NAME})"
 _EXPLICIT_YMD  = r"\d{4}[-/]\d{1,2}[-/]\d{1,2}"
@@ -196,17 +199,22 @@ def _resolve_date(expr: str, today: date) -> date | None:
 
 def _as_time(token: str) -> str | None:
     t = token.lower()
-    if t == "cob":      return _COB_TIME
-    if t == "noon":     return "12:00"
-    if t == "midnight": return "00:00"
+    if t == "cob":
+        return _COB_TIME
+    if t == "noon":
+        return "12:00"
+    if t == "midnight":
+        return "00:00"
     m = re.fullmatch(r"(\d{1,2}):(\d{2})", t)
     if m:
         return f"{int(m.group(1)):02d}:{m.group(2)}"
     m = _AMPM_RE.match(token)
     if m:
         h, mins, mer = int(m.group(1)), m.group(2) or "00", m.group(3).lower()
-        if mer == "pm" and h != 12: h += 12
-        elif mer == "am" and h == 12: h = 0
+        if mer == "pm" and h != 12:
+            h += 12
+        elif mer == "am" and h == 12:
+            h = 0
         return f"{h:02d}:{mins}"
     return None
 

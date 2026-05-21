@@ -1,9 +1,12 @@
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
-from note_taker.session import clear_session_context, get_session_context, set_session_context
+from note_taker.session import (
+    clear_session_context,
+    get_session_context,
+    set_session_context,
+)
 
 
 @pytest.fixture(autouse=True)
