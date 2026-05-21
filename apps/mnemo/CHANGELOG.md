@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.6] — 2026-05-21
+
+- Add mypy and pytest commands to stop hooks for enhanced checks
+- Update mypy configuration and fix type ignore for Google Drive credentials
+- Refactor code for consistency and readability
+- Refactor code and update configurations for improved functionality and readability
+- Add Windows build workflow for backend and frontend
+
 ## [1.2.5] — 2026-05-21
 
 - Enhance instance management and YAML import functionality
