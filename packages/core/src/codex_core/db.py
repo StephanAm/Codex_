@@ -161,6 +161,11 @@ def _migrate(conn: sqlite3.Connection) -> None:
             description     TEXT NOT NULL DEFAULT '',
             instance_kind_id INTEGER NOT NULL REFERENCES instance_kinds(id) ON DELETE RESTRICT
         );
+        CREATE TABLE IF NOT EXISTS instance_references (
+            instance_id  INTEGER NOT NULL REFERENCES instances(id)    ON DELETE CASCADE,
+            reference_id INTEGER NOT NULL REFERENCES "references"(id) ON DELETE CASCADE,
+            PRIMARY KEY (instance_id, reference_id)
+        );
     """)
 
     # Always stamp the current app version so the DB reflects the last migration

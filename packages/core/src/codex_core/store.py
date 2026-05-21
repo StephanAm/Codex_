@@ -205,12 +205,37 @@ def _load_instance(conn: sqlite3.Connection, row: sqlite3.Row) -> Instance:
     kind_row = conn.execute(
         "SELECT * FROM instance_kinds WHERE id = ?", (row["instance_kind_id"],)
     ).fetchone()
+    refs = [
+        r["name"]
+        for r in conn.execute(
+            'SELECT ref.name FROM "references" ref'
+            " JOIN instance_references ir ON ir.reference_id = ref.id"
+            " WHERE ir.instance_id = ?",
+            (row["id"],),
+        )
+    ]
     return Instance(
         id=row["id"],
         name=row["name"],
         description=row["description"],
         type=_load_instance_kind(kind_row),
+        references=refs,
     )
+
+
+def _attach_instance_references(
+    conn: sqlite3.Connection, instance_id: int, references: list[str]
+) -> None:
+    conn.execute("DELETE FROM instance_references WHERE instance_id = ?", (instance_id,))
+    for ref in references:
+        conn.execute('INSERT OR IGNORE INTO "references" (name) VALUES (?)', (ref,))
+        ref_id = conn.execute(
+            'SELECT id FROM "references" WHERE name = ?', (ref,)
+        ).fetchone()["id"]
+        conn.execute(
+            "INSERT OR IGNORE INTO instance_references (instance_id, reference_id) VALUES (?, ?)",
+            (instance_id, ref_id),
+        )
 
 
 def create_type(
@@ -270,6 +295,7 @@ def create_instance(
     name: str,
     instance_kind_id: int,
     description: str = "",
+    references: list[str] | None = None,
     db_path: Path | None = None,
 ) -> Instance:
     conn = connect(db_path)
@@ -277,6 +303,7 @@ def create_instance(
         "INSERT INTO instances (name, description, instance_kind_id) VALUES (?, ?, ?)",
         (name.strip(), description.strip(), instance_kind_id),
     )
+    _attach_instance_references(conn, cur.lastrowid, references or [])  # type: ignore[arg-type]
     conn.commit()
     row = conn.execute(
         "SELECT * FROM instances WHERE id = ?", (cur.lastrowid,)
@@ -309,6 +336,7 @@ def update_instance(
     name: str,
     description: str,
     instance_kind_id: int,
+    references: list[str] | None = None,
     db_path: Path | None = None,
 ) -> Instance | None:
     conn = connect(db_path)
@@ -316,9 +344,11 @@ def update_instance(
         "UPDATE instances SET name = ?, description = ?, instance_kind_id = ? WHERE id = ?",
         (name.strip(), description.strip(), instance_kind_id, instance_id),
     )
-    conn.commit()
     if cur.rowcount == 0:
+        conn.commit()
         return None
+    _attach_instance_references(conn, instance_id, references or [])
+    conn.commit()
     row = conn.execute("SELECT * FROM instances WHERE id = ?", (instance_id,)).fetchone()
     return _load_instance(conn, row)
 

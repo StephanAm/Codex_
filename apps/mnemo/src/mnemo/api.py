@@ -546,6 +546,7 @@ class InstancePayload(BaseModel):
     name: str
     instance_kind_id: int
     description: str = ""
+    references: list[str] = []
 
 
 @app.get("/instances", summary="List all instances")
@@ -557,7 +558,7 @@ def get_instances(instance_kind_id: int | None = None) -> list[dict[str, Any]]:
 @app.post("/instances", status_code=201, summary="Create an instance")
 def create_instance_endpoint(payload: InstancePayload) -> dict[str, Any]:
     """Create a new instance belonging to the given instance kind."""
-    return asdict(create_instance(payload.name, payload.instance_kind_id, payload.description))
+    return asdict(create_instance(payload.name, payload.instance_kind_id, payload.description, payload.references))
 
 
 @app.get("/instances/{instance_id}", summary="Get an instance")
@@ -572,7 +573,7 @@ def get_instance_endpoint(instance_id: int) -> dict[str, Any]:
 @app.put("/instances/{instance_id}", summary="Update an instance")
 def update_instance_endpoint(instance_id: int, payload: InstancePayload) -> dict[str, Any]:
     """Replace the name, description, and kind of an instance. Raises 404 if not found."""
-    i = update_instance(instance_id, payload.name, payload.description, payload.instance_kind_id)
+    i = update_instance(instance_id, payload.name, payload.description, payload.instance_kind_id, payload.references)
     if i is None:
         raise HTTPException(status_code=404, detail=f"Instance #{instance_id} not found")
     return asdict(i)

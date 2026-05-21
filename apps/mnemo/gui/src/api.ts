@@ -47,6 +47,7 @@ export interface Instance {
   name: string;
   description: string;
   type: InstanceKind;
+  references: string[];
 }
 
 export interface Config {
@@ -125,10 +126,10 @@ export const api = {
       const qs = instanceKindId != null ? `?instance_kind_id=${instanceKindId}` : "";
       return get<Instance[]>(`/instances${qs}`);
     },
-    create: (name: string, instanceKindId: number, description = "") =>
-      post<Instance>("/instances", { name, instance_kind_id: instanceKindId, description }),
-    update: (id: number, name: string, instanceKindId: number, description: string) =>
-      put<Instance>(`/instances/${id}`, { name, instance_kind_id: instanceKindId, description }),
+    create: (name: string, instanceKindId: number, description = "", references: string[] = []) =>
+      post<Instance>("/instances", { name, instance_kind_id: instanceKindId, description, references }),
+    update: (id: number, name: string, instanceKindId: number, description: string, references: string[] = []) =>
+      put<Instance>(`/instances/${id}`, { name, instance_kind_id: instanceKindId, description, references }),
     delete: (id: number) => del(`/instances/${id}`),
   },
 };

@@ -34,3 +34,4 @@ class Instance:
     name: str
     description: str
     type: InstanceKind
+    references: list[str] = field(default_factory=list)
