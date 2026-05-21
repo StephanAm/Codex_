@@ -33,7 +33,7 @@ Notes support three types of inline annotations, parsed automatically from the b
 | Syntax | Name | Purpose |
 |---|---|---|
 | `#TagName` | Tag | Categorise a note by topic, project, or type |
-| `@PersonName` | Reference | Link a note to a person, team, or named entity |
+| `@PersonName` | Reference | Link a note to a person, team, or named reference |
 | `~{YYYY-MM-DD}` | Date | Associate a note with a specific date or time |
 
 Tags and references use CamelCase. They are stored lowercase in the database. Dates use the `~{...}` syntax and are rendered as human-readable labels in the GUI.

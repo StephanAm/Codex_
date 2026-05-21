@@ -35,6 +35,19 @@ export interface Reference {
   name: string;
 }
 
+export interface InstanceKind {
+  id: number;
+  name: string;
+  description: string;
+}
+
+export interface Instance {
+  id: number;
+  name: string;
+  description: string;
+  type: InstanceKind;
+}
+
 export interface Config {
   default_tags: string[];
   sync_folder: string;
@@ -97,5 +110,24 @@ export const api = {
   },
   auth: {
     googleConnect: () => post<{ message: string }>("/auth/google"),
+  },
+  instanceKinds: {
+    list: () => get<InstanceKind[]>("/instance-kinds"),
+    create: (name: string, description = "") =>
+      post<InstanceKind>("/instance-kinds", { name, description }),
+    update: (id: number, name: string, description: string) =>
+      put<InstanceKind>(`/instance-kinds/${id}`, { name, description }),
+    delete: (id: number) => del(`/instance-kinds/${id}`),
+  },
+  instances: {
+    list: (instanceKindId?: number) => {
+      const qs = instanceKindId != null ? `?instance_kind_id=${instanceKindId}` : "";
+      return get<Instance[]>(`/instances${qs}`);
+    },
+    create: (name: string, instanceKindId: number, description = "") =>
+      post<Instance>("/instances", { name, instance_kind_id: instanceKindId, description }),
+    update: (id: number, name: string, instanceKindId: number, description: string) =>
+      put<Instance>(`/instances/${id}`, { name, instance_kind_id: instanceKindId, description }),
+    delete: (id: number) => del(`/instances/${id}`),
   },
 };

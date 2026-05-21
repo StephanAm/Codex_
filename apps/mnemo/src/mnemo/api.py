@@ -30,8 +30,14 @@ from .logger import get_logger
 from .session import clear_session_context, get_session_context, set_session_context
 from .store import (
     add_note,
+    create_instance,
+    create_type,
+    delete_instance,
+    delete_type,
     delete_note,
     get_autosync_debounce_ms,
+    get_instance,
+    get_type,
     get_note,
     get_default_tags,
     get_pins,
@@ -39,6 +45,8 @@ from .store import (
     get_sync_adapter,
     get_sync_folder,
     get_sync_local_path,
+    list_instances,
+    list_types,
     list_references,
     list_notes,
     list_tags,
@@ -49,6 +57,8 @@ from .store import (
     set_sync_adapter,
     set_sync_folder,
     set_sync_local_path,
+    update_instance,
+    update_type,
     update_note,
 )
 
@@ -483,6 +493,95 @@ def _do_sync() -> tuple[str, bool]:
         return "Google Drive authorization required.", True
     except Exception as exc:
         return f"Sync failed: {exc}", False
+
+
+# ── instance kinds ────────────────────────────────────────────────────────────
+
+class InstanceKindPayload(BaseModel):
+    name: str
+    description: str = ""
+
+
+@app.get("/instance-kinds", summary="List all instance kinds")
+def get_instance_kinds() -> list[dict[str, Any]]:
+    """Return all instance kinds ordered by name."""
+    return [asdict(t) for t in list_types()]
+
+
+@app.post("/instance-kinds", status_code=201, summary="Create an instance kind")
+def create_instance_kind_endpoint(payload: InstanceKindPayload) -> dict[str, Any]:
+    """Create a new instance kind."""
+    return asdict(create_type(payload.name, payload.description))
+
+
+@app.get("/instance-kinds/{instance_kind_id}", summary="Get an instance kind")
+def get_instance_kind_endpoint(instance_kind_id: int) -> dict[str, Any]:
+    """Return a single instance kind by ID. Raises 404 if not found."""
+    t = get_type(instance_kind_id)
+    if t is None:
+        raise HTTPException(status_code=404, detail=f"Instance kind #{instance_kind_id} not found")
+    return asdict(t)
+
+
+@app.put("/instance-kinds/{instance_kind_id}", summary="Update an instance kind")
+def update_instance_kind_endpoint(instance_kind_id: int, payload: InstanceKindPayload) -> dict[str, Any]:
+    """Replace the name and description of an instance kind. Raises 404 if not found."""
+    t = update_type(instance_kind_id, payload.name, payload.description)
+    if t is None:
+        raise HTTPException(status_code=404, detail=f"Instance kind #{instance_kind_id} not found")
+    return asdict(t)
+
+
+@app.delete("/instance-kinds/{instance_kind_id}", status_code=204, summary="Delete an instance kind")
+def delete_instance_kind_endpoint(instance_kind_id: int) -> None:
+    """Delete an instance kind. Raises 404 if not found."""
+    if not delete_type(instance_kind_id):
+        raise HTTPException(status_code=404, detail=f"Instance kind #{instance_kind_id} not found")
+
+
+# ── instances ─────────────────────────────────────────────────────────────────
+
+class InstancePayload(BaseModel):
+    name: str
+    instance_kind_id: int
+    description: str = ""
+
+
+@app.get("/instances", summary="List all instances")
+def get_instances(instance_kind_id: int | None = None) -> list[dict[str, Any]]:
+    """Return all instances, optionally filtered by instance_kind_id, ordered by name."""
+    return [asdict(i) for i in list_instances(instance_kind_id)]
+
+
+@app.post("/instances", status_code=201, summary="Create an instance")
+def create_instance_endpoint(payload: InstancePayload) -> dict[str, Any]:
+    """Create a new instance belonging to the given instance kind."""
+    return asdict(create_instance(payload.name, payload.instance_kind_id, payload.description))
+
+
+@app.get("/instances/{instance_id}", summary="Get an instance")
+def get_instance_endpoint(instance_id: int) -> dict[str, Any]:
+    """Return a single instance by ID. Raises 404 if not found."""
+    i = get_instance(instance_id)
+    if i is None:
+        raise HTTPException(status_code=404, detail=f"Instance #{instance_id} not found")
+    return asdict(i)
+
+
+@app.put("/instances/{instance_id}", summary="Update an instance")
+def update_instance_endpoint(instance_id: int, payload: InstancePayload) -> dict[str, Any]:
+    """Replace the name, description, and kind of an instance. Raises 404 if not found."""
+    i = update_instance(instance_id, payload.name, payload.description, payload.instance_kind_id)
+    if i is None:
+        raise HTTPException(status_code=404, detail=f"Instance #{instance_id} not found")
+    return asdict(i)
+
+
+@app.delete("/instances/{instance_id}", status_code=204, summary="Delete an instance")
+def delete_instance_endpoint(instance_id: int) -> None:
+    """Delete an instance by ID. Raises 404 if not found."""
+    if not delete_instance(instance_id):
+        raise HTTPException(status_code=404, detail=f"Instance #{instance_id} not found")
 
 
 # ── auth ───────────────────────────────────────────────────────────────────────

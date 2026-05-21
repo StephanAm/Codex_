@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Note } from "../api";
-import { TagEntityPicker } from "./TagEntityPicker";
+import { TagReferencePicker } from "./TagReferencePicker";
 
 interface Props {
   notes: Note[];
@@ -95,7 +95,7 @@ export function NoteList({ notes, selectedId, query, filterTags, filterReference
             </label>
           </div>
         )}
-        <TagEntityPicker
+        <TagReferencePicker
           label="Tags"
           prefix="#"
           kind="tag"
@@ -106,7 +106,7 @@ export function NoteList({ notes, selectedId, query, filterTags, filterReference
           dropdownDir="down"
           compact
         />
-        <TagEntityPicker
+        <TagReferencePicker
           label="Refs"
           prefix="@"
           kind="reference"

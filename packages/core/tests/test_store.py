@@ -6,11 +6,10 @@ from note_taker.store import (
     add_note,
     delete_note,
     get_default_tags,
-    list_entities,
     list_notes,
+    list_references,
     search_notes,
     set_default_tags,
-    set_entity_type,
     update_note,
 )
 
@@ -26,10 +25,10 @@ def test_add_returns_note_with_id(db: Path) -> None:
     assert note.body == "hello world"
 
 
-def test_add_parses_tags_and_entities(db: Path) -> None:
+def test_add_parses_tags_and_references(db: Path) -> None:
     note = add_note("@alice reviewed the #backend PR", db_path=db)
     assert note.tags == ["backend"]
-    assert note.entities == ["alice"]
+    assert note.references == ["alice"]
 
 
 def test_list_returns_most_recent_first(db: Path) -> None:
@@ -48,12 +47,12 @@ def test_list_filter_by_tag(db: Path) -> None:
     assert "important" in results[0].tags
 
 
-def test_list_filter_by_entity(db: Path) -> None:
+def test_list_filter_by_reference(db: Path) -> None:
     add_note("met with @alice", db_path=db)
     add_note("called @bob", db_path=db)
-    results = list_notes(entity="alice", db_path=db)
+    results = list_notes(reference="alice", db_path=db)
     assert len(results) == 1
-    assert "alice" in results[0].entities
+    assert "alice" in results[0].references
 
 
 def test_list_limit(db: Path) -> None:
@@ -86,27 +85,15 @@ def test_delete_nonexistent_note(db: Path) -> None:
     assert delete_note(9999, db_path=db) is False
 
 
-def test_entities_accumulated_across_notes(db: Path) -> None:
+def test_references_accumulated_across_notes(db: Path) -> None:
     add_note("@alice and @bob #meeting", db_path=db)
     add_note("@alice again", db_path=db)
-    entities = list_entities(db_path=db)
-    names = [e.name for e in entities]
+    refs = list_references(db_path=db)
+    names = [r.name for r in refs]
     assert "alice" in names
     assert "bob" in names
-    # alice appears twice in notes but only once in entities
+    # alice appears twice in notes but only once in references
     assert names.count("alice") == 1
-
-
-def test_set_entity_type(db: Path) -> None:
-    add_note("@alice", db_path=db)
-    assert set_entity_type("alice", "person", db_path=db) is True
-    entities = list_entities(db_path=db)
-    alice = next(e for e in entities if e.name == "alice")
-    assert alice.entity_type == "person"
-
-
-def test_set_entity_type_unknown_entity(db: Path) -> None:
-    assert set_entity_type("nobody", "person", db_path=db) is False
 
 
 def test_update_note_body(db: Path) -> None:
@@ -115,7 +102,7 @@ def test_update_note_body(db: Path) -> None:
     assert updated is not None
     assert updated.body == "revised text #new @alice"
     assert updated.tags == ["new"]
-    assert updated.entities == ["alice"]
+    assert updated.references == ["alice"]
 
 
 def test_update_note_replaces_tags(db: Path) -> None:

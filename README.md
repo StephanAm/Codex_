@@ -37,19 +37,19 @@ note search "roadmap"
 note delete 42
 ```
 
-### Tags and entities
+### Tags and references
 
-Notes are parsed for `#tags` and `@entities` automatically. Use them inline in any note body.
+Notes are parsed for `#tags` and `@references` automatically. Use them inline in any note body.
 
 ```bash
 note add "Reviewed PR with @bob #code-review"
 note list --tag code-review
-note list --entity bob
+note list --reference bob
 ```
 
 ### Session context
 
-Apply tags/entities to all new notes in a shell session without typing them each time.
+Apply tags/references to all new notes in a shell session without typing them each time.
 
 ```bash
 note session set --tag standup --mention alice
@@ -83,8 +83,8 @@ note sync config local-path /path/to/shared/folder
 │   ├── tui.py          # Curses TUI (`note-tui` command)
 │   ├── api.py          # FastAPI server (`note-api` command, port 8765)
 │   ├── store.py        # All DB reads/writes — primary API layer
-│   ├── models.py       # Note and Entity dataclasses
-│   ├── parser.py       # Extracts #tags and @entities from text
+│   ├── models.py       # Note and Reference dataclasses
+│   ├── parser.py       # Extracts #tags and @references from text
 │   ├── session.py      # In-process session context (env-var backed)
 │   ├── db.py           # SQLite connection and schema setup
 │   ├── logger.py       # Structured logger (get_logger); use instead of print

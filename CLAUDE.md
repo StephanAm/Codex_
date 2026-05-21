@@ -14,6 +14,29 @@ This application is called **Mnemo**. Always capitalised, never with a full stop
 
 Tagline: *"Remember everything."*
 
+## Kind and Instance domain model
+
+The full spec lives in [`designdocs/things-and-instances.md`](designdocs/things-and-instances.md). **Read it before working on any Kind/Instance feature.** Key points:
+
+- **Kind** — a user-defined common noun that classifies a named real-world subject (e.g. `Person`, `Team`, `Company`). This is what the code calls `Type`.
+- **Instance** — a specific named subject that belongs to a Kind (e.g. `John Smith` of kind `Person`). An Instance cannot exist without a Kind.
+- Instances connect to notes indirectly via `@reference` tokens — there is no direct note↔instance relationship.
+- The word **"entity" must never appear in the UI**. It is an internal engineering term only.
+
+### UI copy rules for Kind/Instance
+
+| Context | Copy |
+|---|---|
+| Sidebar section heading | `KINDS` |
+| Group heading in sidebar | Kind name, pluralised (e.g. `People`, `Teams`) — user supplies the plural |
+| Create kind affordance | `+ new kind` |
+| Create instance affordance | `+ new [kind name]` (e.g. `+ new person`) |
+| Detail view metadata label | Kind name (e.g. `Person`) |
+
+### Internal naming
+
+The code uses `Type` (Python model / DB table `types`) for Kind, and `Instance` (Python model / DB table `instances`) for Instance. The design doc's internal naming table (`entity_type`/`entity`) predates the code rename and can be ignored.
+
 ## Design system
 
 The full design system lives in [`designdocs/mnemo-design-system.md`](designdocs/mnemo-design-system.md). **When building any Mnemo UI, prompt that file and follow every rule exactly.** It is the single source of truth for colours, typography, layout, components, motion, and copy tone.
@@ -33,7 +56,7 @@ This is a multi-platform project. All code must build and run correctly on both 
 
 A note-taking tool built in layers:
 
-1. **CLI** (`note`) — done. Click-based commands: add, list, search, delete, entities, config, session, sync.
+1. **CLI** (`note`) — done. Click-based commands: add, list, search, delete, references, config, session, sync.
 2. **TUI** (`note-tui`) — done. Interactive curses UI with browse/add/edit/delete/search/config/session/sync.
 3. **GUI** — in progress. Tauri + React desktop app in `gui/`. See [`gui/README.md`](gui/README.md) for structure, important files, and dev commands.
 
@@ -80,9 +103,9 @@ All tool configuration (pytest, ruff, mypy, coverage) is in `pyproject.toml`. My
 | `cli.py` | Click entry point for the `note` command |
 | `tui.py` | Curses TUI entry point for `note-tui`; all UI state lives here |
 | `store.py` | All DB reads/writes — the primary API layer used by both CLI and TUI |
-| `models.py` | `Note` and `Entity` dataclasses |
-| `parser.py` | Extracts `#tags` and `@entities` from free-form note text |
-| `session.py` | In-process session context backed by env vars; auto-applies tags/entities to new notes |
+| `models.py` | `Note`, `Reference`, `Type`, and `Instance` dataclasses |
+| `parser.py` | Extracts `#tags` and `@references` from free-form note text |
+| `session.py` | In-process session context backed by env vars; auto-applies tags/references to new notes |
 | `db.py` | SQLite connection factory and schema migrations |
 | `logger.py` | Structured logger (`get_logger`); use instead of `print` everywhere |
 | `api.py` | FastAPI server — REST API consumed by the GUI, runs on port 8765 |
@@ -111,7 +134,7 @@ The `build/` directory is the output location for both final and intermediary bu
 - `store.py` functions accept an optional `db_path` parameter for test isolation.
 - Tags and references are always stored lowercase; `parser.py` normalises them.
 - The `session.py` context is process-local (env-var backed) and is not persisted to the DB.
-- The codebase uses "entities" internally for what the user calls "references" — treat the terms as synonymous.
+- The codebase uses "references" throughout — both internally and in the user-facing UI.
 
 ## Renaming the package
 

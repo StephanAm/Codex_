@@ -29,6 +29,7 @@ note          = "note_taker.cli:cli"
 note-tui      = "note_taker.tui:launch"
 note-api      = "note_taker.api:serve"
 note-openapi  = "note_taker.api:export_openapi"
+gui           = "note_taker.gui_cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/note_taker"]

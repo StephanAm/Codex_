@@ -5,7 +5,7 @@ from uuid import uuid4
 
 from .dates import normalize_dates
 from .db import connect
-from .models import Reference, Note
+from .models import Instance, InstanceKind, Reference, Note
 from .parser import normalise, parse
 
 
@@ -195,6 +195,138 @@ def list_references(db_path: Path | None = None) -> list[Reference]:
     conn = connect(db_path)
     rows = conn.execute('SELECT * FROM "references" ORDER BY name').fetchall()
     return [Reference(id=r["id"], name=r["name"]) for r in rows]
+
+
+def _load_instance_kind(row: sqlite3.Row) -> InstanceKind:
+    return InstanceKind(id=row["id"], name=row["name"], description=row["description"])
+
+
+def _load_instance(conn: sqlite3.Connection, row: sqlite3.Row) -> Instance:
+    kind_row = conn.execute(
+        "SELECT * FROM instance_kinds WHERE id = ?", (row["instance_kind_id"],)
+    ).fetchone()
+    return Instance(
+        id=row["id"],
+        name=row["name"],
+        description=row["description"],
+        type=_load_instance_kind(kind_row),
+    )
+
+
+def create_type(
+    name: str, description: str = "", db_path: Path | None = None
+) -> InstanceKind:
+    conn = connect(db_path)
+    cur = conn.execute(
+        "INSERT INTO instance_kinds (name, description) VALUES (?, ?)",
+        (name.strip(), description.strip()),
+    )
+    conn.commit()
+    row = conn.execute(
+        "SELECT * FROM instance_kinds WHERE id = ?", (cur.lastrowid,)
+    ).fetchone()
+    return _load_instance_kind(row)
+
+
+def get_type(instance_kind_id: int, db_path: Path | None = None) -> InstanceKind | None:
+    conn = connect(db_path)
+    row = conn.execute("SELECT * FROM instance_kinds WHERE id = ?", (instance_kind_id,)).fetchone()
+    return _load_instance_kind(row) if row else None
+
+
+def list_types(db_path: Path | None = None) -> list[InstanceKind]:
+    conn = connect(db_path)
+    rows = conn.execute("SELECT * FROM instance_kinds ORDER BY name").fetchall()
+    return [_load_instance_kind(r) for r in rows]
+
+
+def update_type(
+    instance_kind_id: int,
+    name: str,
+    description: str,
+    db_path: Path | None = None,
+) -> InstanceKind | None:
+    conn = connect(db_path)
+    cur = conn.execute(
+        "UPDATE instance_kinds SET name = ?, description = ? WHERE id = ?",
+        (name.strip(), description.strip(), instance_kind_id),
+    )
+    conn.commit()
+    if cur.rowcount == 0:
+        return None
+    row = conn.execute("SELECT * FROM instance_kinds WHERE id = ?", (instance_kind_id,)).fetchone()
+    return _load_instance_kind(row)
+
+
+def delete_type(instance_kind_id: int, db_path: Path | None = None) -> bool:
+    conn = connect(db_path)
+    cur = conn.execute("DELETE FROM instance_kinds WHERE id = ?", (instance_kind_id,))
+    conn.commit()
+    return cur.rowcount > 0
+
+
+def create_instance(
+    name: str,
+    instance_kind_id: int,
+    description: str = "",
+    db_path: Path | None = None,
+) -> Instance:
+    conn = connect(db_path)
+    cur = conn.execute(
+        "INSERT INTO instances (name, description, instance_kind_id) VALUES (?, ?, ?)",
+        (name.strip(), description.strip(), instance_kind_id),
+    )
+    conn.commit()
+    row = conn.execute(
+        "SELECT * FROM instances WHERE id = ?", (cur.lastrowid,)
+    ).fetchone()
+    return _load_instance(conn, row)
+
+
+def get_instance(instance_id: int, db_path: Path | None = None) -> Instance | None:
+    conn = connect(db_path)
+    row = conn.execute("SELECT * FROM instances WHERE id = ?", (instance_id,)).fetchone()
+    return _load_instance(conn, row) if row else None
+
+
+def list_instances(
+    instance_kind_id: int | None = None, db_path: Path | None = None
+) -> list[Instance]:
+    conn = connect(db_path)
+    if instance_kind_id is not None:
+        rows = conn.execute(
+            "SELECT * FROM instances WHERE instance_kind_id = ? ORDER BY name",
+            (instance_kind_id,),
+        ).fetchall()
+    else:
+        rows = conn.execute("SELECT * FROM instances ORDER BY name").fetchall()
+    return [_load_instance(conn, r) for r in rows]
+
+
+def update_instance(
+    instance_id: int,
+    name: str,
+    description: str,
+    instance_kind_id: int,
+    db_path: Path | None = None,
+) -> Instance | None:
+    conn = connect(db_path)
+    cur = conn.execute(
+        "UPDATE instances SET name = ?, description = ?, instance_kind_id = ? WHERE id = ?",
+        (name.strip(), description.strip(), instance_kind_id, instance_id),
+    )
+    conn.commit()
+    if cur.rowcount == 0:
+        return None
+    row = conn.execute("SELECT * FROM instances WHERE id = ?", (instance_id,)).fetchone()
+    return _load_instance(conn, row)
+
+
+def delete_instance(instance_id: int, db_path: Path | None = None) -> bool:
+    conn = connect(db_path)
+    cur = conn.execute("DELETE FROM instances WHERE id = ?", (instance_id,))
+    conn.commit()
+    return cur.rowcount > 0
 
 
 def get_sync_folder(db_path: Path | None = None) -> str:

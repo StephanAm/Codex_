@@ -13,36 +13,36 @@ def isolated_session(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_get_returns_empty_when_no_file() -> None:
-    tags, entities = get_session_context()
+    tags, references = get_session_context()
     assert tags == []
-    assert entities == []
+    assert references == []
 
 
 def test_set_and_get_roundtrip() -> None:
     set_session_context(["oneonone", "meeting"], ["bronwyn"])
-    tags, entities = get_session_context()
+    tags, references = get_session_context()
     assert tags == ["oneonone", "meeting"]
-    assert entities == ["bronwyn"]
+    assert references == ["bronwyn"]
 
 
 def test_clear_removes_context() -> None:
     set_session_context(["oneonone"], ["bronwyn"])
     clear_session_context()
-    tags, entities = get_session_context()
+    tags, references = get_session_context()
     assert tags == []
-    assert entities == []
+    assert references == []
 
 
 def test_clear_is_idempotent_when_no_file() -> None:
     clear_session_context()  # should not raise
-    tags, entities = get_session_context()
+    tags, references = get_session_context()
     assert tags == []
-    assert entities == []
+    assert references == []
 
 
 def test_set_overwrites_previous_context() -> None:
     set_session_context(["alpha"], ["alice"])
     set_session_context(["beta"], ["bob"])
-    tags, entities = get_session_context()
+    tags, references = get_session_context()
     assert tags == ["beta"]
-    assert entities == ["bob"]
+    assert references == ["bob"]

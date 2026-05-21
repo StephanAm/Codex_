@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, Note } from "./api";
 import { ConfigPanel } from "./components/ConfigPanel";
+import { InstanceSidebar } from "./components/InstanceSidebar";
 import { NoteDetail } from "./components/NoteDetail";
 import { NoteEditor } from "./components/NoteEditor";
 import { NoteList } from "./components/NoteList";
@@ -56,7 +57,7 @@ export default function App() {
   const SIDEBAR_BREAKPOINT = 640;
   const [narrow, setNarrow]           = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeSidebar, setActiveSidebar] = useState<"log" | "recall">("log");
+  const [activeSidebar, setActiveSidebar] = useState<"log" | "recall" | "instances">("log");
 
   useEffect(() => {
     const ro = new ResizeObserver(entries => {
@@ -167,8 +168,9 @@ export default function App() {
   useEffect(() => {
     function handleSidebarKey(e: KeyboardEvent) {
       if (!e.metaKey && !e.ctrlKey) return;
-      if (e.key === "1") { e.preventDefault(); setActiveSidebar("log");    if (narrow) setSidebarOpen(true); }
-      if (e.key === "2") { e.preventDefault(); setActiveSidebar("recall"); if (narrow) setSidebarOpen(true); }
+      if (e.key === "1") { e.preventDefault(); setActiveSidebar("log");      if (narrow) setSidebarOpen(true); }
+      if (e.key === "2") { e.preventDefault(); setActiveSidebar("recall");   if (narrow) setSidebarOpen(true); }
+      if (e.key === "3") { e.preventDefault(); setActiveSidebar("instances"); if (narrow) setSidebarOpen(true); }
     }
     window.addEventListener("keydown", handleSidebarKey);
     return () => window.removeEventListener("keydown", handleSidebarKey);
@@ -343,6 +345,11 @@ export default function App() {
             data-label="recall"
             onClick={() => { setActiveSidebar("recall"); if (narrow) setSidebarOpen(true); }}
           >◎</span>
+          <span
+            className={`rail-glyph rail-glyph--instances${activeSidebar === "instances" ? " rail-glyph--active" : ""}`}
+            data-label="instances"
+            onClick={() => { setActiveSidebar("instances"); if (narrow) setSidebarOpen(true); }}
+          >◈</span>
         </div>
         {activeSidebar === "log" && (
           <NoteList
@@ -364,6 +371,11 @@ export default function App() {
             onDateFromChange={setDateFrom}
             onDateToChange={setDateTo}
             onAdd={() => setMode("add")}
+            className={narrow ? (sidebarOpen ? "note-list-panel--overlay" : "note-list-panel--hidden") : ""}
+          />
+        )}
+        {activeSidebar === "instances" && (
+          <InstanceSidebar
             className={narrow ? (sidebarOpen ? "note-list-panel--overlay" : "note-list-panel--hidden") : ""}
           />
         )}

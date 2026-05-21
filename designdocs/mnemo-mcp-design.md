@@ -6,7 +6,7 @@
 
 ## Context
 
-Mnemo is a personal note-taking tool with a FastAPI backend (`api.py`) running on `localhost:8765`. Its OpenAPI spec is available alongside these instructions. Notes are plain text with inline syntax for tags (`#TagName`), entity references (`@PersonName`), and dates (`~{YYYY-MM-DD}`).
+Mnemo is a personal note-taking tool with a FastAPI backend (`api.py`) running on `localhost:8765`. Its OpenAPI spec is available alongside these instructions. Notes are plain text with inline syntax for tags (`#TagName`), references (`@PersonName`), and dates (`~{YYYY-MM-DD}`).
 
 This MCP server lets an LLM query notes via natural language by exposing a small set of read-only tools over the standard input/output (stdio) MCP transport. It is single-user, local-only, and read-only. No writes, no auth, no networking beyond a localhost HTTP call to the Mnemo API.
 
@@ -22,7 +22,7 @@ The Mnemo API returns notes with the following structure. This is the shape the 
 | `uuid` | string | Stable UUID for sync. Do not surface to the LLM unless explicitly asked. |
 | `body` | string | Full plain-text body including inline `#tags`, `@refs`, and `~{date}` syntax. |
 | `tags` | array of string | Parsed tags, lowercase. |
-| `entities` | array of string | Parsed entity references, lowercase. |
+| `references` | array of string | Parsed references, lowercase. |
 | `created_at` | ISO 8601 string | When the note was written. |
 | `updated_at` | ISO 8601 string | Last edit. |
 | `time_stamp` | ISO 8601 string | Parsed `~{date}` from the body, or equal to `created_at` if no date was specified. **This is the field to use for "when did this happen".** |
@@ -89,15 +89,15 @@ Expose exactly the following five read-only tools. No more, no fewer. Do not exp
 
 ### 1. `search_notes`
 
-Search notes by free-text query, tag, and entity. The primary workhorse tool.
+Search notes by free-text query, tag, and reference. The primary workhorse tool.
 
 - **Input schema:**
   - `q` (string, optional) — free-text search query against note body
   - `tag` (string, optional) — filter by a single tag (lowercase, no `#` prefix)
-  - `entity` (string, optional) — filter by a single entity (lowercase, no `@` prefix)
-- **Behaviour:** maps to `GET /notes` with the supplied query parameters. Per the API, when `q` is provided, `tag` and `entity` are ignored. All parameters are optional; if none are supplied, recent notes are returned.
+  - `reference` (string, optional) — filter by a single reference (lowercase, no `@` prefix)
+- **Behaviour:** maps to `GET /notes` with the supplied query parameters. Per the API, when `q` is provided, `tag` and `reference` are ignored. All parameters are optional; if none are supplied, recent notes are returned.
 - **Returns:** the JSON array of `NoteResponse` objects from the API, untransformed.
-- **Description (for the LLM):** "Search Mnemo notes by free-text query, tag, or entity. Use this to find notes matching a topic, person, or keyword. Tag and entity values should be lowercase and supplied without the `#` or `@` prefix. Note: when `q` is provided, `tag` and `entity` are ignored — call this tool again with the structured filter if you need to narrow further. Returns up to 500 notes ordered by creation date descending."
+- **Description (for the LLM):** "Search Mnemo notes by free-text query, tag, or reference. Use this to find notes matching a topic, person, or keyword. Tag and reference values should be lowercase and supplied without the `#` or `@` prefix. Note: when `q` is provided, `tag` and `reference` are ignored — call this tool again with the structured filter if you need to narrow further. Returns up to 500 notes ordered by creation date descending."
 
 ### 2. `get_note`
 
@@ -118,14 +118,14 @@ Return the full list of known tags.
 - **Returns:** the JSON array of tag strings as returned by the API. All tags are lowercase.
 - **Description (for the LLM):** "List all tags used across Mnemo notes, sorted alphabetically. Use this to discover what topics or projects exist before searching, or to validate that a tag the user mentioned actually exists."
 
-### 4. `list_entities`
+### 4. `list_references`
 
-Return the full list of known entities (people, teams, named things referenced by `@`).
+Return the full list of known references (people, teams, named things referenced by `@`).
 
 - **Input schema:** none
-- **Behaviour:** maps to `GET /entities`.
+- **Behaviour:** maps to `GET /references`.
 - **Returns:** the JSON array as returned by the API.
-- **Description (for the LLM):** "List all entities (people, teams, named references) tracked in Mnemo. Use this to discover who or what is referenced in notes, or to validate that an entity the user mentioned actually exists."
+- **Description (for the LLM):** "List all references (people, teams, named things) tracked in Mnemo. Use this to discover who or what is referenced in notes, or to validate that a reference the user mentioned actually exists."
 
 ### 5. `get_recent_notes`
 

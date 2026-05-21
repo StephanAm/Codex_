@@ -52,7 +52,7 @@
     "/notes": {
       "get": {
         "summary": "List or search notes",
-        "description": "Return a list of notes, optionally filtered or searched.\n\n- **q** \u2014 full-text search query; when provided, `tag` and `entity` are ignored\n- **tag** \u2014 filter by tag (lowercase, e.g. `work`)\n- **entity** \u2014 filter by referenced entity (lowercase, e.g. `alice`)\n\nReturns up to 500 notes ordered by creation date descending.",
+        "description": "Return a list of notes, optionally filtered or searched.\n\n- **q** \u2014 full-text search query; when provided, `tag` and `reference` are ignored\n- **tag** \u2014 filter by tag (lowercase, e.g. `work`)\n- **reference** \u2014 filter by reference (lowercase, e.g. `alice`)\n\nReturns up to 500 notes ordered by creation date descending.",
         "operationId": "get_notes_notes_get",
         "parameters": [
           {
@@ -88,7 +88,7 @@
             }
           },
           {
-            "name": "entity",
+            "name": "reference",
             "in": "query",
             "required": false,
             "schema": {
@@ -100,7 +100,7 @@
                   "type": "null"
                 }
               ],
-              "title": "Entity"
+              "title": "Reference"
             }
           }
         ],
@@ -133,7 +133,7 @@
       },
       "post": {
         "summary": "Create a note",
-        "description": "Create a new note from a plain-text body.\n\nTags (`#Tag`) and references (`@Name`) are parsed automatically from the body.\nAdditional tags and entities can be injected via the `tags` and `entities` fields\nwithout embedding them in the body text.\n\nReturns the created note with its assigned ID and timestamps.",
+        "description": "Create a new note from a plain-text body.\n\nTags (`#Tag`) and references (`@Name`) are parsed automatically from the body.\nAdditional tags and references can be injected via the `tags` and `references` fields\nwithout embedding them in the body text.\n\nReturns the created note with its assigned ID and timestamps.",
         "operationId": "create_note_notes_post",
         "requestBody": {
           "required": true,
@@ -311,11 +311,11 @@
         }
       }
     },
-    "/entities": {
+    "/references": {
       "get": {
-        "summary": "List all entities",
-        "description": "Return all referenced entities (people, teams, named things) across all notes.",
-        "operationId": "get_entities_entities_get",
+        "summary": "List all references",
+        "description": "Return all @references (people, teams, named things) across all notes.",
+        "operationId": "get_references_references_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -327,7 +327,7 @@
                     "type": "object"
                   },
                   "type": "array",
-                  "title": "Response Get Entities Entities Get"
+                  "title": "Response Get References References Get"
                 }
               }
             }
@@ -398,7 +398,7 @@
     "/session": {
       "get": {
         "summary": "Get session context",
-        "description": "Return the active session tags and entities.\n\nSession context is applied automatically to all notes created during the session.\nIt is process-local and not persisted to the database.",
+        "description": "Return the active session tags and references.\n\nSession context is applied automatically to all notes created during the session.\nIt is process-local and not persisted to the database.",
         "operationId": "get_session_session_get",
         "responses": {
           "200": {
@@ -417,7 +417,7 @@
       },
       "put": {
         "summary": "Set session context",
-        "description": "Set the active session tags and entities.\n\nAny tags and entities supplied here will be automatically attached to every note\ncreated while the session is active.",
+        "description": "Set the active session tags and references.\n\nAny tags and references supplied here will be automatically attached to every note\ncreated while the session is active.",
         "operationId": "set_session_session_put",
         "requestBody": {
           "content": {
@@ -456,7 +456,7 @@
       },
       "delete": {
         "summary": "Clear session context",
-        "description": "Clear the active session, removing any automatically applied tags and entities.",
+        "description": "Clear the active session, removing any automatically applied tags and references.",
         "operationId": "delete_session_session_delete",
         "responses": {
           "204": {
@@ -645,12 +645,12 @@
             "title": "Tags",
             "default": []
           },
-          "entities": {
+          "references": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Entities",
+            "title": "References",
             "default": []
           }
         },
@@ -685,12 +685,12 @@
             "title": "Tags",
             "description": "Tags parsed from the body (`#Tag`) plus any injected at creation, stored lowercase"
           },
-          "entities": {
+          "references": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Entities",
+            "title": "References",
             "description": "References parsed from the body (`@Name`) plus any injected at creation, stored lowercase"
           },
           "created_at": {
@@ -715,7 +715,7 @@
           "uuid",
           "body",
           "tags",
-          "entities",
+          "references",
           "created_at",
           "updated_at",
           "time_stamp"
@@ -724,7 +724,7 @@
         "example": {
           "body": "Discussed caching strategy with @Alice \u2014 going with Redis. #Backend #Architecture ~{2026-05-18}",
           "created_at": "2026-05-18T09:30:00+00:00",
-          "entities": [
+          "references": [
             "alice"
           ],
           "id": 42,
@@ -746,18 +746,18 @@
             "type": "array",
             "title": "Tags"
           },
-          "entities": {
+          "references": {
             "items": {
               "type": "string"
             },
             "type": "array",
-            "title": "Entities"
+            "title": "References"
           }
         },
         "type": "object",
         "required": [
           "tags",
-          "entities"
+          "references"
         ],
         "title": "SessionPayload"
       },

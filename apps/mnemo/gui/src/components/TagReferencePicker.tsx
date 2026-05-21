@@ -12,7 +12,7 @@ interface Props {
   compact?: boolean;
 }
 
-export function TagEntityPicker({ label, prefix, kind, allItems, selected, onChange, allowNew = true, dropdownDir = "up", compact = false }: Props) {
+export function TagReferencePicker({ label, prefix, kind, allItems, selected, onChange, allowNew = true, dropdownDir = "up", compact = false }: Props) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);

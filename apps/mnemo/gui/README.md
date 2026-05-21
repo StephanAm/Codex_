@@ -44,8 +44,8 @@ gui/
 │   └── components/
 │       ├── NoteList.tsx        # left panel: search bar + scrollable list of notes
 │       ├── NoteDetail.tsx      # right panel: read-only view of the selected note
-│       ├── NoteEditor.tsx      # right panel: create / edit form (body + tag/entity pickers)
-│       ├── TagEntityPicker.tsx # reusable dropdown for selecting tags or references
+│       ├── NoteEditor.tsx      # right panel: create / edit form (body + tag/reference pickers)
+│       ├── TagReferencePicker.tsx # reusable dropdown for selecting tags or references
 │       ├── TagBadge.tsx        # small coloured badge for a single tag or reference
 │       ├── SyncButton.tsx      # header button that triggers sync
 │       ├── SplashScreen.tsx    # startup screen: polls /health until backend is ready
@@ -64,10 +64,10 @@ gui/
 
 | File | What it does |
 |---|---|
-| `src/api.ts` | All HTTP calls to the Python backend. Also defines the shared `Note`, `Entity`, `Config`, and `Session` TypeScript interfaces. |
+| `src/api.ts` | All HTTP calls to the Python backend. Also defines the shared `Note`, `Reference`, `Config`, and `Session` TypeScript interfaces. |
 | `src/App.tsx` | Owns all top-level state (`notes`, `selected`, `mode`, `query`). Renders the header, `NoteList`, and the active right-panel component based on `mode` (`view` / `add` / `edit` / `config`). |
 | `src/App.css` | Single stylesheet with CSS custom properties for colours/spacing. Badge colours (`--tag-bg`, `--ent-bg`, …) are defined here. |
-| `src/components/NoteEditor.tsx` | Used for both create and edit. Accepts `initialBody`, `initialTags`, `initialEntities` props and calls `onSave(body, tags, entities)` on submit. |
+| `src/components/NoteEditor.tsx` | Used for both create and edit. Accepts `initialBody`, `initialTags`, `initialReferences` props and calls `onSave(body, tags, references)` on submit. |
 | `src-tauri/capabilities/default.json` | Controls which Tauri APIs the frontend can call (e.g. `http`, `shell`). Edit this if you need new native capabilities. |
 
 ## Architecture notes
@@ -76,6 +76,5 @@ gui/
   through the REST API (`src/api.ts → localhost:8765`).
 - There is no client-side routing library — `App.tsx` uses a `mode` enum
   (`"view" | "add" | "edit" | "config"`) to switch between panels.
-- Tags and references are treated symmetrically in the UI. Internally the
-  Python layer calls them "entities"; the UI calls them "references". Both
-  terms refer to the same thing.
+- Tags and references are treated symmetrically in the UI. Both are called
+  "references" throughout the codebase.

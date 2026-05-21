@@ -94,9 +94,10 @@ def _migrate(conn: sqlite3.Connection) -> None:
     conn.execute("UPDATE notes SET updated_at = created_at WHERE updated_at IS NULL")
     conn.execute("UPDATE notes SET time_stamp = created_at WHERE time_stamp IS NULL")
 
-    # Migrate entities → references (existing DBs only)
+    # Migrate entities → references (existing DBs only; keyed on note_entities, not entities,
+    # so the new entities table added later doesn't re-trigger this block)
     has_entities = conn.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='entities'"
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='note_entities'"
     ).fetchone()
     if has_entities:
         conn.executescript("""
@@ -116,6 +117,45 @@ def _migrate(conn: sqlite3.Connection) -> None:
             DROP TABLE IF EXISTS note_entities;
             DROP TABLE IF EXISTS entities;
         """)
+
+    # Rename entity_types → instance_kinds and entities → instances on existing DBs
+    has_entity_types = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='entity_types'"
+    ).fetchone()
+    if has_entity_types:
+        conn.executescript("""
+            ALTER TABLE entity_types RENAME TO instance_kinds;
+            ALTER TABLE entities RENAME TO instances;
+        """)
+
+    # Rename types → instance_kinds on existing DBs
+    has_types = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='types'"
+    ).fetchone()
+    if has_types:
+        conn.executescript("ALTER TABLE types RENAME TO instance_kinds;")
+
+    # Rename type_id → instance_kind_id on existing DBs
+    instances_cols = {row[1] for row in conn.execute("PRAGMA table_info(instances)")}
+    if "type_id" in instances_cols:
+        conn.executescript(
+            "ALTER TABLE instances RENAME COLUMN type_id TO instance_kind_id;"
+        )
+
+    # Instance kinds and instances tables
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS instance_kinds (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            name        TEXT NOT NULL UNIQUE,
+            description TEXT NOT NULL DEFAULT ''
+        );
+        CREATE TABLE IF NOT EXISTS instances (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            name            TEXT NOT NULL,
+            description     TEXT NOT NULL DEFAULT '',
+            instance_kind_id INTEGER NOT NULL REFERENCES instance_kinds(id) ON DELETE RESTRICT
+        );
+    """)
 
     # Always stamp the current app version so the DB reflects the last migration
     conn.execute("UPDATE db_meta SET schema_version = ?", (_APP_VERSION,))

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
-import { TagEntityPicker } from "./TagEntityPicker";
+import { TagReferencePicker } from "./TagReferencePicker";
 
 interface Props {
   initialBody?: string;
@@ -68,7 +68,7 @@ export function NoteEditor({
         spellCheck
       />
       <div className="note-editor-pickers">
-        <TagEntityPicker
+        <TagReferencePicker
           label="Tags"
           prefix="#"
           kind="tag"
@@ -76,7 +76,7 @@ export function NoteEditor({
           selected={selectedTags}
           onChange={setSelectedTags}
         />
-        <TagEntityPicker
+        <TagReferencePicker
           label="References"
           prefix="@"
           kind="reference"

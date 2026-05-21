@@ -101,13 +101,13 @@ def test_merge_tombstone_prevents_reimport(local_db: Path, remote_db: Path) -> N
     assert list_notes(db_path=local_db) == []
 
 
-def test_merge_preserves_tags_and_entities(local_db: Path, remote_db: Path) -> None:
+def test_merge_preserves_tags_and_references(local_db: Path, remote_db: Path) -> None:
     add_note("met @alice about #project", db_path=remote_db)
     local_conn = connect(local_db)
     merge_remote(local_conn, _db_bytes(remote_db))
     notes = list_notes(db_path=local_db)
     assert "project" in notes[0].tags
-    assert "alice" in notes[0].entities
+    assert "alice" in notes[0].references
 
 
 def test_merge_is_idempotent(local_db: Path, remote_db: Path) -> None:

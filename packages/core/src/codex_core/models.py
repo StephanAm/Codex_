@@ -18,3 +18,18 @@ class Note:
 class Reference:
     id: int
     name: str
+
+
+@dataclass
+class InstanceKind:
+    id: int
+    name: str
+    description: str
+
+
+@dataclass
+class Instance:
+    id: int
+    name: str
+    description: str
+    type: InstanceKind
