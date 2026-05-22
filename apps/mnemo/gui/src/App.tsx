@@ -50,7 +50,7 @@ export default function App() {
   const [error, setError]       = useState("");
   const [filterTags, setFilterTags]               = useState<string[]>([]);
   const [filterReferences, setFilterReferences]   = useState<string[]>([]);
-  const [timePeriod, setTimePeriod]           = useState("all");
+  const [timePeriod, setTimePeriod]           = useState("today");
   const [dateFrom, setDateFrom]               = useState("");
   const [dateTo, setDateTo]                   = useState("");
   const [pinnedNotes, setPinnedNotes]         = useState<Note[]>([]);
