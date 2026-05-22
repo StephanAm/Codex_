@@ -406,6 +406,14 @@ body::after {
   padding: 20px 16px;
 }
 
+.recall-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 10px;
+  flex-shrink: 0;
+}
+
 .recall-section-label {
   padding: 12px 16px 6px;
   font-size: 9px;
@@ -414,6 +422,15 @@ body::after {
   color: rgba(255, 149, 0, 0.7);
   flex-shrink: 0;
 }
+
+.recall-add-btn {
+  margin-top: 4px;
+  border-color: var(--border);
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.recall-add-btn:hover { border-color: var(--color-flag) !important; color: var(--color-flag) !important; }
 
 .recall-list {
   list-style: none;

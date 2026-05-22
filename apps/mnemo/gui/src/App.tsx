@@ -80,6 +80,7 @@ export default function App() {
   const [debounceMs, setDebounceMs] = useState(600_000);
   const autopushTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startupPullDone = useRef(false);
+  const pendingPin      = useRef(false);
 
   const allTags        = useMemo(() => [...new Set(notes.flatMap(n => n.tags))].sort(),       [notes]);
   const allReferences  = useMemo(() => [...new Set(notes.flatMap(n => n.references))].sort(), [notes]);
@@ -149,7 +150,7 @@ export default function App() {
       if (tag === "INPUT" || tag === "TEXTAREA") return;
       if (e.key === "n" && !e.ctrlKey && !e.metaKey) { e.preventDefault(); setMode("add"); }
       if (e.key === "e" && selected) { e.preventDefault(); setMode("edit"); }
-      if (e.key === "Escape") setMode("view");
+      if (e.key === "Escape") { pendingPin.current = false; setMode("view"); }
       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         e.preventDefault();
         const list = activeSidebar === "recall" ? pinnedNotes : displayedNotes;
@@ -249,6 +250,12 @@ export default function App() {
       const note = await api.notes.create(body, tags, references);
       await loadNotes(query);
       setSelected(note);
+      if (pendingPin.current) {
+        pendingPin.current = false;
+        const next = [...pinnedNotes, note];
+        await api.pins.save(next.map(n => n.uuid));
+        setPinnedNotes(next);
+      }
     } else if (mode === "edit" && selected) {
       const note = await api.notes.update(selected.id, body, tags, references);
       await loadNotes(query);
@@ -316,7 +323,7 @@ export default function App() {
       );
     }
     if (mode === "config") return <ConfigPanel onClose={() => setMode("view")} />;
-    if (mode === "add") return <NoteEditor onSave={handleSave} onCancel={() => setMode("view")} />;
+    if (mode === "add") return <NoteEditor onSave={handleSave} onCancel={() => { pendingPin.current = false; setMode("view"); }} />;
     if (mode === "edit" && selected) {
       const isPinned = pinnedNotes.some(n => n.uuid === selected.uuid);
       return (
@@ -434,6 +441,7 @@ export default function App() {
               selectedId={selected?.id ?? null}
               onSelect={handleSelect}
               onReorder={handlePinReorder}
+              onAdd={() => { pendingPin.current = true; setMode("add"); }}
             />
           )}
         </div>

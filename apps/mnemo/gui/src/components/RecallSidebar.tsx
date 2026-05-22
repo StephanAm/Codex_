@@ -6,6 +6,7 @@ interface Props {
   selectedId: number | null;
   onSelect: (note: Note) => void;
   onReorder: (notes: Note[]) => void;
+  onAdd: () => void;
   className?: string;
 }
 
@@ -19,7 +20,7 @@ function formatDate(iso: string) {
   });
 }
 
-export function RecallSidebar({ pinnedNotes, selectedId, onSelect, onReorder, className = "" }: Props) {
+export function RecallSidebar({ pinnedNotes, selectedId, onSelect, onReorder, onAdd, className = "" }: Props) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
   const didDragRef = useRef(false);
@@ -33,7 +34,10 @@ export function RecallSidebar({ pinnedNotes, selectedId, onSelect, onReorder, cl
 
   return (
     <div className={`recall-sidebar${className ? " " + className : ""}`}>
-      <div className="recall-section-label">recall</div>
+      <div className="recall-sidebar-header">
+        <div className="recall-section-label">recall</div>
+        <button className="btn-icon recall-add-btn" title="New pinned note" onClick={onAdd}>+</button>
+      </div>
       {pinnedNotes.length === 0 && (
         <span className="recall-sidebar-empty">no pins yet.</span>
       )}
