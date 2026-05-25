@@ -12,6 +12,7 @@ from .store import (
     create_type,
     daily_report,
     delete_note,
+    export_kb_all,
     export_kb_instance,
     export_kb_kind,
     get_default_tags,
@@ -133,12 +134,15 @@ def report(from_date: str | None, to_date: str | None, days: int | None, output:
 @click.option("--output", "-o", default=None, metavar="FILE", help="Write to a file instead of stdout.")
 def export_kb(kind: str | None, instance: str | None, output: str | None) -> None:
     """Export a Kind or Instance knowledge base as markdown."""
-    if not kind and not instance:
-        raise click.UsageError("Provide --kind or --instance.")
     if kind and instance:
         raise click.UsageError("Provide --kind or --instance, not both.")
 
-    md = export_kb_kind(kind) if kind else export_kb_instance(instance or "")
+    if kind:
+        md = export_kb_kind(kind)
+    elif instance:
+        md = export_kb_instance(instance)
+    else:
+        md = export_kb_all()
     if not md:
         raise click.ClickException("Not found.")
 

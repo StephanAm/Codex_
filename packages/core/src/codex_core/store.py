@@ -157,6 +157,28 @@ def export_kb_instance(name: str, db_path: Path | None = None) -> str:
     return _render_instance_kb(instance, heading_level=1)
 
 
+def export_kb_all(db_path: Path | None = None) -> str:
+    conn = connect(db_path)
+    kind_rows = conn.execute("SELECT * FROM instance_kinds ORDER BY name").fetchall()
+    if not kind_rows:
+        return ""
+    sections: list[str] = []
+    for kind_row in kind_rows:
+        kind = _load_instance_kind(kind_row)
+        instance_rows = conn.execute(
+            "SELECT * FROM instances WHERE instance_kind_id = ? ORDER BY name", (kind_row["id"],)
+        ).fetchall()
+        heading = f"# {kind.plural or kind.name + 's'}"
+        if not instance_rows:
+            continue
+        block = [heading]
+        for row in instance_rows:
+            instance = _load_instance(conn, row)
+            block.append(_render_instance_kb(instance, heading_level=2))
+        sections.append("\n\n".join(block))
+    return "\n\n---\n\n".join(sections)
+
+
 def export_kb_kind(kind_name: str, db_path: Path | None = None) -> str:
     conn = connect(db_path)
     kind_row = conn.execute(
