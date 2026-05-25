@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.7] — 2026-05-25
+
+- Add new features for daily report generation and knowledge base export
+- Add recall sidebar header and button for new pinned notes
+- Set default time period to "today" in App component
+- Remove outdated version test for __version__
+
 ## [1.2.6] — 2026-05-21
 
 - Add mypy and pytest commands to stop hooks for enhanced checks
