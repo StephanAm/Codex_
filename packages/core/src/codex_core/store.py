@@ -1,5 +1,6 @@
 import sqlite3
-from datetime import UTC, datetime
+from collections import defaultdict
+from datetime import UTC, date, datetime
 from pathlib import Path
 from uuid import uuid4
 
@@ -122,6 +123,86 @@ def search_notes(query: str, db_path: Path | None = None) -> list[Note]:
         (f"%{query}%",),
     ).fetchall()
     return [_load_note(conn, r) for r in rows]
+
+
+def _notes_for_instance(conn: sqlite3.Connection, instance: "Instance") -> list[Note]:
+    if not instance.references:
+        return []
+    placeholders = ",".join("?" * len(instance.references))
+    rows = conn.execute(
+        "SELECT DISTINCT n.* FROM notes n"
+        " JOIN note_references nr ON nr.note_id = n.id"
+        ' JOIN "references" r ON r.id = nr.reference_id'
+        f" WHERE r.name IN ({placeholders})"
+        " ORDER BY n.time_stamp ASC",
+        [r.lower() for r in instance.references],
+    ).fetchall()
+    return [_load_note(conn, row) for row in rows]
+
+
+def _render_instance_kb(instance: "Instance", heading_level: int) -> str:
+    prefix = "#" * heading_level
+    lines: list[str] = [f"{prefix} {instance.name}", f"*{instance.type.name}*"]
+    if instance.description:
+        lines += ["", instance.description]
+    return "\n".join(lines)
+
+
+def export_kb_instance(name: str, db_path: Path | None = None) -> str:
+    conn = connect(db_path)
+    row = conn.execute("SELECT * FROM instances WHERE lower(name) = ?", (name.lower(),)).fetchone()
+    if row is None:
+        return ""
+    instance = _load_instance(conn, row)
+    return _render_instance_kb(instance, heading_level=1)
+
+
+def export_kb_kind(kind_name: str, db_path: Path | None = None) -> str:
+    conn = connect(db_path)
+    kind_row = conn.execute(
+        "SELECT * FROM instance_kinds WHERE lower(name) = ?", (kind_name.lower(),)
+    ).fetchone()
+    if kind_row is None:
+        return ""
+    kind = _load_instance_kind(kind_row)
+    instance_rows = conn.execute(
+        "SELECT * FROM instances WHERE instance_kind_id = ? ORDER BY name", (kind_row["id"],)
+    ).fetchall()
+    if not instance_rows:
+        return f"# {kind.plural or kind.name + 's'}\n\n*No instances found.*"
+    sections = [f"# {kind.plural or kind.name + 's'}"]
+    for row in instance_rows:
+        instance = _load_instance(conn, row)
+        sections.append(_render_instance_kb(instance, heading_level=2))
+    return "\n\n".join(sections)
+
+
+def daily_report(start: date, end: date, db_path: Path | None = None) -> str:
+    conn = connect(db_path)
+    rows = conn.execute(
+        "SELECT * FROM notes"
+        " WHERE date(time_stamp) BETWEEN ? AND ?"
+        " ORDER BY time_stamp ASC",
+        (start.isoformat(), end.isoformat()),
+    ).fetchall()
+
+    by_day: dict[date, list[Note]] = defaultdict(list)
+    for row in rows:
+        note = _load_note(conn, row)
+        by_day[note.time_stamp.date()].append(note)
+
+    sections: list[str] = []
+    current = start
+    from datetime import timedelta
+
+    while current <= end:
+        if current in by_day:
+            heading = f"## {current.strftime('%A, %d %B %Y')}"
+            notes_md = "\n\n".join(f"- {n.body}" for n in by_day[current])
+            sections.append(f"{heading}\n\n{notes_md}")
+        current += timedelta(days=1)
+
+    return "\n\n".join(sections)
 
 
 def get_note(note_id: int, db_path: Path | None = None) -> Note | None:

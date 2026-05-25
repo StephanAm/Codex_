@@ -12,6 +12,9 @@ When opening a note for editing, place the cursor on a new line at the end of th
 ## ~~#15 — Trailing newline on save~~ ✓
 When saving a note, ensure the body always ends with exactly one newline. Prevents notes from accumulating trailing whitespace or missing the final newline across repeated edits.
 
+## #17 — Markdown rendering in note body
+Render note bodies as markdown in the GUI (headings, bold, italic, code blocks, lists, blockquotes). Use `react-markdown` + `remark-gfm`. The existing date-highlighting in `NoteDetail.tsx` would need to be ported to a remark plugin. All markdown elements need styling to match the Mnemo design system.
+
 ## #14 — Pinned notes
 Allow notes to be pinned so they always appear at the top of the note list regardless of sort order. Useful for persistent reminders, standing agenda items, or reference notes that are frequently consulted.
 

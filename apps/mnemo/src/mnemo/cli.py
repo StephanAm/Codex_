@@ -1,4 +1,5 @@
 import sys
+from datetime import date, timedelta
 from pathlib import Path
 
 import click
@@ -9,7 +10,10 @@ from .store import (
     add_note,
     create_instance,
     create_type,
+    daily_report,
     delete_note,
+    export_kb_instance,
+    export_kb_kind,
     get_default_tags,
     get_sync_adapter,
     get_sync_folder,
@@ -94,6 +98,55 @@ def search(query: str) -> None:
     for note in notes:
         click.echo(_render_note(note))
         click.echo()
+
+
+@cli.command()
+@click.option("--from", "from_date", default=None, metavar="YYYY-MM-DD", help="Start date (inclusive). Defaults to today.")
+@click.option("--to", "to_date", default=None, metavar="YYYY-MM-DD", help="End date (inclusive). Defaults to --from.")
+@click.option("--days", default=None, type=int, help="Number of days ending today (alternative to --from/--to).")
+@click.option("--output", "-o", default=None, metavar="FILE", help="Write report to a file instead of stdout.")
+def report(from_date: str | None, to_date: str | None, days: int | None, output: str | None) -> None:
+    """Generate a daily markdown report for a date range."""
+    today = date.today()
+    if days is not None:
+        start = today - timedelta(days=days - 1)
+        end = today
+    else:
+        start = date.fromisoformat(from_date) if from_date else today
+        end = date.fromisoformat(to_date) if to_date else start
+
+    md = daily_report(start, end)
+    if not md:
+        click.echo("No notes found for that period.")
+        return
+
+    if output:
+        Path(output).write_text(md + "\n", encoding="utf-8")
+        click.echo(f"Report written to {output}")
+    else:
+        click.echo(md)
+
+
+@cli.command("export-kb")
+@click.option("--kind", default=None, metavar="NAME", help="Export all instances of a Kind.")
+@click.option("--instance", default=None, metavar="NAME", help="Export a single Instance.")
+@click.option("--output", "-o", default=None, metavar="FILE", help="Write to a file instead of stdout.")
+def export_kb(kind: str | None, instance: str | None, output: str | None) -> None:
+    """Export a Kind or Instance knowledge base as markdown."""
+    if not kind and not instance:
+        raise click.UsageError("Provide --kind or --instance.")
+    if kind and instance:
+        raise click.UsageError("Provide --kind or --instance, not both.")
+
+    md = export_kb_kind(kind) if kind else export_kb_instance(instance or "")
+    if not md:
+        raise click.ClickException("Not found.")
+
+    if output:
+        Path(output).write_text(md + "\n", encoding="utf-8")
+        click.echo(f"Exported to {output}")
+    else:
+        click.echo(md)
 
 
 @cli.command()
@@ -200,6 +253,33 @@ def session_clear() -> None:
 @cli.group()
 def kinds() -> None:
     """Manage Kinds and their Instances."""
+
+
+@kinds.command("list")
+def kinds_list() -> None:
+    """List all Kinds."""
+    all_kinds = list_types()
+    if not all_kinds:
+        click.echo("No kinds found.")
+        return
+    for k in all_kinds:
+        click.echo(k.name)
+
+
+@kinds.command("instances")
+@click.argument("kind_name")
+def kinds_instances(kind_name: str) -> None:
+    """List all Instances of a Kind."""
+    all_kinds = {k.name.lower(): k for k in list_types()}
+    kind = all_kinds.get(kind_name.lower())
+    if kind is None:
+        raise click.ClickException(f"Kind '{kind_name}' not found.")
+    instances = list_instances(kind.id)
+    if not instances:
+        click.echo(f"No instances found for '{kind.name}'.")
+        return
+    for i in instances:
+        click.echo(i.name)
 
 
 @kinds.command("import")
