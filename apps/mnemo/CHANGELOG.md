@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.3.2] — 2026-05-26
+
+- Remove version specification for pnpm action in Windows build workflow
+
 ## [1.3.1] — 2026-05-26
 
 - Refactor permissions in settings.json to streamline Bash commands and remove obsolete entries
