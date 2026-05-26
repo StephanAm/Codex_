@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.0] — 2026-05-26
+
+- Add mnemo-gui package with dependencies to Cargo.lock
+- Port Mnemo into the codex monorepo
+- Add export_kb_all function to export all knowledge base instances
+
 ## [1.2.7] — 2026-05-25
 
 - Add new features for daily report generation and knowledge base export
