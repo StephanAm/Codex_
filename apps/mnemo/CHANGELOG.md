@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.1] — 2026-05-26
+
+- Refactor permissions in settings.json to streamline Bash commands and remove obsolete entries
+- Update release command documentation and add permission for Mnemo release script
+- Add check script and documentation; update settings and CLI options
+- Remove auto-commit and reminder scripts from Claude settings
+- Format option help text for clarity in search command
+- Fix Tauri build command in build_linux.sh to remove unnecessary dashes
+
 ## [1.3.0] — 2026-05-26
 
 - Add mnemo-gui package with dependencies to Cargo.lock
