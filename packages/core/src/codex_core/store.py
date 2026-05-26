@@ -181,9 +181,7 @@ def export_kb_all(db_path: Path | None = None) -> str:
 
 def export_kb_kind(kind_name: str, db_path: Path | None = None) -> str:
     conn = connect(db_path)
-    kind_row = conn.execute(
-        "SELECT * FROM instance_kinds WHERE lower(name) = ?", (kind_name.lower(),)
-    ).fetchone()
+    kind_row = conn.execute("SELECT * FROM instance_kinds WHERE lower(name) = ?", (kind_name.lower(),)).fetchone()
     if kind_row is None:
         return ""
     kind = _load_instance_kind(kind_row)
@@ -202,9 +200,7 @@ def export_kb_kind(kind_name: str, db_path: Path | None = None) -> str:
 def daily_report(start: date, end: date, db_path: Path | None = None) -> str:
     conn = connect(db_path)
     rows = conn.execute(
-        "SELECT * FROM notes"
-        " WHERE date(time_stamp) BETWEEN ? AND ?"
-        " ORDER BY time_stamp ASC",
+        "SELECT * FROM notes WHERE date(time_stamp) BETWEEN ? AND ? ORDER BY time_stamp ASC",
         (start.isoformat(), end.isoformat()),
     ).fetchall()
 

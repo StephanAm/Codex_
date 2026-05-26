@@ -17,11 +17,18 @@
       "Bash(cat /home/stephan/Code/note-taker/CLAUDE.md 2>/dev/null | head -80; echo \"===\"; cat /home/stephan/Code/note-taker/.gitignore 2>/dev/null)",
       "Read(//home/stephan/Code/note-taker/**)",
       "Bash(ls /home/stephan/Code/note-taker/gui/src/components/ 2>/dev/null; echo \"===\"; ls apps/mnemo/gui/src/components/ 2>/dev/null; echo \"===\"; ls apps/mnemo/gui/src/ 2>/dev/null)",
-      "Read(//home/stephan/Code/note-taker/gui/src/components/**)"
+      "Read(//home/stephan/Code/note-taker/gui/src/components/**)",
+      "Bash(mv /home/stephan/Code/codex/.claude/check.sh /home/stephan/Code/codex/apps/scripts/check.sh)",
+      "Bash(./apps/scripts/check.sh)",
+      "Bash(grep -r \"VIRTUAL_ENV\" /home/stephan/.zshrc /home/stephan/.zprofile /home/stephan/.profile /home/stephan/.bashrc /home/stephan/.bash_profile 2>/dev/null)",
+      "Read(//home/stephan/**)",
+      "Bash(grep -r \"VIRTUAL_ENV\" /etc/environment /etc/profile /etc/profile.d/ 2>/dev/null)",
+      "Read(//etc/**)"
     ],
     "additionalDirectories": [
       "/home/stephan/.claude/commands",
-      "/tmp"
+      "/tmp",
+      "/home/stephan/Code/codex/.claude"
     ]
   },
   "hooks": {
@@ -31,26 +38,26 @@
         "hooks": [
           {
             "type": "command",
-            "if": "Edit(*.py)|Write(*.py)",
             "command": "uv run ruff check 2>&1 || true",
+            "if": "Edit(*.py)|Write(*.py)",
             "statusMessage": "Running ruff check..."
           },
           {
             "type": "command",
-            "if": "Edit(*.py)|Write(*.py)",
             "command": "uv run ruff format --check 2>&1 || true",
+            "if": "Edit(*.py)|Write(*.py)",
             "statusMessage": "Running ruff format check..."
           },
           {
             "type": "command",
-            "if": "Edit(*.py)|Write(*.py)",
             "command": "uv run mypy 2>&1 || true",
+            "if": "Edit(*.py)|Write(*.py)",
             "statusMessage": "Running mypy..."
           },
           {
             "type": "command",
-            "if": "Edit(*.py)|Write(*.py)",
             "command": "uv run pytest 2>&1 || true",
+            "if": "Edit(*.py)|Write(*.py)",
             "statusMessage": "Running pytest..."
           }
         ]

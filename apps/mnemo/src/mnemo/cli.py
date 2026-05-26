@@ -102,8 +102,9 @@ def search(query: str) -> None:
 
 
 @cli.command()
-@click.option("--from", "from_date", default=None, metavar="YYYY-MM-DD",
-              help="Start date (inclusive). Defaults to today.")
+@click.option(
+    "--from", "from_date", default=None, metavar="YYYY-MM-DD", help="Start date (inclusive). Defaults to today."
+)
 @click.option("--to", "to_date", default=None, metavar="YYYY-MM-DD", help="End date (inclusive). Defaults to --from.")
 @click.option("--days", default=None, type=int, help="Number of days ending today (alternative to --from/--to).")
 @click.option("--output", "-o", default=None, metavar="FILE", help="Write report to a file instead of stdout.")
