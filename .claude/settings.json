@@ -23,7 +23,8 @@
       "Bash(grep -r \"VIRTUAL_ENV\" /home/stephan/.zshrc /home/stephan/.zprofile /home/stephan/.profile /home/stephan/.bashrc /home/stephan/.bash_profile 2>/dev/null)",
       "Read(//home/stephan/**)",
       "Bash(grep -r \"VIRTUAL_ENV\" /etc/environment /etc/profile /etc/profile.d/ 2>/dev/null)",
-      "Read(//etc/**)"
+      "Read(//etc/**)",
+      "Bash(./apps/mnemo/scripts/release.sh \"patch\")"
     ],
     "additionalDirectories": [
       "/home/stephan/.claude/commands",
