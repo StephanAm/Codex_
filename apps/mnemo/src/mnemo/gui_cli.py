@@ -58,7 +58,7 @@ def main() -> None:
                 sys.executable,
                 "-m",
                 "uvicorn",
-                "note_taker.api:app",
+                "mnemo.api:app",
                 "--host",
                 "127.0.0.1",
                 "--port",

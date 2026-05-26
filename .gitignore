@@ -13,7 +13,7 @@ build/
 .venv/
 venv/
 env/
-build/
+
 # uv
 .uv/
 
@@ -26,7 +26,6 @@ htmlcov/
 app.log
 
 # Generated
-new_python_project.py
 notion-exports/
 
 # Type checking
@@ -35,11 +34,14 @@ notion-exports/
 # Ruff
 .ruff_cache/
 
+# Node / pnpm
+node_modules/
+.pnpm-store/
+
 # GUI (Tauri + React)
-gui/node_modules/
-gui/dist/
-gui/src-tauri/target/
-gui/src-tauri/binaries/
+apps/*/gui/dist/
+apps/*/gui/src-tauri/target/
+apps/*/gui/src-tauri/binaries/
 
 # Editors
 .vscode/

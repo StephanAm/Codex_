@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from note_taker.db import connect
-from note_taker.store import (
+from codex_core.db import connect
+from codex_core.store import (
     add_note,
     create_instance,
     create_type,
@@ -17,7 +17,7 @@ from note_taker.store import (
     list_types,
     update_type,
 )
-from note_taker.sync.merge import merge_remote
+from codex_core.sync.merge import merge_remote
 
 
 @pytest.fixture
@@ -63,7 +63,7 @@ def test_merge_updates_note_when_remote_is_newer(local_db: Path, remote_db: Path
     # Give remote a newer timestamp by adding then updating
     add_note("original", db_path=remote_db)
     time.sleep(0.01)
-    from note_taker.store import update_note
+    from codex_core.store import update_note
 
     update_note(
         connect(remote_db).execute("SELECT id FROM notes ORDER BY created_at").fetchone()["id"],

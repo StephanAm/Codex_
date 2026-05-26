@@ -2,7 +2,7 @@ import logging
 
 import pytest
 
-from note_taker.logger import _color_for, _ConsoleFormatter, _FileFormatter, get_logger
+from codex_core.logger import _color_for, _ConsoleFormatter, _FileFormatter, get_logger
 
 
 def test_get_logger_returns_logger() -> None:

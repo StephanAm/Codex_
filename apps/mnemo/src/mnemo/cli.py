@@ -4,9 +4,9 @@ from pathlib import Path
 
 import click
 
-from .models import Note
-from .session import clear_session_context, get_session_context, set_session_context
-from .store import (
+from codex_core.models import Note
+from codex_core.session import clear_session_context, get_session_context, set_session_context
+from codex_core.store import (
     add_note,
     create_instance,
     create_type,
@@ -61,7 +61,7 @@ def add(text: str | None) -> None:
     session_tags, session_references = get_session_context()
     all_extra_tags = list(dict.fromkeys(defaults + session_tags))
     if all_extra_tags or session_references:
-        from .parser import parse as _parse
+        from codex_core.parser import parse as _parse
 
         parsed = _parse(text)
         missing_tags = [t for t in all_extra_tags if t not in parsed.tags]
@@ -372,14 +372,14 @@ def kinds_import(file: Path) -> None:
 def _get_adapter() -> object:
     adapter = get_sync_adapter()
     if adapter == "local_folder":
-        from .sync.local_folder import LocalFolderAdapter
+        from codex_core.sync.local_folder import LocalFolderAdapter
 
         raw = get_sync_local_path()
         if not raw:
             raise click.ClickException("Local folder path is not configured. Run: note sync config local-path <PATH>")
         return LocalFolderAdapter(Path(raw))
     # default: google_drive
-    from .sync.google_drive import GoogleDriveAdapter
+    from codex_core.sync.google_drive import GoogleDriveAdapter
 
     config_dir = Path.home() / ".note_taker"
     return GoogleDriveAdapter(
@@ -397,8 +397,8 @@ def sync() -> None:
 @sync.command("push")
 def sync_push() -> None:
     """Upload this device's DB to remote storage."""
-    from .db import get_db_path
-    from .sync.device import get_device_id
+    from codex_core.db import get_db_path
+    from codex_core.sync.device import get_device_id
 
     adapter = _get_adapter()
     device_id = get_device_id()
@@ -411,9 +411,9 @@ def sync_push() -> None:
 @sync.command("pull")
 def sync_pull() -> None:
     """Download and merge all other devices' DBs into the local DB."""
-    from .db import connect, get_db_path
-    from .sync.device import get_device_id
-    from .sync.merge import merge_remote
+    from codex_core.db import connect, get_db_path
+    from codex_core.sync.device import get_device_id
+    from codex_core.sync.merge import merge_remote
 
     adapter = _get_adapter()
     device_id = get_device_id()
@@ -436,7 +436,7 @@ def sync_pull() -> None:
 @sync.command("status")
 def sync_status() -> None:
     """Show this device's ID and sync configuration."""
-    from .sync.device import get_device_id
+    from codex_core.sync.device import get_device_id
 
     adapter = get_sync_adapter()
     click.echo(f"Device ID:     {get_device_id()}")

@@ -8,9 +8,9 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum, auto
 
-from .models import Note
-from .session import clear_session_context, get_session_context, set_session_context
-from .store import (
+from codex_core.models import Note
+from codex_core.session import clear_session_context, get_session_context, set_session_context
+from codex_core.store import (
     add_note,
     delete_note,
     get_default_tags,
@@ -25,7 +25,7 @@ from .store import (
     set_sync_local_path,
     update_note,
 )
-from .sync.adapter import StorageAdapter
+from codex_core.sync.adapter import StorageAdapter
 
 # ── colour pair indices ───────────────────────────────────────────────────────
 _C_HEADER = 1  # white on blue
@@ -688,21 +688,21 @@ class _App:
     def _do_sync(self) -> str:
         from pathlib import Path
 
-        from .db import connect, get_db_path
-        from .sync.device import get_device_id
-        from .sync.merge import merge_remote
+        from codex_core.db import connect, get_db_path
+        from codex_core.sync.device import get_device_id
+        from codex_core.sync.merge import merge_remote
 
         try:
             sync_adapter = get_sync_adapter()
             if sync_adapter == "local_folder":
-                from .sync.local_folder import LocalFolderAdapter
+                from codex_core.sync.local_folder import LocalFolderAdapter
 
                 raw = get_sync_local_path()
                 if not raw:
                     return "Sync failed: local folder path is not configured."
                 adapter: StorageAdapter = LocalFolderAdapter(Path(raw))
             else:
-                from .sync.google_drive import GoogleDriveAdapter
+                from codex_core.sync.google_drive import GoogleDriveAdapter
 
                 config_dir = Path.home() / ".note_taker"
                 adapter = GoogleDriveAdapter(
@@ -764,7 +764,7 @@ class _App:
 
     def _session_input(self, key: int) -> bool:
         if key in (10, 13):  # Enter — save
-            from .parser import parse as _parse
+            from codex_core.parser import parse as _parse
 
             parsed = _parse(self._session_buf)
             if parsed.tags or parsed.references:

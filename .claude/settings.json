@@ -1,9 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(uv sync *)",
-      "Bash(uv run *)",
-      "Bash(python pack.py)",
+      "Bash(uv *)",
+      "Bash(python *)",
       "Bash(npm run *)",
       "Bash(git *)",
       "Bash(./gui/gui.sh build *)",
@@ -12,7 +11,13 @@
       "Bash(./scripts/release.sh)",
       "Bash(./scripts/release.sh minor *)",
       "Bash(grep -E '\\\\.\\(tsx|ts\\)$')",
-      "Bash(cat > *)"
+      "Bash(cat > *)",
+      "Bash(/bin/sed -n '475,490p' packages/core/src/codex_core/store.py)",
+      "Read(//home/stephan/Code/note-taker/.github/workflows/**)",
+      "Bash(cat /home/stephan/Code/note-taker/CLAUDE.md 2>/dev/null | head -80; echo \"===\"; cat /home/stephan/Code/note-taker/.gitignore 2>/dev/null)",
+      "Read(//home/stephan/Code/note-taker/**)",
+      "Bash(ls /home/stephan/Code/note-taker/gui/src/components/ 2>/dev/null; echo \"===\"; ls apps/mnemo/gui/src/components/ 2>/dev/null; echo \"===\"; ls apps/mnemo/gui/src/ 2>/dev/null)",
+      "Read(//home/stephan/Code/note-taker/gui/src/components/**)"
     ],
     "additionalDirectories": [
       "/home/stephan/.claude/commands",

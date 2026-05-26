@@ -4,28 +4,31 @@ A Tauri desktop window wrapping a React/TypeScript frontend. The UI talks to a
 local FastAPI server (part of the main Python package) over HTTP on port 8765.
 
 **Design system:** all colour, typography, component, and copy rules are in
-[`../designdocs/mnemo-design-system.md`](../designdocs/mnemo-design-system.md). Prompt that file
+[`../../../designdocs/mnemo-design-system.md`](../../../designdocs/mnemo-design-system.md). Prompt that file
 when making UI changes and follow every rule exactly.
 
 ## How to run
 
+Run from anywhere — paths are derived from the script's location:
+
 ```bash
 # Terminal 1 — Python API server
-./gui/gui.sh api        # starts FastAPI on http://localhost:8765
+./apps/mnemo/gui/gui.sh api        # starts FastAPI on http://localhost:8765
 
 # Terminal 2 — Tauri desktop window
-./gui/gui.sh dev        # starts Vite + opens the Tauri window
+./apps/mnemo/gui/gui.sh dev        # starts Vite + opens the Tauri window
 
 # Build check (TypeScript + Vite, no Tauri)
-./gui/gui.sh build
+./apps/mnemo/gui/gui.sh build
 
 # Stop the API server
-./gui/gui.sh kill
+./apps/mnemo/gui/gui.sh kill
 ```
 
-The `api` command runs `uvicorn note_taker.api:app` from the repo root using the
-project's `.venv`. The `dev` command requires Rust/Cargo; see the top-level
-CLAUDE.md for one-time setup instructions.
+The `api` command runs `uv run --package mnemo uvicorn mnemo.api:app` from the
+workspace root, picking up the shared `.venv`. The `dev` command requires
+Rust/Cargo; see the workspace [`CLAUDE.md`](../../../CLAUDE.md) for one-time setup
+instructions.
 
 ## Directory layout
 
@@ -41,13 +44,12 @@ gui/
 │   ├── App.css             # all styles (single stylesheet, CSS variables for theming)
 │   ├── api.ts              # typed API client (fetch wrappers + shared interfaces)
 │   │
-│   └── components/
+│   └── components/             # Mnemo-specific components — generic primitives
+│       │                       # (TagBadge, TagReferencePicker, SyncButton)
+│       │                       # live in @codex/ui (packages/ui/).
 │       ├── NoteList.tsx        # left panel: search bar + scrollable list of notes
 │       ├── NoteDetail.tsx      # right panel: read-only view of the selected note
 │       ├── NoteEditor.tsx      # right panel: create / edit form (body + tag/reference pickers)
-│       ├── TagReferencePicker.tsx # reusable dropdown for selecting tags or references
-│       ├── TagBadge.tsx        # small coloured badge for a single tag or reference
-│       ├── SyncButton.tsx      # header button that triggers sync
 │       ├── SplashScreen.tsx    # startup screen: polls /health until backend is ready
 │       └── ConfigPanel.tsx     # right panel: view/edit app config (default tags, sync adapter, sync path)
 │

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Note } from "../api";
-import { TagReferencePicker } from "./TagReferencePicker";
+import { TagReferencePicker } from "@codex/ui";
 
 interface Props {
   notes: Note[];

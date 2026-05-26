@@ -18,19 +18,19 @@ from fastapi.middleware.cors import CORSMiddleware
 try:
     from importlib.metadata import version as _pkg_version
 
-    _VERSION = _pkg_version("note-taker")
+    _VERSION = _pkg_version("mnemo")
 except Exception:
     _VERSION = "unknown"
 import truststore
 from pydantic import BaseModel, Field
 
-from .models import Note
+from codex_core.models import Note
 
 truststore.inject_into_ssl()
 
-from .logger import get_logger  # noqa: E402
-from .session import clear_session_context, get_session_context, set_session_context  # noqa: E402
-from .store import (  # noqa: E402
+from codex_core.logger import get_logger  # noqa: E402
+from codex_core.session import clear_session_context, get_session_context, set_session_context  # noqa: E402
+from codex_core.store import (  # noqa: E402
     add_note,
     create_instance,
     create_type,
@@ -87,7 +87,7 @@ async def lifespan(_app: FastAPI) -> Any:
         _remove_pid_file()
 
 
-app = FastAPI(title="note-taker API", lifespan=lifespan)
+app = FastAPI(title="Mnemo API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -413,17 +413,17 @@ def run_pull() -> dict[str, Any]:
 
 
 def _build_adapter() -> Any:
-    from .sync.adapter import StorageAdapter  # noqa: F401
+    from codex_core.sync.adapter import StorageAdapter  # noqa: F401
 
     sync_adapter = get_sync_adapter()
     if sync_adapter == "local_folder":
-        from .sync.local_folder import LocalFolderAdapter
+        from codex_core.sync.local_folder import LocalFolderAdapter
 
         raw = get_sync_local_path()
         if not raw:
             raise ValueError("Sync failed: local folder path is not configured.")
         return LocalFolderAdapter(Path(raw))
-    from .sync.google_drive import GoogleDriveAdapter
+    from codex_core.sync.google_drive import GoogleDriveAdapter
 
     config_dir = Path.home() / ".note_taker"
     return GoogleDriveAdapter(
@@ -434,9 +434,9 @@ def _build_adapter() -> Any:
 
 
 def _do_push() -> tuple[str, bool]:
-    from .db import get_db_path
-    from .sync.adapter import AuthRequired
-    from .sync.device import get_device_id
+    from codex_core.db import get_db_path
+    from codex_core.sync.adapter import AuthRequired
+    from codex_core.sync.device import get_device_id
 
     try:
         adapter = _build_adapter()
@@ -449,10 +449,10 @@ def _do_push() -> tuple[str, bool]:
 
 
 def _do_pull() -> tuple[str, bool]:
-    from .db import connect, get_db_path
-    from .sync.adapter import AuthRequired
-    from .sync.device import get_device_id
-    from .sync.merge import merge_remote
+    from codex_core.db import connect, get_db_path
+    from codex_core.sync.adapter import AuthRequired
+    from codex_core.sync.device import get_device_id
+    from codex_core.sync.merge import merge_remote
 
     try:
         adapter = _build_adapter()
@@ -475,25 +475,25 @@ def _do_pull() -> tuple[str, bool]:
 
 
 def _do_sync() -> tuple[str, bool]:
-    from .db import connect, get_db_path
-    from .sync.adapter import AuthRequired
-    from .sync.device import get_device_id
-    from .sync.merge import merge_remote
+    from codex_core.db import connect, get_db_path
+    from codex_core.sync.adapter import AuthRequired
+    from codex_core.sync.device import get_device_id
+    from codex_core.sync.merge import merge_remote
 
     try:
-        from .sync.adapter import StorageAdapter
+        from codex_core.sync.adapter import StorageAdapter
 
         sync_adapter = get_sync_adapter()
         adapter: StorageAdapter
         if sync_adapter == "local_folder":
-            from .sync.local_folder import LocalFolderAdapter
+            from codex_core.sync.local_folder import LocalFolderAdapter
 
             raw = get_sync_local_path()
             if not raw:
                 return "Sync failed: local folder path is not configured.", False
             adapter = LocalFolderAdapter(Path(raw))
         else:
-            from .sync.google_drive import GoogleDriveAdapter
+            from codex_core.sync.google_drive import GoogleDriveAdapter
 
             config_dir = Path.home() / ".note_taker"
             adapter = GoogleDriveAdapter(
@@ -642,7 +642,7 @@ async def auth_google() -> dict[str, str]:
             ),
         )
     try:
-        from .sync.google_drive import run_auth_flow
+        from codex_core.sync.google_drive import run_auth_flow
 
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, run_auth_flow, creds_path, token_path)

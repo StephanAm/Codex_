@@ -1,39 +1,5 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[project]
-name = "note_taker"
-version = "1.2.7"
-description = ""
-readme = "README.md"
-requires-python = ">=3.11"
-dependencies = [
-    "click>=8.0",
-    "fastapi>=0.110",
-    "platformdirs>=4.0",
-    "pyyaml>=6.0",
-    "truststore>=0.9",
-    "tqdm>=4.0",
-    "uvicorn[standard]>=0.29",
-]
-
-[project.optional-dependencies]
-google-drive = [
-    "google-api-python-client>=2.0",
-    "google-auth-httplib2>=0.1",
-    "google-auth-oauthlib>=1.0",
-]
-
-[project.scripts]
-note          = "note_taker.cli:cli"
-note-tui      = "note_taker.tui:launch"
-note-api      = "note_taker.api:serve"
-note-openapi  = "note_taker.api:export_openapi"
-gui           = "note_taker.gui_cli:main"
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/note_taker"]
+[tool.uv.workspace]
+members = ["packages/core", "apps/mnemo"]
 
 [dependency-groups]
 dev = [
@@ -46,28 +12,28 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-addopts = "--cov=note_taker --cov-report=term-missing"
+testpaths = ["packages/core/tests", "apps/mnemo/tests"]
+addopts = "--cov=codex_core --cov=mnemo --cov-report=term-missing"
 markers = ["integration: requires external services (deselected by default)"]
 
 [tool.coverage.run]
-source = ["src"]
+source = ["packages/core/src", "apps/mnemo/src"]
 
 [tool.ruff]
 line-length = 120
-src = ["src"]
+src = ["packages/core/src", "apps/mnemo/src"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
 
 [tool.mypy]
 strict = true
-files = ["src"]
+files = ["packages/core/src", "apps/mnemo/src"]
 
 [[tool.mypy.overrides]]
 module = ["google.*", "google_auth_oauthlib.*", "googleapiclient.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = ["note_taker.sync.google_drive"]
+module = ["codex_core.sync.google_drive"]
 disallow_untyped_calls = false

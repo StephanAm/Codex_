@@ -9,7 +9,8 @@ import { NoteEditor } from "./components/NoteEditor";
 import { NoteList } from "./components/NoteList";
 import { RecallSidebar } from "./components/RecallSidebar";
 import { SplashScreen } from "./components/SplashScreen";
-import { SyncButton, SyncState } from "./components/SyncButton";
+import { SyncButton, SyncState } from "@codex/ui";
+import "@codex/ui/styles/components.css";
 import "./App.css";
 
 type Mode = "view" | "add" | "edit" | "config";

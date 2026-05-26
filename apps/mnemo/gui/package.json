@@ -1,5 +1,5 @@
 {
-  "name": "note-taker-gui",
+  "name": "mnemo-gui",
   "private": true,
   "version": "1.2.7",
   "type": "module",
@@ -10,6 +10,7 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@codex/ui": "workspace:*",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",
     "@tauri-apps/plugin-shell": "^2.3.5",

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, Instance } from "../api";
-import { TagReferencePicker } from "./TagReferencePicker";
+import { TagReferencePicker } from "@codex/ui";
 
 interface Props {
   instance: Instance;

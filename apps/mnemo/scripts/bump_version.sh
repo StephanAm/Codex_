@@ -15,6 +15,7 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+WORKSPACE_ROOT="$(cd "$REPO_DIR/../.." && pwd)"
 BUMP_ARG="${1:-}"
 
 log() { echo "▶ [version] $*"; }
@@ -46,11 +47,11 @@ bump_major() {
 sync_files() {
     local ver="$1"
     sed -i "s/^version = \"[^\"]*\"/version = \"$ver\"/"            "$REPO_DIR/pyproject.toml"
-    sed -i "s/__version__ = \"[^\"]*\"/__version__ = \"$ver\"/"     "$REPO_DIR/src/note_taker/__init__.py"
+    sed -i "s/__version__ = \"[^\"]*\"/__version__ = \"$ver\"/"     "$REPO_DIR/src/mnemo/__init__.py"
     sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$ver\"/"       "$REPO_DIR/gui/src-tauri/tauri.conf.json"
     sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$ver\"/"       "$REPO_DIR/gui/package.json"
-    uv sync --extra google-drive --quiet
-    (cd "$REPO_DIR/gui" && npm install --silent)
+    (cd "$WORKSPACE_ROOT" && uv sync --all-packages --extra google-drive --quiet)
+    (cd "$WORKSPACE_ROOT" && pnpm install --silent)
 }
 
 commit_and_tag() {
@@ -62,11 +63,11 @@ commit_and_tag() {
         git -C "$REPO_DIR" add \
             "$VERSION_FILE" \
             "$REPO_DIR/pyproject.toml" \
-            "$REPO_DIR/uv.lock" \
-            "$REPO_DIR/src/note_taker/__init__.py" \
+            "$WORKSPACE_ROOT/uv.lock" \
+            "$REPO_DIR/src/mnemo/__init__.py" \
             "$REPO_DIR/gui/src-tauri/tauri.conf.json" \
             "$REPO_DIR/gui/package.json" \
-            "$REPO_DIR/gui/package-lock.json"
+            "$WORKSPACE_ROOT/pnpm-lock.yaml"
         git -C "$REPO_DIR" commit -m "Bump version to $ver"
     fi
     git -C "$REPO_DIR" tag "v$ver"

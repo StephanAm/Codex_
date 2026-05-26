@@ -17,14 +17,15 @@ jobs:
       - uses: astral-sh/setup-uv@v5
 
       - name: Install Python dependencies
-        run: uv sync --extra google-drive
+        run: uv sync --all-packages --extra google-drive
 
       - name: Build backend binary
         shell: bash
         run: |
-          echo "from note_taker.api import serve; serve()" > _backend_entry.py
-          uv run pyinstaller --onefile --name backend \
-            --collect-all note_taker \
+          mkdir -p apps/mnemo/gui/src-tauri/binaries
+          echo "from mnemo.api import serve; serve()" > _backend_entry.py
+          uv run --package mnemo pyinstaller --onefile --name backend \
+            --collect-all mnemo --collect-all codex_core \
             --hidden-import uvicorn.logging \
             --hidden-import uvicorn.loops \
             --hidden-import uvicorn.loops.auto \
@@ -34,7 +35,7 @@ jobs:
             --hidden-import uvicorn.lifespan \
             --hidden-import uvicorn.lifespan.on \
             _backend_entry.py
-          mv dist/backend.exe gui/src-tauri/binaries/backend-x86_64-pc-windows-msvc.exe
+          mv dist/backend.exe apps/mnemo/gui/src-tauri/binaries/backend-x86_64-pc-windows-msvc.exe
 
       # ── Frontend ───────────────────────────────────────────────────────────
 
@@ -42,9 +43,12 @@ jobs:
         with:
           node-version: 24
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: Install frontend dependencies
-        working-directory: gui
-        run: npm install
+        run: pnpm install
 
       # ── Tauri (Rust + GUI bundle) ──────────────────────────────────────────
 
@@ -52,13 +56,13 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: gui/src-tauri -> target
+          workspaces: apps/mnemo/gui/src-tauri -> target
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         with:
-          projectPath: gui
-          tauriScript: npm run tauri
+          projectPath: apps/mnemo/gui
+          tauriScript: pnpm run tauri
 
       # ── Artifacts ─────────────────────────────────────────────────────────
 
@@ -66,5 +70,5 @@ jobs:
         with:
           name: mnemo-windows-${{ github.ref_name }}
           path: |
-            gui/src-tauri/target/release/bundle/msi/*.msi
-            gui/src-tauri/target/release/bundle/nsis/*.exe
+            apps/mnemo/gui/src-tauri/target/release/bundle/msi/*.msi
+            apps/mnemo/gui/src-tauri/target/release/bundle/nsis/*.exe

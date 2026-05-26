@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from note_taker.db import connect
-from note_taker.store import (
+from codex_core.db import connect
+from codex_core.store import (
     add_note,
     create_instance,
     create_type,

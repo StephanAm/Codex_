@@ -16,7 +16,8 @@ nvm use 24 --silent
 export PATH="$HOME/.cargo/bin:$PATH"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_DIR="$(dirname "$SCRIPT_DIR")"
+APP_DIR="$(dirname "$SCRIPT_DIR")"
+WORKSPACE_ROOT="$(cd "$APP_DIR/../.." && pwd)"
 PORT=8765
 
 # Kill whatever process (uvicorn, frozen backend, anything) holds PORT.
@@ -52,8 +53,8 @@ case "${1:-}" in
       # Give the OS a moment to release the port.
       sleep 0.5
     fi
-    cd "$REPO_DIR"
-    .venv/bin/uvicorn note_taker.api:app --host 127.0.0.1 --port "$PORT" --reload
+    cd "$WORKSPACE_ROOT"
+    uv run --package mnemo uvicorn mnemo.api:app --host 127.0.0.1 --port "$PORT" --reload
     ;;
   *)
     echo "Usage: $0 {api|kill|dev|build}" >&2

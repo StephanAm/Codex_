@@ -16,7 +16,8 @@ nvm use 24 --silent
 export PATH="$HOME/.cargo/bin:$PATH"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_DIR="$(dirname "$SCRIPT_DIR")"
+APP_DIR="$(dirname "$SCRIPT_DIR")"
+WORKSPACE_ROOT="$(cd "$APP_DIR/../.." && pwd)"
 BINARIES_DIR="$SCRIPT_DIR/src-tauri/binaries"
 
 TARGET=$(rustc -Vv | grep '^host' | cut -d' ' -f2)
@@ -26,13 +27,13 @@ mkdir -p "$BINARIES_DIR"
 
 # ── Step 1: Build Python backend with PyInstaller ─────────────────────────────
 echo "Building Python backend..."
-cd "$REPO_DIR"
-.venv/bin/python -m PyInstaller \
+cd "$WORKSPACE_ROOT"
+uv run --package mnemo pyinstaller \
   --onefile \
   --noconsole \
   --distpath "$BINARIES_DIR" \
-  --workpath "$REPO_DIR/build/pyinstaller" \
-  --specpath "$REPO_DIR/build/pyinstaller" \
+  --workpath "$APP_DIR/build/pyinstaller" \
+  --specpath "$APP_DIR/build/pyinstaller" \
   --name "backend-$TARGET" \
   --hidden-import uvicorn.logging \
   --hidden-import uvicorn.loops \
@@ -44,7 +45,7 @@ cd "$REPO_DIR"
   --hidden-import uvicorn.protocols.websockets.auto \
   --hidden-import uvicorn.lifespan \
   --hidden-import uvicorn.lifespan.on \
-  --collect-submodules note_taker \
+  --collect-submodules mnemo --collect-submodules codex_core \
   "$SCRIPT_DIR/backend_main.py"
 
 echo "Backend binary: $BINARIES_DIR/backend-$TARGET"

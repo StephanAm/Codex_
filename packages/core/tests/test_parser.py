@@ -1,4 +1,4 @@
-from note_taker.parser import normalise, parse
+from codex_core.parser import normalise, parse
 
 
 def test_extracts_tag() -> None:

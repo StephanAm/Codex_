@@ -4,7 +4,9 @@
 
 set -euo pipefail
 
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(dirname "$SCRIPT_DIR")"
+WORKSPACE_ROOT="$(cd "$REPO_DIR/../.." && pwd)"
 GUI_DIR="$REPO_DIR/gui"
 TAURI_DIR="$GUI_DIR/src-tauri"
 BUILD_DIR="$REPO_DIR/build"
@@ -34,15 +36,15 @@ log "Target: $TARGET_TRIPLE"
 
 # ── 1. Python dependencies ────────────────────────────────────────────────────
 log "Installing Python dependencies..."
-cd "$REPO_DIR"
-uv sync --extra google-drive
+cd "$WORKSPACE_ROOT"
+uv sync --all-packages --extra google-drive
 
 # ── 2. Freeze Python backend ──────────────────────────────────────────────────
 log "Freezing Python backend with PyInstaller..."
 
 ENTRY_PY="$TMP_DIR/backend_entry.py"
 cat > "$ENTRY_PY" << 'PYEOF'
-from note_taker.api import serve
+from mnemo.api import serve
 serve()
 PYEOF
 
@@ -52,7 +54,7 @@ uv run pyinstaller \
   --distpath "$TMP_DIR/dist" \
   --workpath "$TMP_DIR/work" \
   --specpath "$TMP_DIR" \
-  --collect-all note_taker \
+  --collect-all mnemo --collect-all codex_core \
   --collect-all uvicorn \
   --collect-all fastapi \
   --noconfirm \
@@ -65,12 +67,13 @@ log "Backend binary staged → src-tauri/binaries/backend-$TARGET_TRIPLE.exe"
 
 # ── 3. Node dependencies ──────────────────────────────────────────────────────
 log "Installing Node dependencies..."
-cd "$GUI_DIR"
-npm install
+cd "$WORKSPACE_ROOT"
+pnpm install
 
 # ── 4. Tauri build ────────────────────────────────────────────────────────────
 log "Building Tauri NSIS installer..."
-npm run tauri build -- --bundles nsis
+cd "$GUI_DIR"
+pnpm run tauri build -- --bundles nsis
 
 # ── 5. Collect artefact ───────────────────────────────────────────────────────
 VERSION="$(awk -F'"' '/"version"/{print $4; exit}' "$TAURI_DIR/tauri.conf.json")"

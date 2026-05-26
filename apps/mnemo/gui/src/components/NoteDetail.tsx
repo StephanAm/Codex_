@@ -1,6 +1,6 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { Note } from "../api";
-import { TagBadge } from "./TagBadge";
+import { TagBadge } from "@codex/ui";
 
 interface Props {
   note: Note;

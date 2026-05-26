@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from note_taker.session import (
+from codex_core.session import (
     clear_session_context,
     get_session_context,
     set_session_context,
@@ -12,7 +12,7 @@ from note_taker.session import (
 @pytest.fixture(autouse=True)
 def isolated_session(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     session_file = tmp_path / "session.json"
-    monkeypatch.setattr("note_taker.session._session_path", lambda: session_file)
+    monkeypatch.setattr("codex_core.session._session_path", lambda: session_file)
 
 
 def test_get_returns_empty_when_no_file() -> None:

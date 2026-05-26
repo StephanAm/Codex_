@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from note_taker.dates import normalize_dates
+from codex_core.dates import normalize_dates
 
 
 def norm(text: str, today: date) -> str:

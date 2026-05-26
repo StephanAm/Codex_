@@ -6,7 +6,7 @@ from pathlib import Path
 from uuid import uuid4
 
 try:
-    _APP_VERSION = _pkg_version("note-taker")
+    _APP_VERSION = _pkg_version("codex-core")
 except Exception:
     _APP_VERSION = "unknown"
 

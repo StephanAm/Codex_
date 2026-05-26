@@ -8,7 +8,7 @@ Run them explicitly with:
 
 Prerequisites:
   - ~/.note_taker/credentials.json  (OAuth client secrets from Google Cloud Console)
-  - The google-drive extra installed: uv pip install 'note_taker[google-drive]'
+  - The google-drive extra installed: uv pip install 'codex-core[google-drive]'
 """
 
 from collections.abc import Generator
@@ -24,7 +24,7 @@ if not _CREDS.exists():
     pytest.skip("Google Drive credentials not found", allow_module_level=True)
 
 try:
-    from note_taker.sync.google_drive import GoogleDriveAdapter
+    from codex_core.sync.google_drive import GoogleDriveAdapter
 except ImportError:
     pytest.skip("google-drive extra not installed", allow_module_level=True)
 
@@ -63,8 +63,8 @@ def test_list_devices_returns_list(adapter: GoogleDriveAdapter) -> None:
 
 
 def test_upload_then_download_roundtrip(adapter: GoogleDriveAdapter, tmp_path: Path) -> None:
-    from note_taker.db import connect
-    from note_taker.store import add_note
+    from codex_core.db import connect
+    from codex_core.store import add_note
 
     db = tmp_path / "test.db"
     add_note("integration test note #test", db_path=db)
@@ -87,8 +87,8 @@ def test_download_nonexistent_device_raises(adapter: GoogleDriveAdapter) -> None
 
 
 def test_upload_overwrites_previous_version(adapter: GoogleDriveAdapter, tmp_path: Path) -> None:
-    from note_taker.db import connect
-    from note_taker.store import add_note
+    from codex_core.db import connect
+    from codex_core.store import add_note
 
     db_v1 = tmp_path / "v1.db"
     add_note("version one", db_path=db_v1)

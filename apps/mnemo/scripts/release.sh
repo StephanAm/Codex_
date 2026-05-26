@@ -2,6 +2,7 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+WORKSPACE_ROOT="$(cd "$REPO_DIR/../.." && pwd)"
 BUMP_ARG="${1:-patch}"
 
 log() { echo "▶ [release] $*"; }
@@ -16,14 +17,14 @@ fi
 log "Building GUI..."
 "$REPO_DIR/gui/gui.sh" build
 
-# Step 3: Generate OpenAPI spec
+# Step 3: Generate OpenAPI spec (designdocs lives at the workspace root)
 log "Generating OpenAPI spec..."
-uv run --project "$REPO_DIR" note-openapi > "$REPO_DIR/designdocs/openapi.json"
+(cd "$WORKSPACE_ROOT" && uv run --package mnemo note-openapi) > "$WORKSPACE_ROOT/designdocs/openapi.json"
 
 # Step 4: Commit OpenAPI spec if it changed
-if ! git -C "$REPO_DIR" diff --quiet -- "$REPO_DIR/designdocs/openapi.json"; then
+if ! git -C "$REPO_DIR" diff --quiet -- "$WORKSPACE_ROOT/designdocs/openapi.json"; then
     log "OpenAPI spec changed — committing..."
-    git -C "$REPO_DIR" add "$REPO_DIR/designdocs/openapi.json"
+    git -C "$REPO_DIR" add "$WORKSPACE_ROOT/designdocs/openapi.json"
     git -C "$REPO_DIR" commit -m "Update OpenAPI spec"
 fi
 
