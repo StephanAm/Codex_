@@ -75,7 +75,7 @@ pnpm install
 # ── 4. Tauri build ────────────────────────────────────────────────────────────
 log "Building Tauri AppImage..."
 cd "$GUI_DIR"
-pnpm run tauri build -- --bundles appimage
+pnpm run tauri build --bundles appimage
 
 # ── 5. Collect artefact ───────────────────────────────────────────────────────
 APPIMAGE_SRC="$(find "$TAURI_DIR/target/release/bundle/appimage" -name "*.AppImage" | head -1)"
