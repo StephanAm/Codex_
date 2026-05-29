@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, Instance, InstanceKind, Note } from "./api";
+import { BulletinSidebar, BulletinGroupBy } from "./components/BulletinSidebar";
+import { BulletinView } from "./components/BulletinView";
 import { ConfigPanel } from "./components/ConfigPanel";
 import { InstanceDetail } from "./components/InstanceDetail";
 import { InstanceSidebar } from "./components/InstanceSidebar";
@@ -61,6 +63,15 @@ export default function App() {
   const [instances, setInstances] = useState<Instance[]>([]);
   const [filterInstanceIds, setFilterInstanceIds] = useState<number[]>([]);
 
+  // ── bulletin state ──────────────────────────────────────────────────────────
+  const [bulletinTimePeriod, setBulletinTimePeriod]     = useState("today");
+  const [bulletinDateFrom,   setBulletinDateFrom]       = useState("");
+  const [bulletinDateTo,     setBulletinDateTo]         = useState("");
+  const [bulletinFilterTags, setBulletinFilterTags]     = useState<string[]>([]);
+  const [bulletinFilterReferences, setBulletinFilterReferences] = useState<string[]>([]);
+  const [bulletinFilterInstanceIds, setBulletinFilterInstanceIds] = useState<number[]>([]);
+  const [bulletinGroupBy, setBulletinGroupBy]           = useState<BulletinGroupBy>("none");
+
   // ── responsive layout ───────────────────────────────────────────────────────
   const SIDEBAR_BREAKPOINT = 640;
   const [narrow, setNarrow]           = useState(false);
@@ -92,6 +103,26 @@ export default function App() {
 
   const allTags        = useMemo(() => [...new Set(notes.flatMap(n => n.tags))].sort(),       [notes]);
   const allReferences  = useMemo(() => [...new Set(notes.flatMap(n => n.references))].sort(), [notes]);
+
+  const bulletinNotes = useMemo(() => {
+    let from: Date | null;
+    let to: Date | null;
+    if (bulletinTimePeriod === "custom") {
+      from = bulletinDateFrom ? new Date(bulletinDateFrom) : null;
+      to   = bulletinDateTo   ? new Date(bulletinDateTo + "T23:59:59") : null;
+    } else {
+      [from, to] = timePeriodRange(bulletinTimePeriod);
+    }
+    return notes
+      .filter(n => !from || new Date(n.created_at) >= from)
+      .filter(n => !to   || new Date(n.created_at) <= to)
+      .filter(n => bulletinFilterTags.length === 0 || n.tags.some(t => bulletinFilterTags.includes(t)))
+      .filter(n => bulletinFilterReferences.length === 0 || n.references.some(r => bulletinFilterReferences.includes(r)))
+      .filter(n => bulletinFilterInstanceIds.length === 0 || bulletinFilterInstanceIds.some(id => {
+        const inst = instances.find(i => i.id === id);
+        return inst?.references.some(r => n.references.includes(r.toLowerCase())) ?? false;
+      }));
+  }, [notes, bulletinFilterTags, bulletinFilterReferences, bulletinFilterInstanceIds, instances, bulletinTimePeriod, bulletinDateFrom, bulletinDateTo]);
 
   const displayedNotes = useMemo(() => {
     let from: Date | null;
@@ -316,6 +347,15 @@ export default function App() {
   }
 
   const mainContent = () => {
+    if (activeSidebar === "bulletin") {
+      return (
+        <BulletinView
+          notes={bulletinNotes}
+          groupBy={bulletinGroupBy}
+          instances={instances}
+        />
+      );
+    }
     if (activeSidebar === "instances" && selectedInstance) {
       return (
         <InstanceDetail
@@ -457,9 +497,26 @@ export default function App() {
             />
           )}
           {activeSidebar === "bulletin" && (
-            <div className="sidebar">
-              <div className="sidebar-section-heading">BULLETIN</div>
-            </div>
+            <BulletinSidebar
+              noteCount={bulletinNotes.length}
+              allTags={allTags}
+              allReferences={allReferences}
+              instances={instances}
+              timePeriod={bulletinTimePeriod}
+              dateFrom={bulletinDateFrom}
+              dateTo={bulletinDateTo}
+              filterTags={bulletinFilterTags}
+              filterReferences={bulletinFilterReferences}
+              filterInstanceIds={bulletinFilterInstanceIds}
+              groupBy={bulletinGroupBy}
+              onTimePeriodChange={setBulletinTimePeriod}
+              onDateFromChange={setBulletinDateFrom}
+              onDateToChange={setBulletinDateTo}
+              onFilterTagsChange={setBulletinFilterTags}
+              onFilterReferencesChange={setBulletinFilterReferences}
+              onFilterInstanceIdsChange={setBulletinFilterInstanceIds}
+              onGroupByChange={setBulletinGroupBy}
+            />
           )}
           {activeSidebar === "recall" && (
             <RecallSidebar
