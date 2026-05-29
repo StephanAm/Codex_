@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
-import { Note } from "../api";
+import { Instance, Note } from "../api";
 import { TagReferencePicker } from "@codex/ui";
+import { InstancePicker } from "./InstancePicker";
 
 interface Props {
   notes: Note[];
@@ -13,6 +14,8 @@ interface Props {
   timePeriod: string;
   dateFrom: string;
   dateTo: string;
+  instances: Instance[];
+  filterInstanceIds: number[];
   onSelect: (note: Note) => void;
   onQueryChange: (q: string) => void;
   onFilterTagsChange: (tags: string[]) => void;
@@ -20,6 +23,7 @@ interface Props {
   onTimePeriodChange: (p: string) => void;
   onDateFromChange: (d: string) => void;
   onDateToChange: (d: string) => void;
+  onFilterInstanceIdsChange: (ids: number[]) => void;
   onAdd: () => void;
   className?: string;
 }
@@ -34,7 +38,7 @@ function firstLine(body: string) {
   return body.split("\n").find(l => l.trim()) ?? "";
 }
 
-export function NoteList({ notes, selectedId, query, filterTags, filterReferences, allTags, allReferences, timePeriod, dateFrom, dateTo, onSelect, onQueryChange, onFilterTagsChange, onFilterReferencesChange, onTimePeriodChange, onDateFromChange, onDateToChange, onAdd, className }: Props) {
+export function NoteList({ notes, selectedId, query, filterTags, filterReferences, allTags, allReferences, timePeriod, dateFrom, dateTo, instances, filterInstanceIds, onSelect, onQueryChange, onFilterTagsChange, onFilterReferencesChange, onTimePeriodChange, onDateFromChange, onDateToChange, onFilterInstanceIdsChange, onAdd, className }: Props) {
   const selectedRef = useRef<HTMLLIElement>(null);
 
   useEffect(() => {
@@ -117,6 +121,13 @@ export function NoteList({ notes, selectedId, query, filterTags, filterReference
           dropdownDir="down"
           compact
         />
+        {instances.length > 0 && (
+          <InstancePicker
+            instances={instances}
+            selectedIds={filterInstanceIds}
+            onChange={onFilterInstanceIdsChange}
+          />
+        )}
       </div>
       <ul className="note-list">
         {notes.length === 0 && (

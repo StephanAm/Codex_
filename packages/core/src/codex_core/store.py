@@ -322,6 +322,7 @@ def _load_instance(conn: sqlite3.Connection, row: sqlite3.Row) -> Instance:
 def _attach_instance_references(conn: sqlite3.Connection, instance_id: int, references: list[str]) -> None:
     conn.execute("DELETE FROM instance_references WHERE instance_id = ?", (instance_id,))
     for ref in references:
+        ref = ref.lower()
         conn.execute('INSERT OR IGNORE INTO "references" (name) VALUES (?)', (ref,))
         ref_id = conn.execute('SELECT id FROM "references" WHERE name = ?', (ref,)).fetchone()["id"]
         conn.execute(

@@ -58,12 +58,14 @@ export default function App() {
   const [selectedInstance, setSelectedInstance] = useState<Instance | null>(null);
   const [selectedKind, setSelectedKind] = useState<InstanceKind | null>(null);
   const [kindsVersion, setKindsVersion] = useState(0);
+  const [instances, setInstances] = useState<Instance[]>([]);
+  const [filterInstanceIds, setFilterInstanceIds] = useState<number[]>([]);
 
   // ── responsive layout ───────────────────────────────────────────────────────
   const SIDEBAR_BREAKPOINT = 640;
   const [narrow, setNarrow]           = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeSidebar, setActiveSidebar] = useState<"log" | "recall" | "instances">("log");
+  const [activeSidebar, setActiveSidebar] = useState<"log" | "recall" | "instances" | "bulletin">("log");
 
   useEffect(() => {
     const ro = new ResizeObserver(entries => {
@@ -83,6 +85,11 @@ export default function App() {
   const startupPullDone = useRef(false);
   const pendingPin      = useRef(false);
 
+  useEffect(() => {
+    if (!ready) return;
+    api.instances.list().then(setInstances).catch(() => {});
+  }, [ready, kindsVersion]);
+
   const allTags        = useMemo(() => [...new Set(notes.flatMap(n => n.tags))].sort(),       [notes]);
   const allReferences  = useMemo(() => [...new Set(notes.flatMap(n => n.references))].sort(), [notes]);
 
@@ -98,9 +105,13 @@ export default function App() {
     return notes
       .filter(n => !from || new Date(n.created_at) >= from)
       .filter(n => !to   || new Date(n.created_at) <= to)
-      .filter(n => filterTags.length     === 0 || n.tags.some(t => filterTags.includes(t)))
-      .filter(n => filterReferences.length === 0 || n.references.some(r => filterReferences.includes(r)));
-  }, [notes, filterTags, filterReferences, timePeriod, dateFrom, dateTo]);
+      .filter(n => filterTags.length       === 0 || n.tags.some(t => filterTags.includes(t)))
+      .filter(n => filterReferences.length === 0 || n.references.some(r => filterReferences.includes(r)))
+      .filter(n => filterInstanceIds.length === 0 || filterInstanceIds.some(id => {
+        const inst = instances.find(i => i.id === id);
+        return inst?.references.some(r => n.references.includes(r.toLowerCase())) ?? false;
+      }));
+  }, [notes, filterTags, filterReferences, filterInstanceIds, instances, timePeriod, dateFrom, dateTo]);
 
   const loadNotes = useCallback(async (q?: string) => {
     try {
@@ -178,6 +189,7 @@ export default function App() {
       if (e.key === "1") { e.preventDefault(); setActiveSidebar("log");      if (narrow) setSidebarOpen(true); }
       if (e.key === "2") { e.preventDefault(); setActiveSidebar("recall");   if (narrow) setSidebarOpen(true); }
       if (e.key === "3") { e.preventDefault(); setActiveSidebar("instances"); if (narrow) setSidebarOpen(true); }
+      if (e.key === "4") { e.preventDefault(); setActiveSidebar("bulletin");  if (narrow) setSidebarOpen(true); }
     }
     window.addEventListener("keydown", handleSidebarKey);
     return () => window.removeEventListener("keydown", handleSidebarKey);
@@ -404,6 +416,11 @@ export default function App() {
               data-label="instances"
               onClick={() => setActiveSidebar("instances")}
             >◈</span>
+            <span
+              className={`rail-glyph rail-glyph--bulletin${activeSidebar === "bulletin" ? " rail-glyph--active" : ""}`}
+              data-label="bulletin"
+              onClick={() => setActiveSidebar("bulletin")}
+            >∴</span>
           </div>
           {activeSidebar === "log" && (
             <NoteList
@@ -417,6 +434,8 @@ export default function App() {
               timePeriod={timePeriod}
               dateFrom={dateFrom}
               dateTo={dateTo}
+              instances={instances}
+              filterInstanceIds={filterInstanceIds}
               onSelect={handleSelect}
               onQueryChange={setQuery}
               onFilterTagsChange={setFilterTags}
@@ -424,6 +443,7 @@ export default function App() {
               onTimePeriodChange={setTimePeriod}
               onDateFromChange={setDateFrom}
               onDateToChange={setDateTo}
+              onFilterInstanceIdsChange={setFilterInstanceIds}
               onAdd={() => setMode("add")}
             />
           )}
@@ -435,6 +455,11 @@ export default function App() {
               onSelectKind={handleSelectKind}
               reloadKey={kindsVersion}
             />
+          )}
+          {activeSidebar === "bulletin" && (
+            <div className="sidebar">
+              <div className="sidebar-section-heading">BULLETIN</div>
+            </div>
           )}
           {activeSidebar === "recall" && (
             <RecallSidebar
