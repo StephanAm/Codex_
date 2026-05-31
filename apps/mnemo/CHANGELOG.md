@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.4.0] — 2026-05-31
+
+- feat: add AtlasSidebar and AtlasView components for managing and displaying nodes and pages
+- Update documentation to reflect the correct naming convention for Mnemo_ and its tools
+- Add toolbar with copy markdown functionality to BulletinView
+- Add BulletinSidebar and BulletinView components with filtering functionality for notes
+- Add InstancePicker component and integrate instance filtering in NoteList
+- Add export script for exporting notes from SQLite to JSONL format
+
 ## [1.3.2] — 2026-05-26
 
 - Remove version specification for pnpm action in Windows build workflow
