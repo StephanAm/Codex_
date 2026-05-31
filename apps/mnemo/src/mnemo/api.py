@@ -32,11 +32,18 @@ from codex_core.logger import get_logger  # noqa: E402
 from codex_core.session import clear_session_context, get_session_context, set_session_context  # noqa: E402
 from codex_core.store import (  # noqa: E402
     add_note,
+    create_atlas_node,
+    create_atlas_page,
     create_instance,
     create_type,
+    delete_atlas_node,
+    delete_atlas_page,
     delete_instance,
     delete_note,
     delete_type,
+    get_atlas_node,
+    get_atlas_page_by_node,
+    get_atlas_page_node_ids,
     get_autosync_debounce_ms,
     get_default_tags,
     get_instance,
@@ -47,11 +54,14 @@ from codex_core.store import (  # noqa: E402
     get_sync_folder,
     get_sync_local_path,
     get_type,
+    list_atlas_nodes,
     list_instances,
     list_notes,
     list_references,
     list_tags,
     list_types,
+    move_atlas_node,
+    reorder_atlas_nodes,
     search_notes,
     set_autosync_debounce_ms,
     set_default_tags,
@@ -59,6 +69,8 @@ from codex_core.store import (  # noqa: E402
     set_sync_adapter,
     set_sync_folder,
     set_sync_local_path,
+    update_atlas_node,
+    update_atlas_page,
     update_instance,
     update_note,
     update_type,
@@ -612,6 +624,115 @@ def delete_instance_endpoint(instance_id: int) -> None:
     """Delete an instance by ID. Raises 404 if not found."""
     if not delete_instance(instance_id):
         raise HTTPException(status_code=404, detail=f"Instance #{instance_id} not found")
+
+
+# ── atlas ─────────────────────────────────────────────────────────────────────
+
+
+class AtlasNodePayload(BaseModel):
+    name: str
+    parent_id: int | None = None
+    position: int = 0
+
+
+class AtlasMovePayload(BaseModel):
+    parent_id: int | None
+    position: int
+
+
+class AtlasReorderItem(BaseModel):
+    node_id: int
+    parent_id: int | None
+    position: int
+
+
+class AtlasReorderPayload(BaseModel):
+    updates: list[AtlasReorderItem]
+
+
+class AtlasPagePayload(BaseModel):
+    title: str
+    body: str = ""
+
+
+@app.get("/atlas/nodes", summary="List all atlas nodes")
+def list_atlas_nodes_endpoint() -> list[dict[str, Any]]:
+    nodes = list_atlas_nodes()
+    page_node_ids = get_atlas_page_node_ids()
+    result = []
+    for n in nodes:
+        d = asdict(n)
+        d["has_page"] = n.id in page_node_ids
+        result.append(d)
+    return result
+
+
+@app.post("/atlas/nodes", status_code=201, summary="Create an atlas node")
+def create_atlas_node_endpoint(payload: AtlasNodePayload) -> dict[str, Any]:
+    return asdict(create_atlas_node(payload.name, payload.parent_id, payload.position))
+
+
+@app.put("/atlas/nodes/{node_id}", summary="Rename an atlas node")
+def update_atlas_node_endpoint(node_id: int, payload: AtlasNodePayload) -> dict[str, Any]:
+    node = update_atlas_node(node_id, payload.name)
+    if node is None:
+        raise HTTPException(status_code=404, detail=f"Node #{node_id} not found")
+    return asdict(node)
+
+
+@app.delete("/atlas/nodes/{node_id}", status_code=204, summary="Delete an atlas node")
+def delete_atlas_node_endpoint(node_id: int) -> None:
+    if not delete_atlas_node(node_id):
+        raise HTTPException(status_code=404, detail=f"Node #{node_id} not found")
+
+
+@app.put("/atlas/nodes/{node_id}/move", summary="Move an atlas node")
+def move_atlas_node_endpoint(node_id: int, payload: AtlasMovePayload) -> dict[str, Any]:
+    node = move_atlas_node(node_id, payload.parent_id, payload.position)
+    if node is None:
+        raise HTTPException(status_code=404, detail=f"Node #{node_id} not found")
+    return asdict(node)
+
+
+@app.post("/atlas/nodes/reorder", status_code=204, summary="Batch reorder atlas nodes")
+def reorder_atlas_nodes_endpoint(payload: AtlasReorderPayload) -> None:
+    reorder_atlas_nodes([(u.node_id, u.parent_id, u.position) for u in payload.updates])
+
+
+@app.get("/atlas/nodes/{node_id}/page", summary="Get the page for an atlas node")
+def get_atlas_page_endpoint(node_id: int) -> dict[str, Any]:
+    page = get_atlas_page_by_node(node_id)
+    if page is None:
+        raise HTTPException(status_code=404, detail=f"No page for node #{node_id}")
+    return asdict(page)
+
+
+@app.post("/atlas/nodes/{node_id}/page", status_code=201, summary="Create a page for an atlas node")
+def create_atlas_page_endpoint(node_id: int, payload: AtlasPagePayload) -> dict[str, Any]:
+    if get_atlas_node(node_id) is None:
+        raise HTTPException(status_code=404, detail=f"Node #{node_id} not found")
+    if get_atlas_page_by_node(node_id) is not None:
+        raise HTTPException(status_code=409, detail=f"Node #{node_id} already has a page")
+    return asdict(create_atlas_page(node_id, payload.title, payload.body))
+
+
+@app.put("/atlas/nodes/{node_id}/page", summary="Update the page for an atlas node")
+def update_atlas_page_endpoint(node_id: int, payload: AtlasPagePayload) -> dict[str, Any]:
+    page = get_atlas_page_by_node(node_id)
+    if page is None:
+        raise HTTPException(status_code=404, detail=f"No page for node #{node_id}")
+    updated = update_atlas_page(page.id, payload.title, payload.body)
+    if updated is None:
+        raise HTTPException(status_code=404, detail=f"No page for node #{node_id}")
+    return asdict(updated)
+
+
+@app.delete("/atlas/nodes/{node_id}/page", status_code=204, summary="Delete the page for an atlas node")
+def delete_atlas_page_endpoint(node_id: int) -> None:
+    page = get_atlas_page_by_node(node_id)
+    if page is None:
+        raise HTTPException(status_code=404, detail=f"No page for node #{node_id}")
+    delete_atlas_page(page.id)
 
 
 # ── auth ───────────────────────────────────────────────────────────────────────

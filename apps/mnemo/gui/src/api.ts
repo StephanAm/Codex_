@@ -50,6 +50,27 @@ export interface Instance {
   references: string[];
 }
 
+export interface AtlasNode {
+  id: number;
+  uuid: string;
+  name: string;
+  parent_id: number | null;
+  position: number;
+  has_page: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AtlasPage {
+  id: number;
+  uuid: string;
+  node_id: number;
+  title: string;
+  body: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Config {
   default_tags: string[];
   sync_folder: string;
@@ -131,5 +152,27 @@ export const api = {
     update: (id: number, name: string, instanceKindId: number, description: string, references: string[] = []) =>
       put<Instance>(`/instances/${id}`, { name, instance_kind_id: instanceKindId, description, references }),
     delete: (id: number) => del(`/instances/${id}`),
+  },
+  atlas: {
+    nodes: {
+      list: () => get<AtlasNode[]>("/atlas/nodes"),
+      create: (name: string, parent_id: number | null = null, position = 0) =>
+        post<AtlasNode>("/atlas/nodes", { name, parent_id, position }),
+      update: (id: number, name: string) =>
+        put<AtlasNode>(`/atlas/nodes/${id}`, { name }),
+      delete: (id: number) => del(`/atlas/nodes/${id}`),
+      move: (id: number, parent_id: number | null, position: number) =>
+        put<AtlasNode>(`/atlas/nodes/${id}/move`, { parent_id, position }),
+      reorder: (updates: Array<{ node_id: number; parent_id: number | null; position: number }>) =>
+        post<void>("/atlas/nodes/reorder", { updates }),
+    },
+    pages: {
+      get: (nodeId: number) => get<AtlasPage>(`/atlas/nodes/${nodeId}/page`),
+      create: (nodeId: number, title: string, body = "") =>
+        post<AtlasPage>(`/atlas/nodes/${nodeId}/page`, { title, body }),
+      update: (nodeId: number, title: string, body: string) =>
+        put<AtlasPage>(`/atlas/nodes/${nodeId}/page`, { title, body }),
+      delete: (nodeId: number) => del(`/atlas/nodes/${nodeId}/page`),
+    },
   },
 };

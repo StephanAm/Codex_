@@ -8,7 +8,9 @@
       "Bash(./apps/*/gui/gui.sh *)",
       "Bash(./apps/*/scripts/release.sh *)",
       "Bash(./apps/scripts/check.sh)",
-      "Skill(update-config:*)"
+      "Skill(update-config:*)",
+      "Bash(pnpm add *)",
+      "Bash(pnpm --filter ./apps/mnemo/gui build)"
     ],
     "additionalDirectories": [
       "/home/stephan/.claude/commands",
@@ -44,6 +46,12 @@
             "command": "uv run pytest 2>&1 || true",
             "if": "Edit(*.py)|Write(*.py)",
             "statusMessage": "Running pytest..."
+          },
+          {
+            "type": "command",
+            "command": "cd /home/stephan/Code/codex/apps/mnemo/gui && pnpm exec tsc --noEmit 2>&1 || true",
+            "if": "Edit(*.ts)|Edit(*.tsx)|Write(*.ts)|Write(*.tsx)",
+            "statusMessage": "Running tsc..."
           }
         ]
       }

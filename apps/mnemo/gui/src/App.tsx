@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api, Instance, InstanceKind, Note } from "./api";
+import { api, AtlasNode, Instance, InstanceKind, Note } from "./api";
+import { AtlasSidebar } from "./components/AtlasSidebar";
+import { AtlasView } from "./components/AtlasView";
 import { BulletinSidebar, BulletinGroupBy } from "./components/BulletinSidebar";
 import { BulletinView } from "./components/BulletinView";
 import { ConfigPanel } from "./components/ConfigPanel";
@@ -76,7 +78,11 @@ export default function App() {
   const SIDEBAR_BREAKPOINT = 640;
   const [narrow, setNarrow]           = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeSidebar, setActiveSidebar] = useState<"log" | "recall" | "instances" | "bulletin">("log");
+  const [activeSidebar, setActiveSidebar] = useState<"log" | "recall" | "instances" | "bulletin" | "atlas">("log");
+
+  // ── atlas state ─────────────────────────────────────────────────────────────
+  const [selectedAtlasNode, setSelectedAtlasNode] = useState<AtlasNode | null>(null);
+  const [atlasReloadKey, setAtlasReloadKey] = useState(0);
 
   useEffect(() => {
     const ro = new ResizeObserver(entries => {
@@ -217,10 +223,11 @@ export default function App() {
   useEffect(() => {
     function handleSidebarKey(e: KeyboardEvent) {
       if (!e.metaKey && !e.ctrlKey) return;
-      if (e.key === "1") { e.preventDefault(); setActiveSidebar("log");      if (narrow) setSidebarOpen(true); }
-      if (e.key === "2") { e.preventDefault(); setActiveSidebar("recall");   if (narrow) setSidebarOpen(true); }
+      if (e.key === "1") { e.preventDefault(); setActiveSidebar("log");       if (narrow) setSidebarOpen(true); }
+      if (e.key === "2") { e.preventDefault(); setActiveSidebar("recall");    if (narrow) setSidebarOpen(true); }
       if (e.key === "3") { e.preventDefault(); setActiveSidebar("instances"); if (narrow) setSidebarOpen(true); }
       if (e.key === "4") { e.preventDefault(); setActiveSidebar("bulletin");  if (narrow) setSidebarOpen(true); }
+      if (e.key === "5") { e.preventDefault(); setActiveSidebar("atlas");     if (narrow) setSidebarOpen(true); }
     }
     window.addEventListener("keydown", handleSidebarKey);
     return () => window.removeEventListener("keydown", handleSidebarKey);
@@ -347,6 +354,14 @@ export default function App() {
   }
 
   const mainContent = () => {
+    if (activeSidebar === "atlas") {
+      return (
+        <AtlasView
+          selectedNode={selectedAtlasNode}
+          onPageChange={() => setAtlasReloadKey(k => k + 1)}
+        />
+      );
+    }
     if (activeSidebar === "bulletin") {
       return (
         <BulletinView
@@ -461,6 +476,11 @@ export default function App() {
               data-label="bulletin"
               onClick={() => setActiveSidebar("bulletin")}
             >∴</span>
+            <span
+              className={`rail-glyph rail-glyph--atlas${activeSidebar === "atlas" ? " rail-glyph--active" : ""}`}
+              data-label="atlas"
+              onClick={() => setActiveSidebar("atlas")}
+            >⊕</span>
           </div>
           {activeSidebar === "log" && (
             <NoteList
@@ -516,6 +536,14 @@ export default function App() {
               onFilterReferencesChange={setBulletinFilterReferences}
               onFilterInstanceIdsChange={setBulletinFilterInstanceIds}
               onGroupByChange={setBulletinGroupBy}
+            />
+          )}
+          {activeSidebar === "atlas" && (
+            <AtlasSidebar
+              selectedNodeId={selectedAtlasNode?.id ?? null}
+              onSelect={node => { setSelectedAtlasNode(node); if (narrow) setSidebarOpen(false); }}
+              onDelete={nodeId => { if (selectedAtlasNode?.id === nodeId) setSelectedAtlasNode(null); }}
+              reloadKey={atlasReloadKey}
             />
           )}
           {activeSidebar === "recall" && (

@@ -15,6 +15,12 @@ class MergeResult:
     instances_added: int = 0
     instances_updated: int = 0
     instances_deleted: int = 0
+    atlas_nodes_added: int = 0
+    atlas_nodes_updated: int = 0
+    atlas_nodes_deleted: int = 0
+    atlas_pages_added: int = 0
+    atlas_pages_updated: int = 0
+    atlas_pages_deleted: int = 0
 
 
 def merge_remote(local_conn: sqlite3.Connection, remote_bytes: bytes) -> MergeResult:
@@ -95,6 +101,12 @@ def _merge(local: sqlite3.Connection, remote: sqlite3.Connection) -> MergeResult
                         " ON CONFLICT(key) DO UPDATE SET value = excluded.value",
                         (key, row["value"]),
                     )
+
+    # Atlas — pages first (child), then nodes (parent), then merge in dependency order
+    _apply_atlas_page_tombstones(local, remote, result)
+    _apply_atlas_node_tombstones(local, remote, result)
+    _merge_atlas_nodes(local, remote, result)
+    _merge_atlas_pages(local, remote, result)
 
     local.commit()
     return result
@@ -273,3 +285,135 @@ def _copy_references(
             "INSERT OR IGNORE INTO note_references (note_id, reference_id) VALUES (?, ?)",
             (local_note_id, reference_id),
         )
+
+
+def _apply_atlas_page_tombstones(
+    local: sqlite3.Connection,
+    remote: sqlite3.Connection,
+    result: MergeResult,
+) -> None:
+    for row in remote.execute("SELECT uuid, deleted_at FROM deleted_atlas_pages"):
+        cur = local.execute("DELETE FROM atlas_pages WHERE uuid = ?", (row["uuid"],))
+        if cur.rowcount:
+            result.atlas_pages_deleted += 1
+        local.execute(
+            "INSERT OR IGNORE INTO deleted_atlas_pages (uuid, deleted_at) VALUES (?, ?)",
+            (row["uuid"], row["deleted_at"]),
+        )
+
+
+def _apply_atlas_node_tombstones(
+    local: sqlite3.Connection,
+    remote: sqlite3.Connection,
+    result: MergeResult,
+) -> None:
+    for row in remote.execute("SELECT uuid, deleted_at FROM deleted_atlas_nodes"):
+        # Delete the node's page first if still present (no cascade)
+        node_row = local.execute("SELECT id FROM atlas_nodes WHERE uuid = ?", (row["uuid"],)).fetchone()
+        if node_row:
+            local.execute("DELETE FROM atlas_pages WHERE node_id = ?", (node_row["id"],))
+        cur = local.execute("DELETE FROM atlas_nodes WHERE uuid = ?", (row["uuid"],))
+        if cur.rowcount:
+            result.atlas_nodes_deleted += 1
+        local.execute(
+            "INSERT OR IGNORE INTO deleted_atlas_nodes (uuid, deleted_at) VALUES (?, ?)",
+            (row["uuid"], row["deleted_at"]),
+        )
+
+
+def _merge_atlas_nodes(
+    local: sqlite3.Connection,
+    remote: sqlite3.Connection,
+    result: MergeResult,
+) -> None:
+    tombstoned = {r["uuid"] for r in local.execute("SELECT uuid FROM deleted_atlas_nodes")}
+
+    for row in remote.execute("SELECT * FROM atlas_nodes"):
+        uuid = row["uuid"]
+        if not uuid or uuid in tombstoned:
+            continue
+
+        # Remap remote parent_id → local parent_id via UUID
+        local_parent_id = None
+        if row["parent_id"] is not None:
+            remote_parent = remote.execute(
+                "SELECT uuid FROM atlas_nodes WHERE id = ?", (row["parent_id"],)
+            ).fetchone()
+            if remote_parent:
+                local_parent = local.execute(
+                    "SELECT id FROM atlas_nodes WHERE uuid = ?", (remote_parent["uuid"],)
+                ).fetchone()
+                if local_parent is None:
+                    continue  # parent not present locally yet; skip (resolves on next sync)
+                local_parent_id = local_parent["id"]
+
+        local_row = local.execute("SELECT id, updated_at FROM atlas_nodes WHERE uuid = ?", (uuid,)).fetchone()
+
+        if local_row is None:
+            local.execute(
+                "INSERT INTO atlas_nodes (uuid, name, parent_id, position, created_at, updated_at)"
+                " VALUES (?, ?, ?, ?, ?, ?)",
+                (uuid, row["name"], local_parent_id, row["position"], row["created_at"], row["updated_at"]),
+            )
+            result.atlas_nodes_added += 1
+        elif row["updated_at"] > local_row["updated_at"]:
+            local.execute(
+                "UPDATE atlas_nodes SET name = ?, parent_id = ?, position = ?, updated_at = ? WHERE uuid = ?",
+                (row["name"], local_parent_id, row["position"], row["updated_at"], uuid),
+            )
+            result.atlas_nodes_updated += 1
+
+
+def _merge_atlas_pages(
+    local: sqlite3.Connection,
+    remote: sqlite3.Connection,
+    result: MergeResult,
+) -> None:
+    tombstoned = {r["uuid"] for r in local.execute("SELECT uuid FROM deleted_atlas_pages")}
+
+    for row in remote.execute("SELECT * FROM atlas_pages"):
+        uuid = row["uuid"]
+        if not uuid or uuid in tombstoned:
+            continue
+
+        # Remap remote node_id → local node_id via node UUID
+        remote_node = remote.execute(
+            "SELECT uuid FROM atlas_nodes WHERE id = ?", (row["node_id"],)
+        ).fetchone()
+        if not remote_node:
+            continue
+        local_node = local.execute("SELECT id FROM atlas_nodes WHERE uuid = ?", (remote_node["uuid"],)).fetchone()
+        if not local_node:
+            continue
+        local_node_id = local_node["id"]
+
+        local_row = local.execute("SELECT id, updated_at FROM atlas_pages WHERE uuid = ?", (uuid,)).fetchone()
+
+        if local_row is None:
+            # Check if node already has a page (conflict: different page UUIDs on same node)
+            existing = local.execute(
+                "SELECT id, updated_at FROM atlas_pages WHERE node_id = ?", (local_node_id,)
+            ).fetchone()
+            if existing:
+                # Last-write-wins: replace if remote is newer
+                if row["updated_at"] > existing["updated_at"]:
+                    local.execute("DELETE FROM atlas_pages WHERE node_id = ?", (local_node_id,))
+                    local.execute(
+                        "INSERT INTO atlas_pages (uuid, node_id, title, body, created_at, updated_at)"
+                        " VALUES (?, ?, ?, ?, ?, ?)",
+                        (uuid, local_node_id, row["title"], row["body"], row["created_at"], row["updated_at"]),
+                    )
+                    result.atlas_pages_updated += 1
+            else:
+                local.execute(
+                    "INSERT INTO atlas_pages (uuid, node_id, title, body, created_at, updated_at)"
+                    " VALUES (?, ?, ?, ?, ?, ?)",
+                    (uuid, local_node_id, row["title"], row["body"], row["created_at"], row["updated_at"]),
+                )
+                result.atlas_pages_added += 1
+        elif row["updated_at"] > local_row["updated_at"]:
+            local.execute(
+                "UPDATE atlas_pages SET title = ?, body = ?, updated_at = ? WHERE uuid = ?",
+                (row["title"], row["body"], row["updated_at"], uuid),
+            )
+            result.atlas_pages_updated += 1

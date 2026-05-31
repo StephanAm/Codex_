@@ -6,7 +6,7 @@ from uuid import uuid4
 
 from .dates import normalize_dates
 from .db import connect
-from .models import Instance, InstanceKind, Note, Reference
+from .models import AtlasNode, AtlasPage, Instance, InstanceKind, Note, Reference
 from .parser import normalise, parse
 
 
@@ -589,3 +589,200 @@ def set_pins(uuids: list[str], db_path: Path | None = None) -> None:
         (now,),
     )
     conn.commit()
+
+
+# ── Atlas ──────────────────────────────────────────────────────────────────────
+
+
+def _load_atlas_node(row: sqlite3.Row) -> AtlasNode:
+    return AtlasNode(
+        id=row["id"],
+        uuid=row["uuid"],
+        name=row["name"],
+        parent_id=row["parent_id"],
+        position=row["position"],
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+    )
+
+
+def _load_atlas_page(row: sqlite3.Row) -> AtlasPage:
+    return AtlasPage(
+        id=row["id"],
+        uuid=row["uuid"],
+        node_id=row["node_id"],
+        title=row["title"],
+        body=row["body"],
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+    )
+
+
+def create_atlas_node(
+    name: str,
+    parent_id: int | None = None,
+    position: int = 0,
+    db_path: Path | None = None,
+) -> AtlasNode:
+    conn = connect(db_path)
+    now = datetime.now(UTC).isoformat()
+    cur = conn.execute(
+        "INSERT INTO atlas_nodes (uuid, name, parent_id, position, created_at, updated_at)"
+        " VALUES (?, ?, ?, ?, ?, ?)",
+        (str(uuid4()), name.strip(), parent_id, position, now, now),
+    )
+    conn.commit()
+    row = conn.execute("SELECT * FROM atlas_nodes WHERE id = ?", (cur.lastrowid,)).fetchone()
+    return _load_atlas_node(row)
+
+
+def list_atlas_nodes(db_path: Path | None = None) -> list[AtlasNode]:
+    conn = connect(db_path)
+    rows = conn.execute(
+        "SELECT * FROM atlas_nodes ORDER BY parent_id NULLS FIRST, position ASC"
+    ).fetchall()
+    return [_load_atlas_node(r) for r in rows]
+
+
+def get_atlas_node(node_id: int, db_path: Path | None = None) -> AtlasNode | None:
+    conn = connect(db_path)
+    row = conn.execute("SELECT * FROM atlas_nodes WHERE id = ?", (node_id,)).fetchone()
+    return _load_atlas_node(row) if row else None
+
+
+def update_atlas_node(node_id: int, name: str, db_path: Path | None = None) -> AtlasNode | None:
+    conn = connect(db_path)
+    now = datetime.now(UTC).isoformat()
+    cur = conn.execute(
+        "UPDATE atlas_nodes SET name = ?, updated_at = ? WHERE id = ?",
+        (name.strip(), now, node_id),
+    )
+    conn.commit()
+    if cur.rowcount == 0:
+        return None
+    row = conn.execute("SELECT * FROM atlas_nodes WHERE id = ?", (node_id,)).fetchone()
+    return _load_atlas_node(row)
+
+
+def move_atlas_node(
+    node_id: int,
+    new_parent_id: int | None,
+    new_position: int,
+    db_path: Path | None = None,
+) -> AtlasNode | None:
+    conn = connect(db_path)
+    now = datetime.now(UTC).isoformat()
+    cur = conn.execute(
+        "UPDATE atlas_nodes SET parent_id = ?, position = ?, updated_at = ? WHERE id = ?",
+        (new_parent_id, new_position, now, node_id),
+    )
+    conn.commit()
+    if cur.rowcount == 0:
+        return None
+    row = conn.execute("SELECT * FROM atlas_nodes WHERE id = ?", (node_id,)).fetchone()
+    return _load_atlas_node(row)
+
+
+def reorder_atlas_nodes(
+    updates: list[tuple[int, int | None, int]],
+    db_path: Path | None = None,
+) -> None:
+    conn = connect(db_path)
+    now = datetime.now(UTC).isoformat()
+    for node_id, parent_id, position in updates:
+        conn.execute(
+            "UPDATE atlas_nodes SET parent_id = ?, position = ?, updated_at = ? WHERE id = ?",
+            (parent_id, position, now, node_id),
+        )
+    conn.commit()
+
+
+def delete_atlas_node(node_id: int, db_path: Path | None = None) -> bool:
+    conn = connect(db_path)
+    row = conn.execute("SELECT uuid FROM atlas_nodes WHERE id = ?", (node_id,)).fetchone()
+    if row is None:
+        return False
+    node_uuid = row["uuid"]
+    now = datetime.now(UTC).isoformat()
+    # Explicitly delete page first (FK RESTRICT prevents deletion otherwise)
+    page_row = conn.execute("SELECT uuid FROM atlas_pages WHERE node_id = ?", (node_id,)).fetchone()
+    if page_row:
+        conn.execute("DELETE FROM atlas_pages WHERE node_id = ?", (node_id,))
+        conn.execute(
+            "INSERT OR IGNORE INTO deleted_atlas_pages (uuid, deleted_at) VALUES (?, ?)",
+            (page_row["uuid"], now),
+        )
+    cur = conn.execute("DELETE FROM atlas_nodes WHERE id = ?", (node_id,))
+    if cur.rowcount:
+        conn.execute(
+            "INSERT OR IGNORE INTO deleted_atlas_nodes (uuid, deleted_at) VALUES (?, ?)",
+            (node_uuid, now),
+        )
+    conn.commit()
+    return cur.rowcount > 0
+
+
+def create_atlas_page(
+    node_id: int,
+    title: str,
+    body: str = "",
+    db_path: Path | None = None,
+) -> AtlasPage:
+    conn = connect(db_path)
+    now = datetime.now(UTC).isoformat()
+    cur = conn.execute(
+        "INSERT INTO atlas_pages (uuid, node_id, title, body, created_at, updated_at)"
+        " VALUES (?, ?, ?, ?, ?, ?)",
+        (str(uuid4()), node_id, title.strip(), body, now, now),
+    )
+    conn.commit()
+    row = conn.execute("SELECT * FROM atlas_pages WHERE id = ?", (cur.lastrowid,)).fetchone()
+    return _load_atlas_page(row)
+
+
+def get_atlas_page_node_ids(db_path: Path | None = None) -> set[int]:
+    conn = connect(db_path)
+    rows = conn.execute("SELECT node_id FROM atlas_pages").fetchall()
+    return {r["node_id"] for r in rows}
+
+
+def get_atlas_page_by_node(node_id: int, db_path: Path | None = None) -> AtlasPage | None:
+    conn = connect(db_path)
+    row = conn.execute("SELECT * FROM atlas_pages WHERE node_id = ?", (node_id,)).fetchone()
+    return _load_atlas_page(row) if row else None
+
+
+def update_atlas_page(
+    page_id: int,
+    title: str,
+    body: str,
+    db_path: Path | None = None,
+) -> AtlasPage | None:
+    conn = connect(db_path)
+    now = datetime.now(UTC).isoformat()
+    cur = conn.execute(
+        "UPDATE atlas_pages SET title = ?, body = ?, updated_at = ? WHERE id = ?",
+        (title.strip(), body, now, page_id),
+    )
+    conn.commit()
+    if cur.rowcount == 0:
+        return None
+    row = conn.execute("SELECT * FROM atlas_pages WHERE id = ?", (page_id,)).fetchone()
+    return _load_atlas_page(row)
+
+
+def delete_atlas_page(page_id: int, db_path: Path | None = None) -> bool:
+    conn = connect(db_path)
+    row = conn.execute("SELECT uuid FROM atlas_pages WHERE id = ?", (page_id,)).fetchone()
+    if row is None:
+        return False
+    page_uuid = row["uuid"]
+    now = datetime.now(UTC).isoformat()
+    cur = conn.execute("DELETE FROM atlas_pages WHERE id = ?", (page_id,))
+    if cur.rowcount:
+        conn.execute(
+            "INSERT OR IGNORE INTO deleted_atlas_pages (uuid, deleted_at) VALUES (?, ?)",
+            (page_uuid, now),
+        )
+    conn.commit()
+    return cur.rowcount > 0

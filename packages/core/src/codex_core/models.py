@@ -41,3 +41,25 @@ class Instance:
     uuid: str = ""
     created_at: str = ""
     updated_at: str = ""
+
+
+@dataclass
+class AtlasNode:
+    id: int
+    uuid: str
+    name: str
+    parent_id: int | None
+    position: int
+    created_at: str
+    updated_at: str
+
+
+@dataclass
+class AtlasPage:
+    id: int
+    uuid: str
+    node_id: int
+    title: str
+    body: str
+    created_at: str
+    updated_at: str

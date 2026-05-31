@@ -196,6 +196,36 @@ def _migrate(conn: sqlite3.Connection) -> None:
     conn.execute("UPDATE instances SET created_at = datetime('now') WHERE created_at IS NULL")
     conn.execute("UPDATE instances SET updated_at = created_at WHERE updated_at IS NULL")
 
+    # Atlas tables
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS atlas_nodes (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            uuid       TEXT NOT NULL UNIQUE,
+            name       TEXT NOT NULL DEFAULT '',
+            parent_id  INTEGER REFERENCES atlas_nodes(id) ON DELETE SET NULL,
+            position   INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS atlas_pages (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            uuid       TEXT NOT NULL UNIQUE,
+            node_id    INTEGER NOT NULL UNIQUE REFERENCES atlas_nodes(id),
+            title      TEXT NOT NULL DEFAULT '',
+            body       TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS deleted_atlas_nodes (
+            uuid       TEXT PRIMARY KEY,
+            deleted_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS deleted_atlas_pages (
+            uuid       TEXT PRIMARY KEY,
+            deleted_at TEXT NOT NULL
+        );
+    """)
+
     # Always stamp the current app version so the DB reflects the last migration
     conn.execute("UPDATE db_meta SET schema_version = ?", (_APP_VERSION,))
 
