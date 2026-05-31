@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cartographer"
-version = "0.1.0"
+version = "1.0.0"
 description = "Cartographer — background vector indexing service for the Codex workspace."
 requires-python = ">=3.11"
 dependencies = [
