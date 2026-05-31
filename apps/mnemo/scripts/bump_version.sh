@@ -115,7 +115,7 @@ TAG_VER="${LATEST_TAG#v}"
 log "Latest tag: $LATEST_TAG"
 
 # ── Commits since last tag? ───────────────────────────────────────────────────
-COMMITS_SINCE="$(git -C "$REPO_DIR" log "$LATEST_TAG..HEAD" --oneline)"
+COMMITS_SINCE="$(git -C "$REPO_DIR" log "$LATEST_TAG..HEAD" --oneline -- .)"
 
 if [[ -n "$COMMITS_SINCE" ]]; then
     # Bump PATCH of whatever is in VERSION

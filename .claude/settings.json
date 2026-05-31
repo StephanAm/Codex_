@@ -10,7 +10,8 @@
       "Bash(./apps/scripts/check.sh)",
       "Skill(update-config:*)",
       "Bash(pnpm add *)",
-      "Bash(pnpm --filter ./apps/mnemo/gui build)"
+      "Bash(pnpm --filter ./apps/mnemo/gui build)",
+      "Bash(chmod +x /home/stephan/Code/codex/apps/cartographer/scripts/bump_version.sh /home/stephan/Code/codex/apps/cartographer/scripts/update_changelog.sh)"
     ],
     "additionalDirectories": [
       "/home/stephan/.claude/commands",

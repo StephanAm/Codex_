@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cartographer"
+version = "0.1.0"
+description = "Cartographer — background vector indexing service for the Codex workspace."
+requires-python = ">=3.11"
+dependencies = [
+    "click>=8.0",
+]
+
+[project.optional-dependencies]
+google-drive = [
+    "google-auth>=2.0",
+    "google-auth-oauthlib>=1.0",
+    "google-api-python-client>=2.0",
+]
+
+[project.scripts]
+cartographer = "cartographer.cli:cli"
+
+[tool.uv.sources]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cartographer"]

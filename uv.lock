@@ -9,6 +9,7 @@ resolution-markers = [
 
 [manifest]
 members = [
+    "cartographer",
     "codex-core",
     "mnemo",
 ]
@@ -102,6 +103,30 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/41/11/ca5672c7d491825bc4cd6702dea106a6b60d928707712ec257c7833ae476/ast_serialize-0.5.0-cp39-abi3-win_amd64.whl", hash = "sha256:cf25572c526add400f26a4750dc6ce0c3bb93fc1f75e7ae0cad4ce4f2cd5c590", size = 1108931, upload-time = "2026-05-17T17:48:26.591Z" },
     { url = "https://files.pythonhosted.org/packages/45/19/cc8bd127d28a43da249aa955cfd164cf8fd534e79e42cea96c4854d72fd0/ast_serialize-0.5.0-cp39-abi3-win_arm64.whl", hash = "sha256:92a31c9c20d25a076edaeec76b128a3535d74a24f340b9a8a7e96c9b86dc9642", size = 1081181, upload-time = "2026-05-17T17:48:28.122Z" },
 ]
+
+[[package]]
+name = "cartographer"
+version = "0.1.0"
+source = { editable = "apps/cartographer" }
+dependencies = [
+    { name = "click" },
+]
+
+[package.optional-dependencies]
+google-drive = [
+    { name = "google-api-python-client" },
+    { name = "google-auth" },
+    { name = "google-auth-oauthlib" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "click", specifier = ">=8.0" },
+    { name = "google-api-python-client", marker = "extra == 'google-drive'", specifier = ">=2.0" },
+    { name = "google-auth", marker = "extra == 'google-drive'", specifier = ">=2.0" },
+    { name = "google-auth-oauthlib", marker = "extra == 'google-drive'", specifier = ">=1.0" },
+]
+provides-extras = ["google-drive"]
 
 [[package]]
 name = "certifi"
