@@ -6,8 +6,8 @@
 
 ## 1. Brand
 
-**Name:** Mnemo. Always capitalised. Never with a full stop.
-**Wordmark:** `MNEMO_` — the trailing underscore is part of the mark, rendered in Cyan Pulse.
+**Name:** Mnemo_. The trailing underscore is part of the name, not punctuation. Always written as `Mnemo_` in prose and `MNEMO_` in the wordmark. Never as `Mnemo` or `MNEMO` without the underscore.
+**Wordmark:** `MNEMO_` — rendered in Cyan Pulse.
 **Tagline (primary):** Remember everything.
 
 **Personality:** Precise. Quiet confidence. Engineered, not styled. Retro-informed, not retro-themed.

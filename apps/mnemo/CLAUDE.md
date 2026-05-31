@@ -8,7 +8,9 @@ Feature requests and deferred ideas live in [`../../designdocs/wishlist.md`](../
 
 ## Application name
 
-This application is called **Mnemo**. Always capitalised, never with a full stop. Short for mnemonic — the art of remembering.
+This application is called **Mnemo_**. The trailing underscore is part of the name, not punctuation — always written as `Mnemo_` in prose, `MNEMO_` as the wordmark. Short for mnemonic — the art of remembering.
+
+Mnemo_ is the application shell. The note-taking tool inside it is called **Stylus**. Other tools: Atlas (structured knowledge), Bulletin (summaries). Cartographer is a background service for vector indexing.
 
 Tagline: *"Remember everything."*
 
@@ -116,11 +118,11 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 ## Project purpose
 
-A note-taking tool built in layers:
+Mnemo_ is a multi-tool desktop app. This repo currently implements Stylus (the note-taking tool) across three layers:
 
 1. **CLI** (`note`) — done. Click-based commands: add, list, search, delete, references, config, session, sync.
 2. **TUI** (`note-tui`) — done. Interactive curses UI with browse/add/edit/delete/search/config/session/sync.
-3. **GUI** — in progress. Tauri + React desktop app in `gui/`. See [`gui/README.md`](gui/README.md) for structure and dev commands.
+3. **GUI** (inside Mnemo_) — in progress. Tauri + React desktop app in `gui/`. See [`gui/README.md`](gui/README.md) for structure and dev commands.
 
 ## Tag and reference syntax
 

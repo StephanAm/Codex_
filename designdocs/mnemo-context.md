@@ -1,32 +1,43 @@
-# Mnemo — Context and Intent
+# Mnemo_ — Context and Intent
 
-> Prompt this file when working on any part of Mnemo to establish shared understanding of what the product is and what it is trying to do.
+> Prompt this file when working on any part of Mnemo_ to establish shared understanding of what the product is and what it is trying to do.
 
 ---
 
-## What is Mnemo?
+## What is Mnemo_?
 
-Mnemo is a personal note-taking tool built around the idea that capturing a thought should take less than five seconds. It is designed for people who think in text — developers, writers, anyone who lives in a terminal or wants a fast, keyboard-driven interface for their notes.
+Mnemo_ is a desktop application that houses a suite of focused personal productivity tools. It is built for people who think in text — developers, writers, anyone who lives in a terminal or wants a fast, keyboard-driven interface.
 
 The name is short for *mnemonic* — the art of remembering. The tagline is: **Remember everything.**
 
-Mnemo is not a document editor, a wiki, or a project management tool. It is a fast, searchable log of thoughts, decisions, references, and observations. Notes are plain text. Structure is applied through inline syntax, not forms.
+Mnemo_ is the application shell. The tools and services that live inside it are:
+
+| Name | Type | Function |
+|---|---|---|
+| **Stylus** | Tool | Fast capture — notes, thoughts, decisions, references |
+| **Atlas** | Tool | Structured knowledge — pages and long-form content |
+| **Bulletin** | Tool | Summaries — digest views over Stylus notes |
+| **Cartographer** | Service | Vector indexing — semantic search across the corpus |
 
 ---
 
 ## Core philosophy
 
-**Speed above all.** The friction of capturing a thought should be as close to zero as possible. If it takes more than a few keystrokes to record something, the thought gets lost. Every design and UX decision should be evaluated against this.
+**Speed above all.** The friction of capturing a thought should be as close to zero as possible. If it takes more than a few keystrokes to record something, the thought gets lost. Every design and UX decision in Stylus should be evaluated against this.
 
 **Plain text, always.** Notes are stored as plain text strings. There is no rich text, no markdown rendering, no formatting toolbar. Structure comes from a lightweight inline syntax that is readable as raw text.
 
 **Search is the primary retrieval mechanism.** Notes are not organised into folders or hierarchies. Instead, they are tagged and filtered. Full-text search is always available. The mental model is: capture fast, find fast.
 
-**Minimal surface area.** Mnemo should do one thing well. Feature additions should be evaluated critically — every new concept added to the mental model is a cost.
+**Each tool does one thing well.** Feature additions should be evaluated critically per tool — every new concept added to the mental model is a cost. Tools are composable; they share a data layer but maintain clear boundaries.
 
 ---
 
-## Inline syntax
+## Stylus
+
+Stylus is Mnemo_'s fast-capture note-taking tool. It is not a document editor, a wiki, or a project management tool. It is a fast, searchable log of thoughts, decisions, references, and observations. Notes are plain text. Structure is applied through inline syntax, not forms.
+
+### Inline syntax
 
 Notes support three types of inline annotations, parsed automatically from the body text:
 
@@ -38,11 +49,9 @@ Notes support three types of inline annotations, parsed automatically from the b
 
 Tags and references use CamelCase. They are stored lowercase in the database. Dates use the `~{...}` syntax and are rendered as human-readable labels in the GUI.
 
----
+### Use cases
 
-## Use cases
-
-Mnemo is designed for the following kinds of capture:
+Stylus is designed for:
 
 - **Meeting notes** — quick record of what was discussed, who was involved, what was decided
 - **Decision log** — why was this approach chosen? what were the alternatives?
@@ -50,23 +59,21 @@ Mnemo is designed for the following kinds of capture:
 - **Daily log** — what happened today, what's outstanding, what needs to happen next
 - **Thought capture** — an idea that should not be lost, captured before it evaporates
 
-Mnemo is not designed for:
-- Long-form writing or documents
-- Task management or to-do lists (though users may use it that way)
+Stylus is not designed for:
+- Long-form writing or documents (that is Atlas)
+- Task management or to-do lists
 - Structured data or tables
 - Collaboration (it is a single-user tool with sync, not a shared workspace)
 
----
+### Interfaces
 
-## Interfaces
-
-Mnemo is built in three layers, all sharing the same SQLite database:
+Stylus is built in three layers, all sharing the same SQLite database:
 
 | Interface | Status | Description |
 |---|---|---|
 | CLI (`note`) | Done | Click-based terminal commands for scripting and quick capture |
 | TUI (`note-tui`) | Done | Interactive curses UI for keyboard-driven browsing and editing |
-| GUI | In progress | Tauri + React desktop app; talks to the Python API over HTTP |
+| GUI (inside Mnemo_) | In progress | Tauri + React desktop app; talks to the Python API over HTTP |
 
 The CLI and TUI import directly from the Python store layer. The GUI is fully decoupled — it talks to a local FastAPI server (`api.py`) running on port 8765, which is the only Python module the frontend touches.
 
@@ -97,7 +104,7 @@ The aesthetic is precise and monochrome with controlled colour pops. Retro-infor
 
 ---
 
-## What Mnemo is not trying to be
+## What Mnemo_ is not trying to be
 
 - Notion, Obsidian, or any graph-based knowledge tool
 - A replacement for a proper task manager
