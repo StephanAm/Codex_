@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Instance, Note } from "../api";
 import { BulletinGroupBy } from "./BulletinSidebar";
 
@@ -17,26 +18,7 @@ function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
 }
 
-function BulletinNote({ note }: { note: Note }) {
-  return (
-    <div className="bulletin-note">
-      <div className="bulletin-note-body">{note.body}</div>
-      <div className="bulletin-note-meta">
-        <span className="bulletin-note-time">{formatTime(note.created_at)}</span>
-        {note.tags.map(t => (
-          <span key={t} className="badge badge-tag">#{t}</span>
-        ))}
-        {note.references.map(r => (
-          <span key={r} className="badge badge-reference">@{r}</span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function GroupHeading({ label }: { label: string }) {
-  return <div className="bulletin-group-heading">{label}</div>;
-}
+// ── grouping helpers ──────────────────────────────────────────────────────────
 
 function buildDateGroups(notes: Note[]) {
   const map = new Map<string, Note[]>();
@@ -92,10 +74,7 @@ function buildKindGroups(notes: Note[], instances: Instance[]) {
     );
     if (kindNotes.length === 0) continue;
     if (!kindOrder.has(inst.type.id)) {
-      kindOrder.set(inst.type.id, {
-        kindId: inst.type.id,
-        kindName: inst.type.plural || inst.type.name,
-      });
+      kindOrder.set(inst.type.id, { kindId: inst.type.id, kindName: inst.type.plural || inst.type.name });
     }
     instanceGroups.push({ kindId: inst.type.id, instanceName: inst.name, notes: kindNotes });
   }
@@ -106,7 +85,83 @@ function buildKindGroups(notes: Note[], instances: Instance[]) {
   }));
 }
 
+// ── markdown generation ───────────────────────────────────────────────────────
+
+function noteToMd(note: Note): string {
+  const meta: string[] = [formatTime(note.created_at)];
+  if (note.tags.length > 0)       meta.push(note.tags.map(t => `#${t}`).join(" "));
+  if (note.references.length > 0) meta.push(note.references.map(r => `@${r}`).join(" "));
+  return `${note.body}\n\n*${meta.join(" · ")}*`;
+}
+
+const DIVIDER = "\n\n---\n\n";
+
+function generateMarkdown(notes: Note[], groupBy: BulletinGroupBy, instances: Instance[]): string {
+  if (groupBy === "kind") {
+    const kindGroups = buildKindGroups(notes, instances);
+    const matchedIds = new Set(kindGroups.flatMap(k => k.instances.flatMap(i => i.notes.map(n => n.id))));
+    const other = notes.filter(n => !matchedIds.has(n.id));
+
+    const sections: string[] = kindGroups.map(({ kindName, instances: instGroups }) => {
+      const parts = instGroups.map(({ instanceName, notes: instNotes }) =>
+        `### ${instanceName}\n\n${instNotes.map(noteToMd).join(DIVIDER)}`
+      );
+      return `## ${kindName}\n\n${parts.join("\n\n")}`;
+    });
+    if (other.length > 0) {
+      sections.push(`## other\n\n${other.map(noteToMd).join(DIVIDER)}`);
+    }
+    return sections.join("\n\n");
+  }
+
+  const groups =
+    groupBy === "date"      ? buildDateGroups(notes) :
+    groupBy === "tag"       ? buildTagGroups(notes)  :
+    groupBy === "reference" ? buildReferenceGroups(notes) :
+    [{ heading: "", notes }];
+
+  return groups.map(({ heading, notes: groupNotes }) => {
+    const body = groupNotes.map(noteToMd).join(DIVIDER);
+    return heading ? `## ${heading}\n\n${body}` : body;
+  }).join("\n\n");
+}
+
+// ── render helpers ────────────────────────────────────────────────────────────
+
+function BulletinNote({ note }: { note: Note }) {
+  return (
+    <div className="bulletin-note">
+      <div className="bulletin-note-body">{note.body}</div>
+      <div className="bulletin-note-meta">
+        <span className="bulletin-note-time">{formatTime(note.created_at)}</span>
+        {note.tags.map(t => (
+          <span key={t} className="badge badge-tag">#{t}</span>
+        ))}
+        {note.references.map(r => (
+          <span key={r} className="badge badge-reference">@{r}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function GroupHeading({ label }: { label: string }) {
+  return <div className="bulletin-group-heading">{label}</div>;
+}
+
+// ── component ─────────────────────────────────────────────────────────────────
+
 export function BulletinView({ notes, groupBy, instances }: Props) {
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    const md = generateMarkdown(notes, groupBy, instances);
+    navigator.clipboard.writeText(md).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }
+
   if (notes.length === 0) {
     return (
       <div className="empty-state">
@@ -114,6 +169,14 @@ export function BulletinView({ notes, groupBy, instances }: Props) {
       </div>
     );
   }
+
+  const toolbar = (
+    <div className="bulletin-toolbar">
+      <button className="btn btn-secondary bulletin-copy-btn" onClick={handleCopy}>
+        {copied ? "copied" : "copy markdown"}
+      </button>
+    </div>
+  );
 
   if (groupBy === "kind") {
     const kindGroups = buildKindGroups(notes, instances);
@@ -123,6 +186,7 @@ export function BulletinView({ notes, groupBy, instances }: Props) {
     const other = notes.filter(n => !matchedNoteIds.has(n.id));
     return (
       <div className="bulletin-view">
+        {toolbar}
         {kindGroups.map(({ kindName, instances: instGroups }) => (
           <div key={kindName} className="bulletin-kind-block">
             <div className="bulletin-kind-heading">{kindName}</div>
@@ -152,6 +216,7 @@ export function BulletinView({ notes, groupBy, instances }: Props) {
 
   return (
     <div className="bulletin-view">
+      {toolbar}
       {groups.map(({ heading, notes: groupNotes }, i) => (
         <div key={heading || i} className="bulletin-group">
           {heading && <GroupHeading label={heading} />}

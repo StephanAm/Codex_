@@ -1444,6 +1444,14 @@ body::after {
   gap: 0;
 }
 
+.bulletin-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+.bulletin-copy-btn { font-size: 9px; }
+
 .bulletin-group { margin-bottom: 24px; }
 
 .bulletin-group-heading {
