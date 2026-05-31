@@ -6,7 +6,7 @@ All values are stored in the `config` table as key-value pairs.
 
 from pathlib import Path
 
-from cartographer.db import connect, get_db_path as _get_db_path
+from cartographer.db import connect
 
 _VALID_SOURCE_TYPES = ("google_drive", "local_folder", "mnemo_local")
 
@@ -14,6 +14,8 @@ _CONFIG_DIR = Path.home() / ".cartographer"
 _DEFAULT_SOURCE_TYPE = "google_drive"
 _DEFAULT_DRIVE_FOLDER = "note-taker-sync"
 _DEFAULT_MNEMO_DB = str(Path.home() / ".note_taker" / "notes.db")
+_DEFAULT_EMBEDDING_BACKEND = "fastembed"
+_DEFAULT_OLLAMA_URL = "http://localhost:11434"
 
 
 def _get(key: str, default: str, db_path: Path | None = None) -> str:
@@ -101,3 +103,48 @@ def get_mnemo_db_path(db_path: Path | None = None) -> str:
 
 def set_mnemo_db_path(path: str, db_path: Path | None = None) -> None:
     _set("mnemo_db_path", path.strip(), db_path)
+
+
+# ---------------------------------------------------------------------------
+# Remote DB name (the fixed filename used in the remote adapter location)
+# ---------------------------------------------------------------------------
+
+def get_remote_name(db_path: Path | None = None) -> str:
+    return _get("remote_name", "cartographer", db_path)
+
+
+def set_remote_name(name: str, db_path: Path | None = None) -> None:
+    _set("remote_name", name.strip(), db_path)
+
+
+# ---------------------------------------------------------------------------
+# Embedding backend
+# ---------------------------------------------------------------------------
+
+def get_embedding_backend(db_path: Path | None = None) -> str:
+    return _get("embedding_backend", _DEFAULT_EMBEDDING_BACKEND, db_path)
+
+
+def set_embedding_backend(backend: str, db_path: Path | None = None) -> None:
+    from cartographer.embeddings import VALID_BACKENDS
+    if backend not in VALID_BACKENDS:
+        raise ValueError(
+            f"Unknown backend {backend!r}. Choose one of: {', '.join(VALID_BACKENDS)}"
+        )
+    _set("embedding_backend", backend, db_path)
+
+
+def get_embedding_model(db_path: Path | None = None) -> str:
+    return _get("embedding_model", "", db_path)
+
+
+def set_embedding_model(model: str, db_path: Path | None = None) -> None:
+    _set("embedding_model", model.strip(), db_path)
+
+
+def get_ollama_url(db_path: Path | None = None) -> str:
+    return _get("ollama_url", _DEFAULT_OLLAMA_URL, db_path)
+
+
+def set_ollama_url(url: str, db_path: Path | None = None) -> None:
+    _set("ollama_url", url.strip(), db_path)

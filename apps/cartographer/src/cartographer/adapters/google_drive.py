@@ -14,11 +14,11 @@ try:
     from google.oauth2.credentials import Credentials
     from google_auth_oauthlib.flow import InstalledAppFlow
     from googleapiclient.discovery import build
-    from googleapiclient.http import MediaIoBaseDownload
+    from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 except ImportError as exc:  # pragma: no cover
     raise ImportError(
         "Google Drive support requires the google-drive extra: "
-        "uv pip install 'cartographer[google-drive]'"
+        "uv sync --all-packages --extra google-drive"
     ) from exc
 
 _SCOPES = ["https://www.googleapis.com/auth/drive.file"]
@@ -81,11 +81,13 @@ class GoogleDriveAdapter:
             svc.files()
             .list(
                 q=f"name='{self._folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false",
-                fields="files(id)",
+                fields="files(id,createdTime)",
             )
             .execute()
         )
         files = results.get("files", [])
+        if files:
+            files.sort(key=lambda f: f.get("createdTime", ""))
         if not files:
             raise FileNotFoundError(
                 f"Drive folder {self._folder_name!r} not found. "
@@ -101,12 +103,38 @@ class GoogleDriveAdapter:
         results = (
             svc.files()
             .list(
-                q=f"'{folder_id}' in parents and name contains '.db' and trashed=false",
+                q=f"'{folder_id}' in parents and trashed=false",
                 fields="files(name)",
             )
             .execute()
         )
-        return [f["name"].removesuffix(".db") for f in results.get("files", [])]
+        return [
+            f["name"].removesuffix(".db")
+            for f in results.get("files", [])
+            if f["name"].endswith(".db")
+        ]
+
+    def upload(self, device_id: str, local_path: Path) -> None:
+        svc = self._get_service()
+        folder_id = self._get_folder_id()
+        filename = f"{device_id}.db"
+        media = MediaFileUpload(str(local_path), mimetype="application/octet-stream", resumable=False)
+        results = (
+            svc.files()
+            .list(
+                q=f"name='{filename}' and '{folder_id}' in parents and trashed=false",
+                fields="files(id)",
+            )
+            .execute()
+        )
+        files = results.get("files", [])
+        if files:
+            svc.files().update(fileId=files[0]["id"], media_body=media).execute()
+        else:
+            svc.files().create(
+                body={"name": filename, "parents": [folder_id]},
+                media_body=media,
+            ).execute()
 
     def download(self, device_id: str) -> bytes:
         svc = self._get_service()

@@ -137,7 +137,7 @@ def _migrate(conn: sqlite3.Connection) -> None:
         CREATE TABLE IF NOT EXISTS embeddings (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             source_uuid TEXT NOT NULL,
-            source_type TEXT NOT NULL CHECK (source_type IN ('note', 'atlas_page')),
+            source_type TEXT NOT NULL CHECK (source_type IN ('note', 'atlas_page', 'instance_kind', 'instance')),
             chunk_index INTEGER NOT NULL DEFAULT 0,
             model       TEXT NOT NULL,
             vector      BLOB NOT NULL,
@@ -149,8 +149,9 @@ def _migrate(conn: sqlite3.Connection) -> None:
         -- detected without re-reading the source DB.
         CREATE TABLE IF NOT EXISTS index_state (
             source_uuid       TEXT NOT NULL,
-            source_type       TEXT NOT NULL CHECK (source_type IN ('note', 'atlas_page')),
+            source_type       TEXT NOT NULL CHECK (source_type IN ('note', 'atlas_page', 'instance_kind', 'instance')),
             source_updated_at TEXT NOT NULL,
+            model             TEXT NOT NULL DEFAULT '',
             indexed_at        TEXT NOT NULL,
             PRIMARY KEY (source_uuid, source_type)
         );
@@ -158,18 +159,84 @@ def _migrate(conn: sqlite3.Connection) -> None:
         CREATE TABLE IF NOT EXISTS db_meta (
             id             INTEGER PRIMARY KEY CHECK (id = 1),
             schema_version TEXT NOT NULL,
-            created_at     TEXT NOT NULL
+            created_at     TEXT NOT NULL,
+            updated_at     TEXT NOT NULL
         );
     """)
 
+    now = datetime.now(UTC).isoformat()
+
     if not conn.execute("SELECT 1 FROM db_meta").fetchone():
         conn.execute(
-            "INSERT INTO db_meta (id, schema_version, created_at) VALUES (1, ?, ?)",
-            (_APP_VERSION, datetime.now(UTC).isoformat()),
+            "INSERT INTO db_meta (id, schema_version, created_at, updated_at) VALUES (1, ?, ?, ?)",
+            (_APP_VERSION, now, now),
         )
+
+    # Add updated_at to db_meta on existing DBs that predate this column.
+    meta_cols = {row[1] for row in conn.execute("PRAGMA table_info(db_meta)")}
+    if "updated_at" not in meta_cols:
+        conn.execute("ALTER TABLE db_meta ADD COLUMN updated_at TEXT NOT NULL DEFAULT ''")
+        conn.execute("UPDATE db_meta SET updated_at = created_at WHERE updated_at = ''")
+
+    # Recreate embeddings + index_state when the CHECK constraint is too narrow
+    # (predates instance_kind / instance source types) or the model column is missing.
+    emb_sql = (
+        conn.execute(
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='embeddings'"
+        ).fetchone()
+        or {"sql": ""}
+    )["sql"] or ""
+    if "instance_kind" not in emb_sql:
+        conn.executescript("""
+            ALTER TABLE embeddings  RENAME TO _emb_old;
+            ALTER TABLE index_state RENAME TO _idx_old;
+
+            CREATE TABLE embeddings (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                source_uuid TEXT NOT NULL,
+                source_type TEXT NOT NULL
+                    CHECK (source_type IN ('note', 'atlas_page', 'instance_kind', 'instance')),
+                chunk_index INTEGER NOT NULL DEFAULT 0,
+                model       TEXT NOT NULL,
+                vector      BLOB NOT NULL,
+                indexed_at  TEXT NOT NULL,
+                UNIQUE (source_uuid, source_type, chunk_index, model)
+            );
+
+            CREATE TABLE index_state (
+                source_uuid       TEXT NOT NULL,
+                source_type       TEXT NOT NULL
+                    CHECK (source_type IN ('note', 'atlas_page', 'instance_kind', 'instance')),
+                source_updated_at TEXT NOT NULL,
+                model             TEXT NOT NULL DEFAULT '',
+                indexed_at        TEXT NOT NULL,
+                PRIMARY KEY (source_uuid, source_type)
+            );
+
+            INSERT INTO embeddings
+                SELECT id, source_uuid, source_type, chunk_index, model, vector, indexed_at
+                FROM _emb_old;
+
+            INSERT INTO index_state
+                SELECT source_uuid, source_type, source_updated_at,
+                       COALESCE(model, ''), indexed_at
+                FROM _idx_old;
+
+            DROP TABLE _emb_old;
+            DROP TABLE _idx_old;
+        """)
 
     # Drop the old sync_sources table (replaced by config keys in v0.2+).
     conn.execute("DROP TABLE IF EXISTS sync_sources")
 
     conn.execute("UPDATE db_meta SET schema_version = ?", (_APP_VERSION,))
+    conn.commit()
+
+
+def touch_updated_at(conn: sqlite3.Connection) -> None:
+    """Stamp db_meta.updated_at with the current UTC time and commit."""
+    conn.execute(
+        "UPDATE db_meta SET updated_at = ?",
+        (datetime.now(UTC).isoformat(),),
+    )
     conn.commit()

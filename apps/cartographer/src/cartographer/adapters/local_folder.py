@@ -1,3 +1,4 @@
+import shutil
 from pathlib import Path
 
 
@@ -9,6 +10,10 @@ class LocalFolderAdapter:
         if not self._folder.exists():
             return []
         return [p.stem for p in self._folder.glob("*.db")]
+
+    def upload(self, device_id: str, local_path: Path) -> None:
+        self._folder.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(str(local_path), str(self._folder / f"{device_id}.db"))
 
     def download(self, device_id: str) -> bytes:
         path = self._folder / f"{device_id}.db"

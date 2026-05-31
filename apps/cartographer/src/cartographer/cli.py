@@ -1,4 +1,3 @@
-from pathlib import Path
 
 import click
 
@@ -6,16 +5,18 @@ from cartographer.config import (
     get_drive_folder,
     get_local_folder_path,
     get_mnemo_db_path,
+    get_remote_name,
     get_source_type,
     set_drive_folder,
     set_local_folder_path,
     set_mnemo_db_path,
+    set_remote_name,
     set_source_type,
 )
 from cartographer.db import connect, get_db_path
 from cartographer.merge import MergeResult
-from cartographer.sync import SyncReport, sync as do_sync
-
+from cartographer.sync import SyncReport
+from cartographer.sync import sync as do_sync
 
 # ---------------------------------------------------------------------------
 # Root
@@ -34,7 +35,7 @@ def cli() -> None:
 def status() -> None:
     """Show mirror and indexing status."""
     conn = connect()
-    meta = conn.execute("SELECT schema_version, created_at FROM db_meta").fetchone()
+    meta = conn.execute("SELECT schema_version, created_at, updated_at FROM db_meta").fetchone()
     notes = conn.execute("SELECT COUNT(*) FROM notes").fetchone()[0]
     kinds = conn.execute("SELECT COUNT(*) FROM instance_kinds").fetchone()[0]
     instances = conn.execute("SELECT COUNT(*) FROM instances").fetchone()[0]
@@ -47,6 +48,7 @@ def status() -> None:
 
     click.echo(f"db:           {get_db_path()}")
     click.echo(f"version:      {meta['schema_version']}")
+    click.echo(f"updated:      {meta['updated_at']}")
     click.echo(f"source:       {source_type}")
     if source_type == "google_drive":
         click.echo(f"drive folder: {get_drive_folder()}")
@@ -174,13 +176,175 @@ def sync_config_mnemo_db(path: str | None) -> None:
 
 
 # ---------------------------------------------------------------------------
-# index (stub)
+# remote
 # ---------------------------------------------------------------------------
 
-@cli.command()
-def index() -> None:
+@cli.group()
+def remote() -> None:
+    """Push or pull the Cartographer DB to/from the remote location."""
+
+
+@remote.command("push")
+@click.option("--force", is_flag=True, help="Overwrite even if the remote DB is newer.")
+def remote_push(force: bool) -> None:
+    """Upload the local DB to the remote location (master operation).
+
+    Aborts if the remote DB has a newer updated_at timestamp, unless --force
+    is passed.
+    """
+    from cartographer.remote import RemoteNewerError, push
+    try:
+        name = push(force=force)
+    except RemoteNewerError as exc:
+        raise click.ClickException(str(exc)) from exc
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(f"pushed: {name}")
+
+
+@remote.command("pull")
+def remote_pull() -> None:
+    """Download the remote DB and replace the local one entirely (slave operation).
+
+    The local DB is overwritten; there is no merge.
+    """
+    from cartographer.remote import pull
+    try:
+        updated_at = pull()
+    except FileNotFoundError as exc:
+        raise click.ClickException(str(exc)) from exc
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(f"pulled (remote updated_at: {updated_at})")
+
+
+@remote.command("config")
+@click.argument("name", required=False)
+def remote_config(name: str | None) -> None:
+    """View or set the remote DB filename (default: cartographer).
+
+    This is the key used in the remote adapter — the actual file stored
+    remotely will be NAME.db.
+    """
+    if name is None:
+        click.echo(get_remote_name())
+        return
+    set_remote_name(name)
+    click.echo(f"remote name set to: {name}")
+
+
+# ---------------------------------------------------------------------------
+# index
+# ---------------------------------------------------------------------------
+
+@cli.group(invoke_without_command=True)
+@click.option("--force", is_flag=True, help="Re-index even items that are already up-to-date.")
+@click.pass_context
+def index(ctx: click.Context, force: bool) -> None:
     """Build vector embeddings for all mirrored content."""
-    click.echo("index: not yet implemented")
+    if ctx.invoked_subcommand is not None:
+        return
+
+    from cartographer.config import (
+        get_embedding_backend,
+        get_embedding_model,
+        get_ollama_url,
+    )
+    from cartographer.embeddings import DEFAULT_MODELS, build_backend
+    from cartographer.indexer import run_index
+
+    backend_name = get_embedding_backend()
+    model = get_embedding_model() or DEFAULT_MODELS.get(backend_name, "")
+    ollama_url = get_ollama_url()
+
+    click.echo(f"backend: {backend_name}")
+    click.echo(f"model:   {model}")
+
+    try:
+        be = build_backend(backend_name, model or None, ollama_url)
+        report = run_index(be, force=force)
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    click.echo(f"notes:       +{report.notes_indexed} (skipped {report.notes_skipped})")
+    click.echo(f"atlas pages: +{report.atlas_pages_indexed} (skipped {report.atlas_pages_skipped})")
+    click.echo(f"kinds:       +{report.kinds_indexed} (skipped {report.kinds_skipped})")
+    click.echo(f"instances:   +{report.instances_indexed} (skipped {report.instances_skipped})")
+    if report.errors:
+        for err in report.errors:
+            click.echo(f"  error: {err}", err=True)
+
+
+@index.group("config")
+def index_config() -> None:
+    """View or update embedding configuration."""
+
+
+@index_config.command("show")
+def index_config_show() -> None:
+    """Show current embedding configuration."""
+    from cartographer.config import get_embedding_backend, get_embedding_model, get_ollama_url
+    from cartographer.embeddings import DEFAULT_MODELS
+
+    backend = get_embedding_backend()
+    model = get_embedding_model() or DEFAULT_MODELS.get(backend, "")
+    click.echo(f"backend:    {backend}")
+    click.echo(f"model:      {model}")
+    click.echo(f"ollama url: {get_ollama_url()}")
+
+
+@index_config.command("backend")
+@click.argument("name", required=False, metavar="BACKEND")
+def index_config_backend(name: str | None) -> None:
+    """View or set the embedding backend (fastembed, ollama).
+
+    With no argument, shows the current value.
+    """
+    from cartographer.config import get_embedding_backend, set_embedding_backend
+
+    if name is None:
+        click.echo(get_embedding_backend())
+        return
+    try:
+        set_embedding_backend(name)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(f"backend set to: {name}")
+
+
+@index_config.command("model")
+@click.argument("model", required=False)
+def index_config_model(model: str | None) -> None:
+    """View or set the embedding model name.
+
+    Leave unset to use the default for the active backend.
+    With no argument, shows the current value (or the backend default).
+    """
+    from cartographer.config import get_embedding_backend, get_embedding_model, set_embedding_model
+    from cartographer.embeddings import DEFAULT_MODELS
+
+    if model is None:
+        current = get_embedding_model() or DEFAULT_MODELS.get(get_embedding_backend(), "")
+        click.echo(current)
+        return
+    set_embedding_model(model)
+    click.echo(f"model set to: {model}")
+
+
+@index_config.command("ollama-url")
+@click.argument("url", required=False)
+def index_config_ollama_url(url: str | None) -> None:
+    """View or set the Ollama server URL.
+
+    Defaults to http://localhost:11434. With no argument, shows the current value.
+    """
+    from cartographer.config import get_ollama_url, set_ollama_url
+
+    if url is None:
+        click.echo(get_ollama_url())
+        return
+    set_ollama_url(url)
+    click.echo(f"ollama url set to: {url}")
 
 
 # ---------------------------------------------------------------------------

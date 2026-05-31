@@ -13,7 +13,10 @@ except ImportError as exc:  # pragma: no cover
         "Google Drive support requires the google-drive extra: uv pip install 'codex-core[google-drive]'"
     ) from exc
 
+from codex_core.logger import get_logger
 from .adapter import AuthRequired
+
+_log = get_logger("drive")
 
 _SCOPES = ["https://www.googleapis.com/auth/drive.file"]
 _DEFAULT_FOLDER = "note-taker-sync"
@@ -63,19 +66,24 @@ class GoogleDriveAdapter:
 
     def _get_folder_id(self) -> str:
         if self._folder_id:
+            _log.debug("folder id cached: %s", self._folder_id)
             return self._folder_id
         svc = self._get_service()
+        _log.debug("looking up Drive folder %r", self._folder_name)
         results = (
             svc.files()
             .list(
                 q=f"name='{self._folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false",
-                fields="files(id)",
+                fields="files(id,createdTime)",
             )
             .execute()
         )
         files = results.get("files", [])
+        _log.debug("folder lookup returned %d result(s): %s", len(files), files)
         if files:
+            files.sort(key=lambda f: f.get("createdTime", ""))
             self._folder_id = files[0]["id"]
+            _log.debug("using folder id: %s (createdTime: %s)", self._folder_id, files[0].get("createdTime"))
         else:
             meta = {
                 "name": self._folder_name,
@@ -83,6 +91,7 @@ class GoogleDriveAdapter:
             }
             created = svc.files().create(body=meta, fields="id").execute()
             self._folder_id = created["id"]
+            _log.debug("folder not found — created new folder id: %s", self._folder_id)
         assert self._folder_id is not None
         return self._folder_id
 
@@ -90,6 +99,7 @@ class GoogleDriveAdapter:
         svc = self._get_service()
         folder_id = self._get_folder_id()
         filename = f"{device_id}.db"
+        _log.debug("upload: checking for existing file %r in folder %s", filename, folder_id)
         results = (
             svc.files()
             .list(
@@ -101,28 +111,41 @@ class GoogleDriveAdapter:
         files = results.get("files", [])
         media = MediaFileUpload(str(local_db), mimetype="application/octet-stream")
         if files:
+            _log.debug("upload: updating existing file id %s", files[0]["id"])
             svc.files().update(fileId=files[0]["id"], media_body=media).execute()
         else:
+            _log.debug("upload: creating new file %r", filename)
             meta = {"name": filename, "parents": [folder_id]}
             svc.files().create(body=meta, media_body=media).execute()
+        _log.debug("upload: done")
 
     def list_devices(self) -> list[str]:
         svc = self._get_service()
         folder_id = self._get_folder_id()
+        _log.debug("list_devices: listing files in folder %s", folder_id)
         results = (
             svc.files()
             .list(
-                q=f"'{folder_id}' in parents and name contains '.db' and trashed=false",
+                q=f"'{folder_id}' in parents and trashed=false",
                 fields="files(name)",
             )
             .execute()
         )
-        return [f["name"].removesuffix(".db") for f in results.get("files", [])]
+        all_files = results.get("files", [])
+        _log.debug("list_devices: raw results (%d files): %s", len(all_files), [f["name"] for f in all_files])
+        devices = [
+            f["name"].removesuffix(".db")
+            for f in all_files
+            if f["name"].endswith(".db")
+        ]
+        _log.debug("list_devices: device ids after .db filter: %s", devices)
+        return devices
 
     def download(self, device_id: str) -> bytes:
         svc = self._get_service()
         folder_id = self._get_folder_id()
         filename = f"{device_id}.db"
+        _log.debug("download: looking for %r in folder %s", filename, folder_id)
         results = (
             svc.files()
             .list(
@@ -132,6 +155,7 @@ class GoogleDriveAdapter:
             .execute()
         )
         files = results.get("files", [])
+        _log.debug("download: found %d match(es) for %r", len(files), filename)
         if not files:
             raise FileNotFoundError(f"No remote DB for device {device_id!r}")
         buf = io.BytesIO()
@@ -139,4 +163,5 @@ class GoogleDriveAdapter:
         done = False
         while not done:
             _, done = downloader.next_chunk()
+        _log.debug("download: received %d bytes for %r", len(buf.getvalue()), device_id)
         return buf.getvalue()

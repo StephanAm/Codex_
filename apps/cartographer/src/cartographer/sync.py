@@ -20,7 +20,7 @@ from cartographer.config import (
     get_mnemo_db_path,
     get_source_type,
 )
-from cartographer.db import connect
+from cartographer.db import connect, touch_updated_at
 from cartographer.merge import MergeResult, merge_from_bytes, merge_from_path
 
 
@@ -52,6 +52,9 @@ def sync(db_path: Path | None = None) -> SyncReport:
         _sync_mnemo_local(local, report, db_path)
     else:
         raise ValueError(f"Unknown source type: {source_type!r}")
+
+    if report.total_changes > 0:
+        touch_updated_at(local)
 
     return report
 
