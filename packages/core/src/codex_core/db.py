@@ -216,6 +216,16 @@ def _migrate(conn: sqlite3.Connection) -> None:
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS atlas_page_tags (
+            page_id INTEGER NOT NULL REFERENCES atlas_pages(id) ON DELETE CASCADE,
+            tag_id  INTEGER NOT NULL REFERENCES tags(id)        ON DELETE CASCADE,
+            PRIMARY KEY (page_id, tag_id)
+        );
+        CREATE TABLE IF NOT EXISTS atlas_page_references (
+            page_id      INTEGER NOT NULL REFERENCES atlas_pages(id)    ON DELETE CASCADE,
+            reference_id INTEGER NOT NULL REFERENCES "references"(id)   ON DELETE CASCADE,
+            PRIMARY KEY (page_id, reference_id)
+        );
         CREATE TABLE IF NOT EXISTS deleted_atlas_nodes (
             uuid       TEXT PRIMARY KEY,
             deleted_at TEXT NOT NULL
@@ -225,6 +235,15 @@ def _migrate(conn: sqlite3.Connection) -> None:
             deleted_at TEXT NOT NULL
         );
     """)
+
+    # Add date_annotation and instance_id to atlas_pages
+    atlas_cols = {row[1] for row in conn.execute("PRAGMA table_info(atlas_pages)")}
+    if "date_annotation" not in atlas_cols:
+        conn.execute("ALTER TABLE atlas_pages ADD COLUMN date_annotation TEXT")
+    if "instance_id" not in atlas_cols:
+        conn.execute(
+            "ALTER TABLE atlas_pages ADD COLUMN instance_id INTEGER REFERENCES instances(id) ON DELETE SET NULL"
+        )
 
     # Always stamp the current app version so the DB reflects the last migration
     conn.execute("UPDATE db_meta SET schema_version = ?", (_APP_VERSION,))

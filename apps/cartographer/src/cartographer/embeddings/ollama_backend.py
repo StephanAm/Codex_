@@ -31,4 +31,5 @@ class OllamaBackend:
                 f"Ollama is not reachable at {self._url}. "
                 "Make sure Ollama is running: ollama serve"
             ) from exc
-        return data["embeddings"]
+        result: list[list[float]] = data["embeddings"]
+        return result

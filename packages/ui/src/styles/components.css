@@ -18,6 +18,7 @@
 
 .badge-tag       { background: var(--accent-dim); color: var(--accent); }
 .badge-reference { background: rgba(127, 223, 255, 0.12); color: var(--accent-ice); }
+.badge-date      { background: var(--date-dim); color: var(--date); }
 
 /* ── tag / reference picker ─────────────────────────────────────────────── */
 

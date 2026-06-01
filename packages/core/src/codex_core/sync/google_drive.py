@@ -14,6 +14,7 @@ except ImportError as exc:  # pragma: no cover
     ) from exc
 
 from codex_core.logger import get_logger
+
 from .adapter import AuthRequired
 
 _log = get_logger("drive")

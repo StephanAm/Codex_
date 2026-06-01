@@ -1,3 +1,4 @@
+import re
 import sqlite3
 from collections import defaultdict
 from datetime import UTC, date, datetime
@@ -591,6 +592,32 @@ def set_pins(uuids: list[str], db_path: Path | None = None) -> None:
     conn.commit()
 
 
+def _resolve_date_annotation(value: str | None, granularity: str | None) -> str | None:
+    """Resolve a ~expression to an ISO date string formatted to the given granularity.
+
+    If *value* does not start with ``~``, it is returned unchanged so callers
+    can pass already-normalised values (e.g. ``2025-06``) without re-processing.
+    """
+    if not value:
+        return None
+    if not value.startswith("~"):
+        return value
+    normalized = normalize_dates(value).text
+    m = re.search(r"~\{(\d{4}-\d{2}-\d{2})", normalized)
+    if not m:
+        return None  # expression didn't resolve — discard rather than store garbage
+    iso_date = m.group(1)  # YYYY-MM-DD
+    if granularity == "week":
+        d = date.fromisoformat(iso_date)
+        cal = d.isocalendar()
+        return f"{cal.year}-W{cal.week:02d}"
+    if granularity == "month":
+        return iso_date[:7]
+    if granularity == "year":
+        return iso_date[:4]
+    return iso_date  # "day" or unrecognised granularity → full date
+
+
 # ── Atlas ──────────────────────────────────────────────────────────────────────
 
 
@@ -606,16 +633,57 @@ def _load_atlas_node(row: sqlite3.Row) -> AtlasNode:
     )
 
 
-def _load_atlas_page(row: sqlite3.Row) -> AtlasPage:
+def _load_atlas_page(conn: sqlite3.Connection, row: sqlite3.Row) -> AtlasPage:
+    page_id = row["id"]
+    tags = [
+        r["name"]
+        for r in conn.execute(
+            "SELECT t.name FROM tags t JOIN atlas_page_tags apt ON apt.tag_id = t.id WHERE apt.page_id = ?",
+            (page_id,),
+        )
+    ]
+    references = [
+        r["name"]
+        for r in conn.execute(
+            'SELECT r.name FROM "references" r'
+            " JOIN atlas_page_references apr ON apr.reference_id = r.id WHERE apr.page_id = ?",
+            (page_id,),
+        )
+    ]
+    date_annotation = row["date_annotation"]
     return AtlasPage(
-        id=row["id"],
+        id=page_id,
         uuid=row["uuid"],
         node_id=row["node_id"],
         title=row["title"],
         body=row["body"],
         created_at=row["created_at"],
         updated_at=row["updated_at"],
+        tags=tags,
+        references=references,
+        dates=[date_annotation] if date_annotation else [],
     )
+
+
+def _attach_page_tags_references(
+    conn: sqlite3.Connection,
+    page_id: int,
+    tags: list[str],
+    references: list[str],
+) -> None:
+    conn.execute("DELETE FROM atlas_page_tags WHERE page_id = ?", (page_id,))
+    conn.execute("DELETE FROM atlas_page_references WHERE page_id = ?", (page_id,))
+    for tag in tags:
+        conn.execute("INSERT OR IGNORE INTO tags (name) VALUES (?)", (tag,))
+        tag_id = conn.execute("SELECT id FROM tags WHERE name = ?", (tag,)).fetchone()["id"]
+        conn.execute("INSERT OR IGNORE INTO atlas_page_tags (page_id, tag_id) VALUES (?, ?)", (page_id, tag_id))
+    for ref in references:
+        conn.execute('INSERT OR IGNORE INTO "references" (name) VALUES (?)', (ref,))
+        ref_id = conn.execute('SELECT id FROM "references" WHERE name = ?', (ref,)).fetchone()["id"]
+        conn.execute(
+            "INSERT OR IGNORE INTO atlas_page_references (page_id, reference_id) VALUES (?, ?)",
+            (page_id, ref_id),
+        )
 
 
 def create_atlas_node(
@@ -726,18 +794,29 @@ def create_atlas_page(
     node_id: int,
     title: str,
     body: str = "",
+    extra_tags: list[str] | None = None,
+    extra_references: list[str] | None = None,
+    date_annotation: str | None = None,
+    date_granularity: str | None = None,
     db_path: Path | None = None,
 ) -> AtlasPage:
     conn = connect(db_path)
     now = datetime.now(UTC).isoformat()
+    resolved_date = _resolve_date_annotation(date_annotation, date_granularity)
     cur = conn.execute(
-        "INSERT INTO atlas_pages (uuid, node_id, title, body, created_at, updated_at)"
-        " VALUES (?, ?, ?, ?, ?, ?)",
-        (str(uuid4()), node_id, title.strip(), body, now, now),
+        "INSERT INTO atlas_pages (uuid, node_id, title, body, created_at, updated_at, date_annotation)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (str(uuid4()), node_id, title.strip(), body, now, now, resolved_date),
     )
+    page_id = cur.lastrowid
+    assert page_id is not None
+    parsed = parse(body)
+    tags = list(dict.fromkeys(parsed.tags + [t.lower() for t in (extra_tags or [])]))
+    references = list(dict.fromkeys(parsed.references + [r.lower() for r in (extra_references or [])]))
+    _attach_page_tags_references(conn, page_id, tags, references)
     conn.commit()
-    row = conn.execute("SELECT * FROM atlas_pages WHERE id = ?", (cur.lastrowid,)).fetchone()
-    return _load_atlas_page(row)
+    row = conn.execute("SELECT * FROM atlas_pages WHERE id = ?", (page_id,)).fetchone()
+    return _load_atlas_page(conn, row)
 
 
 def get_atlas_page_node_ids(db_path: Path | None = None) -> set[int]:
@@ -749,26 +828,36 @@ def get_atlas_page_node_ids(db_path: Path | None = None) -> set[int]:
 def get_atlas_page_by_node(node_id: int, db_path: Path | None = None) -> AtlasPage | None:
     conn = connect(db_path)
     row = conn.execute("SELECT * FROM atlas_pages WHERE node_id = ?", (node_id,)).fetchone()
-    return _load_atlas_page(row) if row else None
+    return _load_atlas_page(conn, row) if row else None
 
 
 def update_atlas_page(
     page_id: int,
     title: str,
     body: str,
+    extra_tags: list[str] | None = None,
+    extra_references: list[str] | None = None,
+    date_annotation: str | None = None,
+    date_granularity: str | None = None,
     db_path: Path | None = None,
 ) -> AtlasPage | None:
     conn = connect(db_path)
     now = datetime.now(UTC).isoformat()
+    resolved_date = _resolve_date_annotation(date_annotation, date_granularity)
     cur = conn.execute(
-        "UPDATE atlas_pages SET title = ?, body = ?, updated_at = ? WHERE id = ?",
-        (title.strip(), body, now, page_id),
+        "UPDATE atlas_pages SET title = ?, body = ?, updated_at = ?, date_annotation = ? WHERE id = ?",
+        (title.strip(), body, now, resolved_date, page_id),
     )
-    conn.commit()
     if cur.rowcount == 0:
+        conn.commit()
         return None
+    parsed = parse(body)
+    tags = list(dict.fromkeys(parsed.tags + [t.lower() for t in (extra_tags or [])]))
+    references = list(dict.fromkeys(parsed.references + [r.lower() for r in (extra_references or [])]))
+    _attach_page_tags_references(conn, page_id, tags, references)
+    conn.commit()
     row = conn.execute("SELECT * FROM atlas_pages WHERE id = ?", (page_id,)).fetchone()
-    return _load_atlas_page(row)
+    return _load_atlas_page(conn, row)
 
 
 def delete_atlas_page(page_id: int, db_path: Path | None = None) -> bool:

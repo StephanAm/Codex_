@@ -104,13 +104,25 @@ def _migrate(conn: sqlite3.Connection) -> None:
             updated_at TEXT NOT NULL
         );
         CREATE TABLE IF NOT EXISTS atlas_pages (
-            id         INTEGER PRIMARY KEY AUTOINCREMENT,
-            uuid       TEXT NOT NULL UNIQUE,
-            node_id    INTEGER NOT NULL UNIQUE REFERENCES atlas_nodes(id),
-            title      TEXT NOT NULL DEFAULT '',
-            body       TEXT NOT NULL DEFAULT '',
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            uuid            TEXT NOT NULL UNIQUE,
+            node_id         INTEGER NOT NULL UNIQUE REFERENCES atlas_nodes(id),
+            title           TEXT NOT NULL DEFAULT '',
+            body            TEXT NOT NULL DEFAULT '',
+            created_at      TEXT NOT NULL,
+            updated_at      TEXT NOT NULL,
+            date_annotation TEXT,
+            instance_id     INTEGER REFERENCES instances(id) ON DELETE SET NULL
+        );
+        CREATE TABLE IF NOT EXISTS atlas_page_tags (
+            page_id INTEGER NOT NULL REFERENCES atlas_pages(id) ON DELETE CASCADE,
+            tag_id  INTEGER NOT NULL REFERENCES tags(id)        ON DELETE CASCADE,
+            PRIMARY KEY (page_id, tag_id)
+        );
+        CREATE TABLE IF NOT EXISTS atlas_page_references (
+            page_id      INTEGER NOT NULL REFERENCES atlas_pages(id)    ON DELETE CASCADE,
+            reference_id INTEGER NOT NULL REFERENCES "references"(id)   ON DELETE CASCADE,
+            PRIMARY KEY (page_id, reference_id)
         );
         CREATE TABLE IF NOT EXISTS deleted_atlas_nodes (
             uuid       TEXT PRIMARY KEY,
@@ -225,6 +237,15 @@ def _migrate(conn: sqlite3.Connection) -> None:
             DROP TABLE _emb_old;
             DROP TABLE _idx_old;
         """)
+
+    # Add date_annotation and instance_id to mirror atlas_pages if missing.
+    ap_cols = {row[1] for row in conn.execute("PRAGMA table_info(atlas_pages)")}
+    if "date_annotation" not in ap_cols:
+        conn.execute("ALTER TABLE atlas_pages ADD COLUMN date_annotation TEXT")
+    if "instance_id" not in ap_cols:
+        conn.execute(
+            "ALTER TABLE atlas_pages ADD COLUMN instance_id INTEGER REFERENCES instances(id) ON DELETE SET NULL"
+        )
 
     # Drop the old sync_sources table (replaced by config keys in v0.2+).
     conn.execute("DROP TABLE IF EXISTS sync_sources")

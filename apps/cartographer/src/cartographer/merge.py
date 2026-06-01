@@ -88,6 +88,7 @@ def merge(local: sqlite3.Connection, source: sqlite3.Connection) -> MergeResult:
     _apply_atlas_node_tombstones(local, source, result)
     _merge_atlas_nodes(local, source, result)
     _merge_atlas_pages(local, source, result)
+    _copy_all_atlas_page_annotations(local, source)
 
     local.commit()
     return result
@@ -415,22 +416,78 @@ def _merge_atlas_pages(
                 # Two different page UUIDs claim the same node — last-write-wins.
                 if row["updated_at"] > existing["updated_at"]:
                     local.execute("DELETE FROM atlas_pages WHERE node_id = ?", (local_node_id,))
-                    local.execute(
-                        "INSERT INTO atlas_pages (uuid, node_id, title, body, created_at, updated_at)"
-                        " VALUES (?, ?, ?, ?, ?, ?)",
-                        (uuid, local_node_id, row["title"], row["body"], row["created_at"], row["updated_at"]),
-                    )
+                    _insert_atlas_page(local, uuid, local_node_id, row)
                     result.atlas_pages_updated += 1
             else:
-                local.execute(
-                    "INSERT INTO atlas_pages (uuid, node_id, title, body, created_at, updated_at)"
-                    " VALUES (?, ?, ?, ?, ?, ?)",
-                    (uuid, local_node_id, row["title"], row["body"], row["created_at"], row["updated_at"]),
-                )
+                _insert_atlas_page(local, uuid, local_node_id, row)
                 result.atlas_pages_added += 1
         elif row["updated_at"] > local_row["updated_at"]:
             local.execute(
-                "UPDATE atlas_pages SET title = ?, body = ?, updated_at = ? WHERE uuid = ?",
-                (row["title"], row["body"], row["updated_at"], uuid),
+                "UPDATE atlas_pages"
+                " SET title = ?, body = ?, updated_at = ?, date_annotation = ?"
+                " WHERE uuid = ?",
+                (row["title"], row["body"], row["updated_at"], row["date_annotation"], uuid),
             )
             result.atlas_pages_updated += 1
+
+
+def _insert_atlas_page(
+    local: sqlite3.Connection, uuid: str, local_node_id: int, row: sqlite3.Row
+) -> None:
+    local.execute(
+        "INSERT INTO atlas_pages"
+        " (uuid, node_id, title, body, created_at, updated_at, date_annotation)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (uuid, local_node_id, row["title"], row["body"], row["created_at"], row["updated_at"],
+         row["date_annotation"]),
+    )
+
+
+def _copy_all_atlas_page_annotations(
+    local: sqlite3.Connection, source: sqlite3.Connection
+) -> None:
+    """Sync atlas_page_tags and atlas_page_references for all pages present in local."""
+    for local_page in local.execute("SELECT id, uuid FROM atlas_pages").fetchall():
+        source_page = source.execute(
+            "SELECT id FROM atlas_pages WHERE uuid = ?", (local_page["uuid"],)
+        ).fetchone()
+        if not source_page:
+            continue
+        _copy_atlas_page_tags(source, local, source_page["id"], local_page["id"])
+        _copy_atlas_page_references(source, local, source_page["id"], local_page["id"])
+
+
+def _copy_atlas_page_tags(
+    source: sqlite3.Connection, local: sqlite3.Connection, source_page_id: int, local_page_id: int
+) -> None:
+    local.execute("DELETE FROM atlas_page_tags WHERE page_id = ?", (local_page_id,))
+    for row in source.execute(
+        "SELECT t.name FROM tags t JOIN atlas_page_tags apt ON apt.tag_id = t.id WHERE apt.page_id = ?",
+        (source_page_id,),
+    ):
+        name = row["name"]
+        local.execute("INSERT OR IGNORE INTO tags (name) VALUES (?)", (name,))
+        tag_id = local.execute("SELECT id FROM tags WHERE name = ?", (name,)).fetchone()["id"]
+        local.execute(
+            "INSERT OR IGNORE INTO atlas_page_tags (page_id, tag_id) VALUES (?, ?)",
+            (local_page_id, tag_id),
+        )
+
+
+def _copy_atlas_page_references(
+    source: sqlite3.Connection, local: sqlite3.Connection, source_page_id: int, local_page_id: int
+) -> None:
+    local.execute("DELETE FROM atlas_page_references WHERE page_id = ?", (local_page_id,))
+    for row in source.execute(
+        'SELECT r.name FROM "references" r'
+        " JOIN atlas_page_references apr ON apr.reference_id = r.id"
+        " WHERE apr.page_id = ?",
+        (source_page_id,),
+    ):
+        name = row["name"]
+        local.execute('INSERT OR IGNORE INTO "references" (name) VALUES (?)', (name,))
+        ref_id = local.execute('SELECT id FROM "references" WHERE name = ?', (name,)).fetchone()["id"]
+        local.execute(
+            "INSERT OR IGNORE INTO atlas_page_references (page_id, reference_id) VALUES (?, ?)",
+            (local_page_id, ref_id),
+        )

@@ -69,6 +69,9 @@ export interface AtlasPage {
   body: string;
   created_at: string;
   updated_at: string;
+  tags: string[];
+  references: string[];
+  dates: string[];
 }
 
 export interface Config {
@@ -168,10 +171,10 @@ export const api = {
     },
     pages: {
       get: (nodeId: number) => get<AtlasPage>(`/atlas/nodes/${nodeId}/page`),
-      create: (nodeId: number, title: string, body = "") =>
-        post<AtlasPage>(`/atlas/nodes/${nodeId}/page`, { title, body }),
-      update: (nodeId: number, title: string, body: string) =>
-        put<AtlasPage>(`/atlas/nodes/${nodeId}/page`, { title, body }),
+      create: (nodeId: number, title: string, body = "", tags: string[] = [], references: string[] = [], date_annotation: string | null = null, date_granularity: string | null = null) =>
+        post<AtlasPage>(`/atlas/nodes/${nodeId}/page`, { title, body, tags, references, date_annotation, date_granularity }),
+      update: (nodeId: number, title: string, body: string, tags: string[] = [], references: string[] = [], date_annotation: string | null = null, date_granularity: string | null = null) =>
+        put<AtlasPage>(`/atlas/nodes/${nodeId}/page`, { title, body, tags, references, date_annotation, date_granularity }),
       delete: (nodeId: number) => del(`/atlas/nodes/${nodeId}/page`),
     },
   },

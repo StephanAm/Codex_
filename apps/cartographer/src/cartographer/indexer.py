@@ -6,7 +6,9 @@ for items that are new or stale (content or model changed), and stores the
 results in the embeddings + index_state tables.
 """
 
+import sqlite3
 import struct
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -145,7 +147,7 @@ def run_index(
             instances_to_index.append(row)
 
     def _store_batch(
-        batch: list,
+        batch: list[sqlite3.Row],
         source_type: str,
         texts: list[str],
         vectors: list[list[float]],
@@ -174,9 +176,9 @@ def run_index(
         conn.commit()
 
     def _run_batches(
-        items: list,
+        items: list[sqlite3.Row],
         source_type: str,
-        text_fn,  # callable(row) -> str
+        text_fn: Callable[[sqlite3.Row], str],
     ) -> tuple[int, list[str]]:
         indexed = 0
         errors: list[str] = []

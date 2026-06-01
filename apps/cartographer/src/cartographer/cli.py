@@ -348,6 +348,73 @@ def index_config_ollama_url(url: str | None) -> None:
 
 
 # ---------------------------------------------------------------------------
+# search
+# ---------------------------------------------------------------------------
+
+
+@cli.command()
+@click.argument("query")
+def search(query: str) -> None:
+    """Search the index for QUERY using the full retrieval pipeline.
+
+    Parses @references, #tags, and date expressions from the query, then
+    runs per-corpus vector search with temporal decay and boost scoring.
+    """
+    from cartographer.config import (
+        get_embedding_backend,
+        get_embedding_model,
+        get_ollama_url,
+    )
+    from cartographer.embeddings import DEFAULT_MODELS, build_backend
+    from cartographer.search import search as do_search
+
+    backend_name = get_embedding_backend()
+    model = get_embedding_model() or DEFAULT_MODELS.get(backend_name, "")
+    ollama_url = get_ollama_url()
+
+    try:
+        be = build_backend(backend_name, model or None, ollama_url)
+        ctx = do_search(query, be)
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    if not ctx.chunks:
+        click.echo("No results. Run `cartographer index` first, or try a different query.")
+        return
+
+    # Show parsed query signals when they differ from the raw query
+    signals = []
+    if ctx.references:
+        signals.append(f"refs: {', '.join(ctx.references)}")
+    if ctx.tags:
+        signals.append(f"tags: {', '.join(ctx.tags)}")
+    if ctx.date_window:
+        signals.append(f"date: {ctx.date_window.from_date} – {ctx.date_window.to_date}")
+    if signals:
+        click.echo(f"signals: {' | '.join(signals)}")
+    if ctx.semantic_query != query:
+        click.echo(f"query:   {ctx.semantic_query}")
+
+    for rank, chunk in enumerate(ctx.chunks, 1):
+        type_label = chunk.corpus_type.replace("_", " ")
+        click.echo(f"\n{rank:>2}. ({chunk.score:.3f}) [{type_label}] {chunk.title}")
+        if chunk.content:
+            # Show up to 200 chars of content, wrapped at 80 cols
+            excerpt = chunk.content[:200].replace("\n", " ")
+            words, line, lines = excerpt.split(), "", []
+            for word in words:
+                if len(line) + len(word) + 1 > 78:
+                    lines.append(line)
+                    line = word
+                else:
+                    line = f"{line} {word}".lstrip()
+            if line:
+                lines.append(line)
+            for ln in lines:
+                click.echo(f"     {ln}")
+
+
+# ---------------------------------------------------------------------------
 # helpers
 # ---------------------------------------------------------------------------
 

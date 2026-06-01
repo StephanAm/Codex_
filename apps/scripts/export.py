@@ -19,7 +19,9 @@ tags = {}
 refs = {}
 for row in conn.execute("SELECT nt.note_id, t.name FROM note_tags nt JOIN tags t ON t.id = nt.tag_id"):
     tags.setdefault(row[0], []).append(row[1])
-for row in conn.execute('SELECT nr.note_id, r.name FROM note_references nr JOIN "references" r ON r.id = nr.reference_id'):
+for row in conn.execute(
+    'SELECT nr.note_id, r.name FROM note_references nr JOIN "references" r ON r.id = nr.reference_id'
+):
     refs.setdefault(row[0], []).append(row[1])
 
 for note in conn.execute("SELECT * FROM notes"):
@@ -37,7 +39,9 @@ for kind in conn.execute("SELECT * FROM instance_kinds"):
 
 # Instances
 inst_refs = {}
-for row in conn.execute('SELECT ir.instance_id, r.name FROM instance_references ir JOIN "references" r ON r.id = ir.reference_id'):
+for row in conn.execute(
+    'SELECT ir.instance_id, r.name FROM instance_references ir JOIN "references" r ON r.id = ir.reference_id'
+):
     inst_refs.setdefault(row[0], []).append(row[1])
 
 kinds = {row["id"]: row["name"] for row in conn.execute("SELECT id, name FROM instance_kinds")}

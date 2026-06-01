@@ -63,3 +63,6 @@ class AtlasPage:
     body: str
     created_at: str
     updated_at: str
+    tags: list[str] = field(default_factory=list)
+    references: list[str] = field(default_factory=list)
+    dates: list[str] = field(default_factory=list)
