@@ -415,6 +415,71 @@ def search(query: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# retrieve
+# ---------------------------------------------------------------------------
+
+
+@cli.command()
+@click.option(
+    "--note-ids",
+    "note_ids_str",
+    required=True,
+    metavar="IDS",
+    help="Comma-separated integer note IDs.",
+)
+@click.option(
+    "--top-k",
+    default=10,
+    show_default=True,
+    help="Maximum number of chunks to return.",
+)
+def retrieve(note_ids_str: str, top_k: int) -> None:
+    """Retrieve semantically related chunks for the given note IDs.
+
+    Outputs a JSON object to stdout:
+
+    \b
+      {
+        "chunks": [
+          {"chunk_id": "<uuid>", "note_id": <int|null>, "text": "...", "score": 0.91},
+          ...
+        ]
+      }
+
+    Only JSON is written to stdout. Run `cartographer index` first to populate
+    the embedding index.
+    """
+    import json
+
+    from cartographer.retrieve import retrieve as do_retrieve
+
+    try:
+        note_ids = [int(x.strip()) for x in note_ids_str.split(",") if x.strip()]
+    except ValueError as exc:
+        raise click.ClickException(f"Invalid note IDs: {exc}") from exc
+
+    if not note_ids:
+        raise click.ClickException("--note-ids must contain at least one integer.")
+
+    try:
+        chunks = do_retrieve(note_ids, top_k)
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    click.echo(json.dumps({
+        "chunks": [
+            {
+                "chunk_id": c.chunk_id,
+                "note_id": c.note_id,
+                "text": c.text,
+                "score": c.score,
+            }
+            for c in chunks
+        ]
+    }))
+
+
+# ---------------------------------------------------------------------------
 # helpers
 # ---------------------------------------------------------------------------
 

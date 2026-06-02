@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [project.scripts]
-scribe = "scribe.cli:cli"
+scribe = "scribe.cli:main"
 
 [tool.uv.sources]
 
