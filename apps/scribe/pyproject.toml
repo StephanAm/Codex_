@@ -9,6 +9,7 @@ description = "Scribe — context-aware LLM integration for the Codex workspace.
 requires-python = ">=3.11"
 dependencies = [
     "click>=8.0",
+    "ollama>=0.3",
 ]
 
 [project.scripts]
