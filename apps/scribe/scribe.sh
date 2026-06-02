@@ -7,7 +7,9 @@ export CARTOGRAPHER_DB="${CARTOGRAPHER_DB:-$HOME/.cartographer/index.db}"
 export CARTOGRAPHER_BIN="/home/stephan/Code/codex/apps/cartographer/cartographer.sh"
 
 # ── LLM ───────────────────────────────────────────────────────────────────────
-export SCRIBE_MODEL="${SCRIBE_MODEL:-llama3.2:3b}"
+export SCRIBE_BACKEND="claude"
+export SCRIBE_CLAUDE_BIN="${SCRIBE_CLAUDE_BIN:-claude}"
+export SCRIBE_MODEL="${SCRIBE_MODEL:-}"
 export SCRIBE_OLLAMA_URL="${SCRIBE_OLLAMA_URL:-http://localhost:11434}"
 export SCRIBE_TOP_K="${SCRIBE_TOP_K:-10}"
 

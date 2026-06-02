@@ -47,6 +47,13 @@ def _build_user_message(
     for note in notes:
         ts = note.time_stamp[:10] if note.time_stamp else "?"
         lines.append(f"[{ts}] {note.body.strip()}")
+        meta: list[str] = []
+        if note.tags:
+            meta.append("tags: " + ", ".join(f"#{t}" for t in note.tags))
+        if note.references:
+            meta.append("refs: " + ", ".join(f"@{r}" for r in note.references))
+        if meta:
+            lines.append("  " + " | ".join(meta))
     lines.append("")
 
     if chunks:

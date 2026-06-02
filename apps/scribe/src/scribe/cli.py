@@ -27,6 +27,7 @@ def main() -> None:
 @click.option("--title", default=None, help="Report title. Default: 'Bulletin — {date}'.")
 @click.option("--output", "output_str", default=None, metavar="PATH", help="Output file. Default: ./bulletin-{date}.md")
 @click.option("--top-k", "top_k", default=None, type=int, help="Chunks to retrieve (overrides SCRIBE_TOP_K).")
+@click.option("--backend", "backend_name", default=None, help="LLM backend: ollama, dummy. Overrides SCRIBE_BACKEND.")
 @click.option("--dry-run", is_flag=True, help="Print fetched notes, skip Cartographer and LLM.")
 def bulletin(
     date_str: str | None,
@@ -35,6 +36,7 @@ def bulletin(
     title: str | None,
     output_str: str | None,
     top_k: int | None,
+    backend_name: str,
     dry_run: bool,
 ) -> None:
     """Generate a bulletin from notes in the given date range.
@@ -45,7 +47,9 @@ def bulletin(
     from scribe.config import (
         get_cartographer_bin,
         get_cartographer_db,
+        get_claude_bin,
         get_ollama_url,
+        get_scribe_backend,
         get_scribe_model,
         get_scribe_top_k,
     )
@@ -119,7 +123,16 @@ def bulletin(
     # ── 7. Build LLM backend ─────────────────────────────────────────────────
     from scribe.llm import build_backend
 
-    backend = build_backend("ollama", get_scribe_model(), get_ollama_url())
+    resolved_backend = backend_name or get_scribe_backend()
+    try:
+        backend = build_backend(
+            resolved_backend,
+            get_scribe_model() or None,
+            get_ollama_url(),
+            get_claude_bin(),
+        )
+    except ValueError as exc:
+        raise click.UsageError(str(exc))
 
     # ── 8. Generate bulletin ─────────────────────────────────────────────────
     from scribe.bulletin import run_bulletin

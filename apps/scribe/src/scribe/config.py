@@ -13,6 +13,10 @@ def get_cartographer_bin() -> str:
     return os.environ.get("CARTOGRAPHER_BIN", "cartographer")
 
 
+def get_scribe_backend() -> str:
+    return os.environ.get("SCRIBE_BACKEND", "ollama")
+
+
 def get_scribe_model() -> str:
     return os.environ.get("SCRIBE_MODEL", "llama3")
 
@@ -26,3 +30,7 @@ def get_scribe_top_k() -> int:
 
 def get_ollama_url() -> str:
     return os.environ.get("SCRIBE_OLLAMA_URL", "http://localhost:11434")
+
+
+def get_claude_bin() -> str:
+    return os.environ.get("SCRIBE_CLAUDE_BIN", "claude")
