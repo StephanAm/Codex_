@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.5.0] — 2026-06-02
+
+- feat(atlas): Enhance AtlasPage model with tags, references, and date annotations
+- feat: add Google Drive and local folder adapters for syncing device DBs
+
 ## [1.4.0] — 2026-05-31
 
 - feat: add AtlasSidebar and AtlasView components for managing and displaying nodes and pages
