@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "scribe"
+version = "0.1.0"
+description = "Scribe — context-aware LLM integration for the Codex workspace."
+requires-python = ">=3.11"
+dependencies = [
+    "click>=8.0",
+]
+
+[project.scripts]
+scribe = "scribe.cli:cli"
+
+[tool.uv.sources]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/scribe"]

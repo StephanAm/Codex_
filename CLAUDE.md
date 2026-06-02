@@ -6,12 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `codex` is a `uv` + `pnpm` monorepo. It ships **Mnemo_** today and will host two companion apps in the future — **Lexis_** (reporting) and **Pragma_** (to-dos) — that share Mnemo_'s data layer.
 
-Mnemo_ is the application shell. Its current tools: **Stylus** (fast capture / notes), **Atlas** (structured knowledge), **Bulletin** (summaries). **Cartographer** is a background service for vector indexing.
+Mnemo_ is the application shell. Its current tools: **Stylus** (fast capture / notes), **Atlas** (structured knowledge), **Bulletin** (summaries). **Cartographer** is a background service for vector indexing. **Scribe** is a CLI tool that generates AI-written reports from Mnemo notes.
 
 ```
 codex/
 ├── apps/
-│   └── mnemo/            # Mnemo_ app: CLI, TUI, Tauri+React GUI (Stylus tool)
+│   ├── mnemo/            # Mnemo_ app: CLI, TUI, Tauri+React GUI (Stylus tool)
+│   ├── cartographer/     # Background vector indexing service
+│   └── scribe/           # AI report generation CLI (see designdocs/scribe-design.md)
 ├── packages/
 │   ├── core/             # codex_core — shared Python (models, store, sync, parser)
 │   └── ui/               # @codex/ui — shared React primitives + design-system CSS
@@ -78,6 +80,7 @@ Cross-app design references live in [`designdocs/`](designdocs/):
 - [`things-and-instances.md`](designdocs/things-and-instances.md) — Kind / Instance domain model
 - [`dateparsingrules.md`](designdocs/dateparsingrules.md) — `~{...}` date expression rules
 - [`mnemo-mcp-design.md`](designdocs/mnemo-mcp-design.md) — MCP server design
+- [`scribe-design.md`](designdocs/scribe-design.md) — Scribe design: pipeline, CLI, Cartographer subprocess contract, prompt design
 - [`wishlist.md`](designdocs/wishlist.md) — deferred feature ideas
 - [`buglist.md`](designdocs/buglist.md) — parked bugs
 

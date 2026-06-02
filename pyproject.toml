@@ -1,5 +1,5 @@
 [tool.uv.workspace]
-members = ["packages/core", "apps/mnemo", "apps/cartographer"]
+members = ["packages/core", "apps/mnemo", "apps/cartographer", "apps/scribe"]
 
 [dependency-groups]
 dev = [
@@ -12,23 +12,23 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["packages/core/tests", "apps/mnemo/tests", "apps/cartographer/tests"]
-addopts = "--cov=codex_core --cov=mnemo --cov=cartographer --cov-report=term-missing"
+testpaths = ["packages/core/tests", "apps/mnemo/tests", "apps/cartographer/tests", "apps/scribe/tests"]
+addopts = "--cov=codex_core --cov=mnemo --cov=cartographer --cov=scribe --cov-report=term-missing"
 markers = ["integration: requires external services (deselected by default)"]
 
 [tool.coverage.run]
-source = ["packages/core/src", "apps/mnemo/src", "apps/cartographer/src"]
+source = ["packages/core/src", "apps/mnemo/src", "apps/cartographer/src", "apps/scribe/src"]
 
 [tool.ruff]
 line-length = 120
-src = ["packages/core/src", "apps/mnemo/src", "apps/cartographer/src"]
+src = ["packages/core/src", "apps/mnemo/src", "apps/cartographer/src", "apps/scribe/src"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
 
 [tool.mypy]
 strict = true
-files = ["packages/core/src", "apps/mnemo/src", "apps/cartographer/src"]
+files = ["packages/core/src", "apps/mnemo/src", "apps/cartographer/src", "apps/scribe/src"]
 
 [[tool.mypy.overrides]]
 module = ["google.*", "google_auth_oauthlib.*", "googleapiclient.*"]
