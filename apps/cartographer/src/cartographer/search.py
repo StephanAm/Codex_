@@ -471,7 +471,7 @@ def _assemble(
     for c in candidates:
         c["final_score"] = _score(c, parsed, now)
 
-    candidates = [c for c in candidates if c["similarity"] >= MIN_SIMILARITY]
+    candidates = [c for c in candidates if c["final_score"] >= MIN_SIMILARITY]
     candidates.sort(key=lambda x: x["final_score"], reverse=True)
 
     # Guarantee at least one representative per corpus
