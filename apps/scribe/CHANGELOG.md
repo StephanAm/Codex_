@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.1] — 2026-06-02
+
+- fix(scribe): update build entry points to import main instead of cli
+
 ## [1.0.0] — 2026-06-02
 
 - feat(scribe): remove outdated bulletin file for the period 2025-05-18 to 2026-06-02
