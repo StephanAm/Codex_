@@ -31,7 +31,7 @@ strict = true
 files = ["packages/core/src", "apps/mnemo/src", "apps/cartographer/src", "apps/scribe/src"]
 
 [[tool.mypy.overrides]]
-module = ["google.*", "google_auth_oauthlib.*", "googleapiclient.*"]
+module = ["google.*", "google_auth_oauthlib.*", "googleapiclient.*", "fastembed.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
