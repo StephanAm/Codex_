@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.6.0] — 2026-06-02
+
+- fix(mnemo): bundle Google Drive auth libs in AppImage and fix error message
+
 ## [1.5.0] — 2026-06-02
 
 - feat(atlas): Enhance AtlasPage model with tags, references, and date annotations
