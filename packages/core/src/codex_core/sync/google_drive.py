@@ -10,7 +10,7 @@ try:
     from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 except ImportError as exc:  # pragma: no cover
     raise ImportError(
-        "Google Drive support requires the google-drive extra: uv pip install 'codex-core[google-drive]'"
+        "Google Drive support requires the google-drive extra: uv sync --all-packages --extra google-drive"
     ) from exc
 
 from codex_core.logger import get_logger

@@ -58,6 +58,10 @@ uv run pyinstaller \
   --collect-all mnemo --collect-all codex_core \
   --collect-all uvicorn \
   --collect-all fastapi \
+  --collect-all google.auth \
+  --collect-all google.oauth2 \
+  --collect-all google_auth_oauthlib \
+  --collect-all googleapiclient \
   --noconfirm \
   "$ENTRY_PY"
 
