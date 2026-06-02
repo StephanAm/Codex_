@@ -25,8 +25,8 @@ log "Freezing with PyInstaller..."
 
 ENTRY_PY="$TMP_DIR/entry.py"
 cat > "$ENTRY_PY" << 'PYEOF'
-from scribe.cli import cli
-cli()
+from scribe.cli import main
+main()
 PYEOF
 
 uv run pyinstaller \
