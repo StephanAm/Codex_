@@ -42,7 +42,7 @@ Each tool gets exactly one dedicated colour used for its rail glyph (hover/activ
 
 | Token | Hex | Tool |
 |---|---|---|
-| `--tool-stylus` | `#4F8EF7` | Stylus — ink blue |
+| `--tool-stylus` | `#00E5FF` | Stylus — cyan |
 | `--tool-recall` | `#FF6EB4` | Recall — warm rose |
 | `--tool-registry` | `#9D84F5` | Registry — soft violet |
 | `--tool-atlas` | `#00CFA7` | Atlas — teal |
@@ -63,7 +63,7 @@ Each tool gets exactly one dedicated colour used for its rail glyph (hover/activ
   --color-text:    #E8E8F0;
   --color-muted:   #7878A0;
 
-  --tool-stylus:   #4F8EF7;
+  --tool-stylus:   #00E5FF;
   --tool-recall:   #FF6EB4;
   --tool-registry: #9D84F5;
   --tool-atlas:    #00CFA7;

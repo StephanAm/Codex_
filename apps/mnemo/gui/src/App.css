@@ -201,7 +201,7 @@
   --danger:     #ff4d4d;
   --color-flag: #FF9500;
 
-  --tool-stylus:   #4F8EF7;
+  --tool-stylus:   #00E5FF;
   --tool-recall:   #FF6EB4;
   --tool-registry: #9D84F5;
   --tool-atlas:    #00CFA7;
@@ -365,7 +365,7 @@ body::after {
 .rail-glyph--log.rail-glyph--active    { color: var(--tool-stylus); }
 .rail-glyph--recall.rail-glyph--active { color: var(--tool-recall); }
 
-.rail-glyph--log:hover    { color: var(--tool-stylus); text-shadow: 0 0 10px rgba(79, 142, 247, 0.45); }
+.rail-glyph--log:hover    { color: var(--tool-stylus); text-shadow: 0 0 10px rgba(0, 229, 255, 0.45); }
 .rail-glyph--recall:hover { color: var(--tool-recall); text-shadow: 0 0 10px rgba(255, 110, 180, 0.45); }
 
 .rail-glyph::after {
