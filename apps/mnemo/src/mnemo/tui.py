@@ -1,3 +1,6 @@
+# Copyright (C) 2026 Stephan Marais
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 """Interactive curses TUI for note-taker."""
 
 from __future__ import annotations

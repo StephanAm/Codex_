@@ -1,3 +1,7 @@
+# Copyright (C) 2026 Stephan Marais
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+
 class DummyBackend:
     """Returns the prompt that would have been sent to the LLM instead of calling one."""
 

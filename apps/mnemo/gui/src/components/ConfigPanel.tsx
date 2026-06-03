@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Stephan Marais
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { api, Config } from "../api";

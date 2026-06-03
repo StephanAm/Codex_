@@ -1,3 +1,6 @@
+# Copyright (C) 2026 Stephan Marais
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 """
 Read-only merge: pulls data from a source Mnemo DB into the local mirror.
 

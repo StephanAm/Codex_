@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Stephan Marais
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 const BASE = "http://localhost:8765";
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {

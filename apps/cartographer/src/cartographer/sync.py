@@ -1,3 +1,6 @@
+# Copyright (C) 2026 Stephan Marais
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 """
 Sync: pulls all available Mnemo DBs from the configured source into the local mirror.
 

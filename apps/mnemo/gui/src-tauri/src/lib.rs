@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Stephan Marais
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 use std::fs;
 use std::io::Write;
 use std::net::TcpStream;

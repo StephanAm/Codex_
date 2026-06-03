@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Stephan Marais
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { Note } from "../api";
 import { TagBadge } from "@codex/ui";

@@ -1,3 +1,6 @@
+# Copyright (C) 2026 Stephan Marais
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 """PyInstaller entry point for the FastAPI backend.
 
 Runs uvicorn directly (no --reload) so it works inside a frozen executable.

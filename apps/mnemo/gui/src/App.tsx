@@ -1,3 +1,6 @@
+// Copyright (C) 2026 Stephan Marais
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, AtlasNode, Instance, InstanceKind, Note } from "./api";
 import { AtlasSidebar } from "./components/AtlasSidebar";

@@ -1,3 +1,6 @@
+# Copyright (C) 2026 Stephan Marais
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 """Integration tests for the Google Drive storage adapter.
 
 These tests hit the real Google Drive API and are skipped automatically

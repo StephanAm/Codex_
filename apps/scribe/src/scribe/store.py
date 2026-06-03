@@ -1,3 +1,6 @@
+# Copyright (C) 2026 Stephan Marais
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 """Read-only access to the Cartographer SQLite DB for note retrieval."""
 
 from __future__ import annotations

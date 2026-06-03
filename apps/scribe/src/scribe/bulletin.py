@@ -1,3 +1,6 @@
+# Copyright (C) 2026 Stephan Marais
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 """Bulletin pipeline: prompt assembly, LLM call, markdown rendering."""
 
 from __future__ import annotations

@@ -1,3 +1,6 @@
+# Copyright (C) 2026 Stephan Marais
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 """Subprocess wrapper for the `cartographer retrieve` command."""
 
 from __future__ import annotations

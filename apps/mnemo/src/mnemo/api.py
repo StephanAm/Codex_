@@ -1,3 +1,6 @@
+# Copyright (C) 2026 Stephan Marais
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 """FastAPI REST layer — thin wrapper over store.py for the GUI."""
 
 from __future__ import annotations

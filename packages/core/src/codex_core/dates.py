@@ -1,3 +1,6 @@
+# Copyright (C) 2026 Stephan Marais
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 """Date expression normaliser for Mnemo notes.
 
 Finds ~expressions in note text and resolves them to ISO dates/datetimes
