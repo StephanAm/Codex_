@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.1.1] — 2026-06-03
+
+- fix(cartographer): bundle fastembed and Google Drive libs in binary
+
 ## [1.1.0] — 2026-06-02
 
 - feat(scribe): implement bulletin generation with date range and context retrieval
