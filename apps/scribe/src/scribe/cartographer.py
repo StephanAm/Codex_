@@ -30,16 +30,11 @@ def retrieve_chunks(note_ids: list[int], top_k: int, bin_path: str) -> list[Chun
     try:
         result = subprocess.run(cmd, capture_output=True, text=True)
     except FileNotFoundError:
-        raise RuntimeError(
-            f"Cartographer binary not found: {bin_path!r}. "
-            "Set CARTOGRAPHER_BIN to the correct path."
-        )
+        raise RuntimeError(f"Cartographer binary not found: {bin_path!r}. Set CARTOGRAPHER_BIN to the correct path.")
 
     if result.returncode != 0:
         detail = result.stderr.strip() or "(no stderr)"
-        raise RuntimeError(
-            f"`cartographer retrieve` failed (exit {result.returncode}): {detail}"
-        )
+        raise RuntimeError(f"`cartographer retrieve` failed (exit {result.returncode}): {detail}")
 
     try:
         data = json.loads(result.stdout)
@@ -53,6 +48,4 @@ def retrieve_chunks(note_ids: list[int], top_k: int, bin_path: str) -> list[Chun
             for c in data.get("chunks", [])
         ]
     except (json.JSONDecodeError, KeyError, TypeError) as exc:
-        raise RuntimeError(
-            f"Failed to parse `cartographer retrieve` output: {exc}"
-        ) from exc
+        raise RuntimeError(f"Failed to parse `cartographer retrieve` output: {exc}") from exc

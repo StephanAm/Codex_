@@ -16,17 +16,17 @@ def build_backend(
 ) -> LLMBackend:
     if backend == "ollama":
         from scribe.llm.ollama_backend import OllamaBackend
+
         return OllamaBackend(model or DEFAULT_MODELS["ollama"], url)
     if backend == "claude":
         from scribe.llm.claude_backend import ClaudeBackend
+
         return ClaudeBackend(bin_path=claude_bin, model=model or None)
     if backend == "dummy":
         from scribe.llm.dummy_backend import DummyBackend
+
         return DummyBackend()
-    raise ValueError(
-        f"Unknown LLM backend {backend!r}. "
-        f"Choose one of: {', '.join(VALID_BACKENDS)}"
-    )
+    raise ValueError(f"Unknown LLM backend {backend!r}. Choose one of: {', '.join(VALID_BACKENDS)}")
 
 
 __all__ = ["LLMBackend", "build_backend", "VALID_BACKENDS", "DEFAULT_MODELS"]

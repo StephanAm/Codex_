@@ -17,9 +17,7 @@ class OllamaBackend:
         try:
             import ollama
         except ImportError as exc:
-            raise RuntimeError(
-                "The 'ollama' package is required. Install it with: uv add ollama"
-            ) from exc
+            raise RuntimeError("The 'ollama' package is required. Install it with: uv add ollama") from exc
 
         client = ollama.Client(host=self._url)
         try:

@@ -17,8 +17,7 @@ try:
     from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 except ImportError as exc:  # pragma: no cover
     raise ImportError(
-        "Google Drive support requires the google-drive extra: "
-        "uv sync --all-packages --extra google-drive"
+        "Google Drive support requires the google-drive extra: uv sync --all-packages --extra google-drive"
     ) from exc
 
 _SCOPES = ["https://www.googleapis.com/auth/drive.file"]
@@ -67,9 +66,7 @@ class GoogleDriveAdapter:
                 creds.refresh(Request())
                 self._token_path.write_text(creds.to_json())
             else:
-                raise AuthRequired(
-                    "Google Drive authorisation required. Run: cartographer sync auth"
-                )
+                raise AuthRequired("Google Drive authorisation required. Run: cartographer sync auth")
         self._service = build("drive", "v3", credentials=creds)
         return self._service
 
@@ -108,11 +105,7 @@ class GoogleDriveAdapter:
             )
             .execute()
         )
-        return [
-            f["name"].removesuffix(".db")
-            for f in results.get("files", [])
-            if f["name"].endswith(".db")
-        ]
+        return [f["name"].removesuffix(".db") for f in results.get("files", []) if f["name"].endswith(".db")]
 
     def upload(self, device_id: str, local_path: Path) -> None:
         svc = self._get_service()

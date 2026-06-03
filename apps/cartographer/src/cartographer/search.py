@@ -48,14 +48,14 @@ _CORPUS_DEFS = frozenset({"instance_kind", "instance"})
 @dataclass
 class DateWindow:
     from_date: str  # ISO date string (inclusive)
-    to_date: str    # ISO date string (exclusive upper bound)
+    to_date: str  # ISO date string (exclusive upper bound)
 
 
 @dataclass
 class ParsedQuery:
-    references_hard: list[str]   # explicit @mentions matched to known references
-    references_soft: list[str]   # names inferred from query words
-    tags: list[str]              # explicit #tags + inferred from query words
+    references_hard: list[str]  # explicit @mentions matched to known references
+    references_soft: list[str]  # names inferred from query words
+    tags: list[str]  # explicit #tags + inferred from query words
     date_window: DateWindow | None
     semantic_query: str
 
@@ -154,12 +154,8 @@ def _strip_structured_signals(raw_query: str, date_window: DateWindow | None) ->
 
 
 def parse_query(raw_query: str, conn: sqlite3.Connection) -> ParsedQuery:
-    known_refs: set[str] = {
-        row[0].lower() for row in conn.execute('SELECT name FROM "references"')
-    }
-    known_tags: set[str] = {
-        row[0].lower() for row in conn.execute("SELECT name FROM tags")
-    }
+    known_refs: set[str] = {row[0].lower() for row in conn.execute('SELECT name FROM "references"')}
+    known_tags: set[str] = {row[0].lower() for row in conn.execute("SELECT name FROM tags")}
 
     hard_ref_raw = re.findall(r"@(\w+)", raw_query, re.IGNORECASE)
     references_hard = [r.lower() for r in hard_ref_raw if r.lower() in known_refs]
@@ -222,10 +218,7 @@ def _retrieve_notes(
     where_extra = ""
 
     if parsed.date_window:
-        where_extra += (
-            " AND COALESCE(n.time_stamp, n.created_at) >= ?"
-            " AND COALESCE(n.time_stamp, n.created_at) < ?"
-        )
+        where_extra += " AND COALESCE(n.time_stamp, n.created_at) >= ? AND COALESCE(n.time_stamp, n.created_at) < ?"
         params.extend([parsed.date_window.from_date, parsed.date_window.to_date])
 
     if parsed.references_hard:
@@ -283,19 +276,15 @@ def _build_ancestor_annotations(conn: sqlite3.Connection) -> dict[int, dict[str,
     """Return {page_id: {"tags": [...], "refs": [...]}} with inherited ancestors merged in."""
     # Build node → parent map and node → page map
     node_parent: dict[int, int | None] = {
-        row["id"]: row["parent_id"]
-        for row in conn.execute("SELECT id, parent_id FROM atlas_nodes").fetchall()
+        row["id"]: row["parent_id"] for row in conn.execute("SELECT id, parent_id FROM atlas_nodes").fetchall()
     }
     node_to_page: dict[int, int] = {
-        row["node_id"]: row["id"]
-        for row in conn.execute("SELECT id, node_id FROM atlas_pages").fetchall()
+        row["node_id"]: row["id"] for row in conn.execute("SELECT id, node_id FROM atlas_pages").fetchall()
     }
 
     # Load per-page annotations
     page_tags: dict[int, list[str]] = {}
-    for row in conn.execute(
-        "SELECT apt.page_id, t.name FROM atlas_page_tags apt JOIN tags t ON t.id = apt.tag_id"
-    ):
+    for row in conn.execute("SELECT apt.page_id, t.name FROM atlas_page_tags apt JOIN tags t ON t.id = apt.tag_id"):
         page_tags.setdefault(row["page_id"], []).append(row["name"])
 
     page_refs: dict[int, list[str]] = {}
@@ -465,9 +454,7 @@ def _score(c: dict[str, Any], parsed: ParsedQuery, now: datetime) -> float:
 # ---------------------------------------------------------------------------
 
 
-def _assemble(
-    candidates: list[dict[str, Any]], parsed: ParsedQuery, now: datetime
-) -> list[dict[str, Any]]:
+def _assemble(candidates: list[dict[str, Any]], parsed: ParsedQuery, now: datetime) -> list[dict[str, Any]]:
     for c in candidates:
         c["final_score"] = _score(c, parsed, now)
 

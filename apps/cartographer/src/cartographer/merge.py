@@ -33,11 +33,21 @@ class MergeResult:
     @property
     def total_changes(self) -> int:
         return (
-            self.notes_added + self.notes_updated + self.notes_deleted
-            + self.kinds_added + self.kinds_updated + self.kinds_deleted
-            + self.instances_added + self.instances_updated + self.instances_deleted
-            + self.atlas_nodes_added + self.atlas_nodes_updated + self.atlas_nodes_deleted
-            + self.atlas_pages_added + self.atlas_pages_updated + self.atlas_pages_deleted
+            self.notes_added
+            + self.notes_updated
+            + self.notes_deleted
+            + self.kinds_added
+            + self.kinds_updated
+            + self.kinds_deleted
+            + self.instances_added
+            + self.instances_updated
+            + self.instances_deleted
+            + self.atlas_nodes_added
+            + self.atlas_nodes_updated
+            + self.atlas_nodes_deleted
+            + self.atlas_pages_added
+            + self.atlas_pages_updated
+            + self.atlas_pages_deleted
         )
 
 
@@ -98,9 +108,8 @@ def merge(local: sqlite3.Connection, source: sqlite3.Connection) -> MergeResult:
 # Notes
 # ---------------------------------------------------------------------------
 
-def _apply_note_tombstones(
-    local: sqlite3.Connection, source: sqlite3.Connection, result: MergeResult
-) -> None:
+
+def _apply_note_tombstones(local: sqlite3.Connection, source: sqlite3.Connection, result: MergeResult) -> None:
     for row in source.execute("SELECT uuid, deleted_at FROM deleted_notes"):
         cur = local.execute("DELETE FROM notes WHERE uuid = ?", (row["uuid"],))
         if cur.rowcount:
@@ -111,9 +120,7 @@ def _apply_note_tombstones(
         )
 
 
-def _merge_notes(
-    local: sqlite3.Connection, source: sqlite3.Connection, result: MergeResult
-) -> None:
+def _merge_notes(local: sqlite3.Connection, source: sqlite3.Connection, result: MergeResult) -> None:
     tombstoned = {r["uuid"] for r in local.execute("SELECT uuid FROM deleted_notes")}
 
     for row in source.execute("SELECT * FROM notes"):
@@ -125,8 +132,7 @@ def _merge_notes(
 
         if local_row is None:
             local.execute(
-                "INSERT INTO notes (uuid, body, created_at, updated_at, time_stamp)"
-                " VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO notes (uuid, body, created_at, updated_at, time_stamp) VALUES (?, ?, ?, ?, ?)",
                 (uuid, row["body"], row["created_at"], row["updated_at"], row["time_stamp"]),
             )
             local_id = local.execute("SELECT id FROM notes WHERE uuid = ?", (uuid,)).fetchone()["id"]
@@ -166,9 +172,7 @@ def _copy_note_references(
     source: sqlite3.Connection, local: sqlite3.Connection, source_note_id: int, local_note_id: int
 ) -> None:
     for row in source.execute(
-        'SELECT r.name FROM "references" r'
-        " JOIN note_references nr ON nr.reference_id = r.id"
-        " WHERE nr.note_id = ?",
+        'SELECT r.name FROM "references" r JOIN note_references nr ON nr.reference_id = r.id WHERE nr.note_id = ?',
         (source_note_id,),
     ):
         name = row["name"]
@@ -184,9 +188,8 @@ def _copy_note_references(
 # Instance kinds + instances
 # ---------------------------------------------------------------------------
 
-def _apply_instance_tombstones(
-    local: sqlite3.Connection, source: sqlite3.Connection, result: MergeResult
-) -> None:
+
+def _apply_instance_tombstones(local: sqlite3.Connection, source: sqlite3.Connection, result: MergeResult) -> None:
     for row in source.execute("SELECT uuid, deleted_at FROM deleted_instances"):
         cur = local.execute("DELETE FROM instances WHERE uuid = ?", (row["uuid"],))
         if cur.rowcount:
@@ -197,9 +200,7 @@ def _apply_instance_tombstones(
         )
 
 
-def _apply_kind_tombstones(
-    local: sqlite3.Connection, source: sqlite3.Connection, result: MergeResult
-) -> None:
+def _apply_kind_tombstones(local: sqlite3.Connection, source: sqlite3.Connection, result: MergeResult) -> None:
     for row in source.execute("SELECT uuid, deleted_at FROM deleted_instance_kinds"):
         try:
             cur = local.execute("DELETE FROM instance_kinds WHERE uuid = ?", (row["uuid"],))
@@ -213,9 +214,7 @@ def _apply_kind_tombstones(
             pass  # local instances still reference this kind; skip
 
 
-def _merge_instance_kinds(
-    local: sqlite3.Connection, source: sqlite3.Connection, result: MergeResult
-) -> None:
+def _merge_instance_kinds(local: sqlite3.Connection, source: sqlite3.Connection, result: MergeResult) -> None:
     tombstoned = {r["uuid"] for r in local.execute("SELECT uuid FROM deleted_instance_kinds")}
 
     for row in source.execute("SELECT * FROM instance_kinds"):
@@ -240,16 +239,13 @@ def _merge_instance_kinds(
             ).fetchone()
             safe_name = f"{row['name']}_{uuid[:8]}" if name_conflict else row["name"]
             local.execute(
-                "UPDATE instance_kinds SET name = ?, plural = ?, description = ?, updated_at = ?"
-                " WHERE uuid = ?",
+                "UPDATE instance_kinds SET name = ?, plural = ?, description = ?, updated_at = ? WHERE uuid = ?",
                 (safe_name, row["plural"], row["description"], row["updated_at"], uuid),
             )
             result.kinds_updated += 1
 
 
-def _merge_instances(
-    local: sqlite3.Connection, source: sqlite3.Connection, result: MergeResult
-) -> None:
+def _merge_instances(local: sqlite3.Connection, source: sqlite3.Connection, result: MergeResult) -> None:
     tombstoned = {r["uuid"] for r in local.execute("SELECT uuid FROM deleted_instances")}
 
     for row in source.execute("SELECT * FROM instances"):
@@ -263,9 +259,7 @@ def _merge_instances(
         ).fetchone()
         if not source_kind:
             continue
-        local_kind = local.execute(
-            "SELECT id FROM instance_kinds WHERE uuid = ?", (source_kind["uuid"],)
-        ).fetchone()
+        local_kind = local.execute("SELECT id FROM instance_kinds WHERE uuid = ?", (source_kind["uuid"],)).fetchone()
         if not local_kind:
             continue
 
@@ -283,8 +277,7 @@ def _merge_instances(
         elif row["updated_at"] > local_row["updated_at"]:
             local_id = local_row["id"]
             local.execute(
-                "UPDATE instances SET name = ?, description = ?, instance_kind_id = ?, updated_at = ?"
-                " WHERE uuid = ?",
+                "UPDATE instances SET name = ?, description = ?, instance_kind_id = ?, updated_at = ? WHERE uuid = ?",
                 (row["name"], row["description"], local_kind["id"], row["updated_at"], uuid),
             )
             local.execute("DELETE FROM instance_references WHERE instance_id = ?", (local_id,))
@@ -314,9 +307,8 @@ def _copy_instance_references(
 # Atlas
 # ---------------------------------------------------------------------------
 
-def _apply_atlas_page_tombstones(
-    local: sqlite3.Connection, source: sqlite3.Connection, result: MergeResult
-) -> None:
+
+def _apply_atlas_page_tombstones(local: sqlite3.Connection, source: sqlite3.Connection, result: MergeResult) -> None:
     for row in source.execute("SELECT uuid, deleted_at FROM deleted_atlas_pages"):
         cur = local.execute("DELETE FROM atlas_pages WHERE uuid = ?", (row["uuid"],))
         if cur.rowcount:
@@ -327,9 +319,7 @@ def _apply_atlas_page_tombstones(
         )
 
 
-def _apply_atlas_node_tombstones(
-    local: sqlite3.Connection, source: sqlite3.Connection, result: MergeResult
-) -> None:
+def _apply_atlas_node_tombstones(local: sqlite3.Connection, source: sqlite3.Connection, result: MergeResult) -> None:
     for row in source.execute("SELECT uuid, deleted_at FROM deleted_atlas_nodes"):
         node_row = local.execute("SELECT id FROM atlas_nodes WHERE uuid = ?", (row["uuid"],)).fetchone()
         if node_row:
@@ -343,9 +333,7 @@ def _apply_atlas_node_tombstones(
         )
 
 
-def _merge_atlas_nodes(
-    local: sqlite3.Connection, source: sqlite3.Connection, result: MergeResult
-) -> None:
+def _merge_atlas_nodes(local: sqlite3.Connection, source: sqlite3.Connection, result: MergeResult) -> None:
     tombstoned = {r["uuid"] for r in local.execute("SELECT uuid FROM deleted_atlas_nodes")}
 
     for row in source.execute("SELECT * FROM atlas_nodes"):
@@ -355,9 +343,7 @@ def _merge_atlas_nodes(
 
         local_parent_id = None
         if row["parent_id"] is not None:
-            source_parent = source.execute(
-                "SELECT uuid FROM atlas_nodes WHERE id = ?", (row["parent_id"],)
-            ).fetchone()
+            source_parent = source.execute("SELECT uuid FROM atlas_nodes WHERE id = ?", (row["parent_id"],)).fetchone()
             if source_parent:
                 local_parent = local.execute(
                     "SELECT id FROM atlas_nodes WHERE uuid = ?", (source_parent["uuid"],)
@@ -377,16 +363,13 @@ def _merge_atlas_nodes(
             result.atlas_nodes_added += 1
         elif row["updated_at"] > local_row["updated_at"]:
             local.execute(
-                "UPDATE atlas_nodes SET name = ?, parent_id = ?, position = ?, updated_at = ?"
-                " WHERE uuid = ?",
+                "UPDATE atlas_nodes SET name = ?, parent_id = ?, position = ?, updated_at = ? WHERE uuid = ?",
                 (row["name"], local_parent_id, row["position"], row["updated_at"], uuid),
             )
             result.atlas_nodes_updated += 1
 
 
-def _merge_atlas_pages(
-    local: sqlite3.Connection, source: sqlite3.Connection, result: MergeResult
-) -> None:
+def _merge_atlas_pages(local: sqlite3.Connection, source: sqlite3.Connection, result: MergeResult) -> None:
     tombstoned = {r["uuid"] for r in local.execute("SELECT uuid FROM deleted_atlas_pages")}
 
     for row in source.execute("SELECT * FROM atlas_pages"):
@@ -394,14 +377,10 @@ def _merge_atlas_pages(
         if not uuid or uuid in tombstoned:
             continue
 
-        source_node = source.execute(
-            "SELECT uuid FROM atlas_nodes WHERE id = ?", (row["node_id"],)
-        ).fetchone()
+        source_node = source.execute("SELECT uuid FROM atlas_nodes WHERE id = ?", (row["node_id"],)).fetchone()
         if not source_node:
             continue
-        local_node = local.execute(
-            "SELECT id FROM atlas_nodes WHERE uuid = ?", (source_node["uuid"],)
-        ).fetchone()
+        local_node = local.execute("SELECT id FROM atlas_nodes WHERE uuid = ?", (source_node["uuid"],)).fetchone()
         if not local_node:
             continue
         local_node_id = local_node["id"]
@@ -423,34 +402,25 @@ def _merge_atlas_pages(
                 result.atlas_pages_added += 1
         elif row["updated_at"] > local_row["updated_at"]:
             local.execute(
-                "UPDATE atlas_pages"
-                " SET title = ?, body = ?, updated_at = ?, date_annotation = ?"
-                " WHERE uuid = ?",
+                "UPDATE atlas_pages SET title = ?, body = ?, updated_at = ?, date_annotation = ? WHERE uuid = ?",
                 (row["title"], row["body"], row["updated_at"], row["date_annotation"], uuid),
             )
             result.atlas_pages_updated += 1
 
 
-def _insert_atlas_page(
-    local: sqlite3.Connection, uuid: str, local_node_id: int, row: sqlite3.Row
-) -> None:
+def _insert_atlas_page(local: sqlite3.Connection, uuid: str, local_node_id: int, row: sqlite3.Row) -> None:
     local.execute(
         "INSERT INTO atlas_pages"
         " (uuid, node_id, title, body, created_at, updated_at, date_annotation)"
         " VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (uuid, local_node_id, row["title"], row["body"], row["created_at"], row["updated_at"],
-         row["date_annotation"]),
+        (uuid, local_node_id, row["title"], row["body"], row["created_at"], row["updated_at"], row["date_annotation"]),
     )
 
 
-def _copy_all_atlas_page_annotations(
-    local: sqlite3.Connection, source: sqlite3.Connection
-) -> None:
+def _copy_all_atlas_page_annotations(local: sqlite3.Connection, source: sqlite3.Connection) -> None:
     """Sync atlas_page_tags and atlas_page_references for all pages present in local."""
     for local_page in local.execute("SELECT id, uuid FROM atlas_pages").fetchall():
-        source_page = source.execute(
-            "SELECT id FROM atlas_pages WHERE uuid = ?", (local_page["uuid"],)
-        ).fetchone()
+        source_page = source.execute("SELECT id FROM atlas_pages WHERE uuid = ?", (local_page["uuid"],)).fetchone()
         if not source_page:
             continue
         _copy_atlas_page_tags(source, local, source_page["id"], local_page["id"])

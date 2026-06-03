@@ -28,8 +28,7 @@ class OllamaBackend:
                 data = json.loads(resp.read())
         except URLError as exc:
             raise RuntimeError(
-                f"Ollama is not reachable at {self._url}. "
-                "Make sure Ollama is running: ollama serve"
+                f"Ollama is not reachable at {self._url}. Make sure Ollama is running: ollama serve"
             ) from exc
         result: list[list[float]] = data["embeddings"]
         return result

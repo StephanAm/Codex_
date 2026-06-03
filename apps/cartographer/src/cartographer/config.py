@@ -27,8 +27,7 @@ def _get(key: str, default: str, db_path: Path | None = None) -> str:
 def _set(key: str, value: str, db_path: Path | None = None) -> None:
     conn = connect(db_path)
     conn.execute(
-        "INSERT INTO config (key, value) VALUES (?, ?)"
-        " ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        "INSERT INTO config (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
         (key, value),
     )
     conn.commit()
@@ -38,22 +37,21 @@ def _set(key: str, value: str, db_path: Path | None = None) -> None:
 # Source type
 # ---------------------------------------------------------------------------
 
+
 def get_source_type(db_path: Path | None = None) -> str:
     return _get("source_type", _DEFAULT_SOURCE_TYPE, db_path)
 
 
 def set_source_type(source_type: str, db_path: Path | None = None) -> None:
     if source_type not in _VALID_SOURCE_TYPES:
-        raise ValueError(
-            f"Unknown source type {source_type!r}. "
-            f"Choose one of: {', '.join(_VALID_SOURCE_TYPES)}"
-        )
+        raise ValueError(f"Unknown source type {source_type!r}. Choose one of: {', '.join(_VALID_SOURCE_TYPES)}")
     _set("source_type", source_type, db_path)
 
 
 # ---------------------------------------------------------------------------
 # Google Drive
 # ---------------------------------------------------------------------------
+
 
 def get_drive_folder(db_path: Path | None = None) -> str:
     return _get("google_drive_folder", _DEFAULT_DRIVE_FOLDER, db_path)
@@ -85,6 +83,7 @@ def set_drive_token_path(path: Path, db_path: Path | None = None) -> None:
 # Local folder
 # ---------------------------------------------------------------------------
 
+
 def get_local_folder_path(db_path: Path | None = None) -> str:
     return _get("local_folder_path", "", db_path)
 
@@ -96,6 +95,7 @@ def set_local_folder_path(path: str, db_path: Path | None = None) -> None:
 # ---------------------------------------------------------------------------
 # Mnemo local DB
 # ---------------------------------------------------------------------------
+
 
 def get_mnemo_db_path(db_path: Path | None = None) -> str:
     return _get("mnemo_db_path", _DEFAULT_MNEMO_DB, db_path)
@@ -109,6 +109,7 @@ def set_mnemo_db_path(path: str, db_path: Path | None = None) -> None:
 # Remote DB name (the fixed filename used in the remote adapter location)
 # ---------------------------------------------------------------------------
 
+
 def get_remote_name(db_path: Path | None = None) -> str:
     return _get("remote_name", "cartographer", db_path)
 
@@ -121,16 +122,16 @@ def set_remote_name(name: str, db_path: Path | None = None) -> None:
 # Embedding backend
 # ---------------------------------------------------------------------------
 
+
 def get_embedding_backend(db_path: Path | None = None) -> str:
     return _get("embedding_backend", _DEFAULT_EMBEDDING_BACKEND, db_path)
 
 
 def set_embedding_backend(backend: str, db_path: Path | None = None) -> None:
     from cartographer.embeddings import VALID_BACKENDS
+
     if backend not in VALID_BACKENDS:
-        raise ValueError(
-            f"Unknown backend {backend!r}. Choose one of: {', '.join(VALID_BACKENDS)}"
-        )
+        raise ValueError(f"Unknown backend {backend!r}. Choose one of: {', '.join(VALID_BACKENDS)}")
     _set("embedding_backend", backend, db_path)
 
 

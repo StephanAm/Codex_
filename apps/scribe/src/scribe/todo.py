@@ -86,12 +86,6 @@ def run_todo(
     generated = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
     period = from_date if from_date == to_date else f"{from_date} – {to_date}"
 
-    header = (
-        f"# {title}\n\n"
-        f"*Generated: {generated}*  \n"
-        f"*Period: {period}*  \n"
-        f"*Notes: {len(notes)}*\n\n"
-        "---\n\n"
-    )
+    header = f"# {title}\n\n*Generated: {generated}*  \n*Period: {period}*  \n*Notes: {len(notes)}*\n\n---\n\n"
 
     return header + llm_output.strip() + "\n"

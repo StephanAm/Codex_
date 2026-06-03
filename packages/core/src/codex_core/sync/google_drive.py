@@ -134,11 +134,7 @@ class GoogleDriveAdapter:
         )
         all_files = results.get("files", [])
         _log.debug("list_devices: raw results (%d files): %s", len(all_files), [f["name"] for f in all_files])
-        devices = [
-            f["name"].removesuffix(".db")
-            for f in all_files
-            if f["name"].endswith(".db")
-        ]
+        devices = [f["name"].removesuffix(".db") for f in all_files if f["name"].endswith(".db")]
         _log.debug("list_devices: device ids after .db filter: %s", devices)
         return devices
 

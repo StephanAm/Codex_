@@ -63,6 +63,7 @@ def sync(db_path: Path | None = None) -> SyncReport:
 # Per-source-type sync implementations
 # ---------------------------------------------------------------------------
 
+
 def _sync_google_drive(local: object, report: SyncReport, db_path: Path | None) -> None:
     import sqlite3
 
@@ -99,10 +100,12 @@ def _sync_local_folder(local: object, report: SyncReport, db_path: Path | None) 
 
     raw = get_local_folder_path(db_path)
     if not raw:
-        report.results.append((
-            "local_folder",
-            ValueError("Local folder path is not configured. Run: cartographer sync config local-path <PATH>"),
-        ))
+        report.results.append(
+            (
+                "local_folder",
+                ValueError("Local folder path is not configured. Run: cartographer sync config local-path <PATH>"),
+            )
+        )
         return
 
     adapter = LocalFolderAdapter(Path(raw))
@@ -123,10 +126,12 @@ def _sync_mnemo_local(local: object, report: SyncReport, db_path: Path | None) -
     raw = get_mnemo_db_path(db_path)
     path = Path(raw)
     if not path.exists():
-        report.results.append((
-            raw,
-            FileNotFoundError(f"Mnemo DB not found: {raw}"),
-        ))
+        report.results.append(
+            (
+                raw,
+                FileNotFoundError(f"Mnemo DB not found: {raw}"),
+            )
+        )
         return
 
     try:

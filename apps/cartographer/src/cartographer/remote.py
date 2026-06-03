@@ -36,16 +36,15 @@ def _build_adapter(db_path: Path | None) -> object:
     source_type = get_source_type(db_path)
     if source_type == "local_folder":
         from cartographer.adapters.local_folder import LocalFolderAdapter
+
         raw = get_local_folder_path(db_path)
         if not raw:
-            raise ValueError(
-                "Local folder path is not configured. "
-                "Run: cartographer sync config local-path <PATH>"
-            )
+            raise ValueError("Local folder path is not configured. Run: cartographer sync config local-path <PATH>")
         return LocalFolderAdapter(Path(raw))
     # default: google_drive (also covers mnemo_local — remote operations always
     # need a network/folder location, so mnemo_local falls back to google_drive)
     from cartographer.adapters.google_drive import GoogleDriveAdapter
+
     return GoogleDriveAdapter(
         credentials_path=get_drive_credentials_path(db_path),
         token_path=get_drive_token_path(db_path),
@@ -70,6 +69,7 @@ def _remote_updated_at(remote_bytes: bytes) -> str | None:
             conn.close()
     finally:
         import os
+
         os.unlink(tmp)
 
 
@@ -95,8 +95,7 @@ def push(force: bool = False, db_path: Path | None = None) -> str:
         remote_ts = _remote_updated_at(remote_bytes)
         if remote_ts and local_ts and remote_ts > local_ts and not force:
             raise RemoteNewerError(
-                f"Remote DB is newer (remote: {remote_ts}, local: {local_ts}). "
-                "Use --force to overwrite."
+                f"Remote DB is newer (remote: {remote_ts}, local: {local_ts}). Use --force to overwrite."
             )
     except FileNotFoundError:
         pass  # no remote yet — first push

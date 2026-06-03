@@ -695,8 +695,7 @@ def create_atlas_node(
     conn = connect(db_path)
     now = datetime.now(UTC).isoformat()
     cur = conn.execute(
-        "INSERT INTO atlas_nodes (uuid, name, parent_id, position, created_at, updated_at)"
-        " VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO atlas_nodes (uuid, name, parent_id, position, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
         (str(uuid4()), name.strip(), parent_id, position, now, now),
     )
     conn.commit()
@@ -706,9 +705,7 @@ def create_atlas_node(
 
 def list_atlas_nodes(db_path: Path | None = None) -> list[AtlasNode]:
     conn = connect(db_path)
-    rows = conn.execute(
-        "SELECT * FROM atlas_nodes ORDER BY parent_id NULLS FIRST, position ASC"
-    ).fetchall()
+    rows = conn.execute("SELECT * FROM atlas_nodes ORDER BY parent_id NULLS FIRST, position ASC").fetchall()
     return [_load_atlas_node(r) for r in rows]
 
 

@@ -193,10 +193,7 @@ def _migrate(conn: sqlite3.Connection) -> None:
     # Recreate embeddings + index_state when the CHECK constraint is too narrow
     # (predates instance_kind / instance source types) or the model column is missing.
     emb_sql = (
-        conn.execute(
-            "SELECT sql FROM sqlite_master WHERE type='table' AND name='embeddings'"
-        ).fetchone()
-        or {"sql": ""}
+        conn.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='embeddings'").fetchone() or {"sql": ""}
     )["sql"] or ""
     if "instance_kind" not in emb_sql:
         conn.executescript("""

@@ -20,8 +20,7 @@ def fetch_notes_in_range(from_date: str, to_date: str, db_path: Path) -> list[No
     """Return notes whose semantic date falls within [from_date, to_date] (inclusive, YYYY-MM-DD)."""
     if not db_path.exists():
         raise RuntimeError(
-            f"Cartographer DB not found at {db_path}. "
-            "Run `cartographer sync` to build the local mirror."
+            f"Cartographer DB not found at {db_path}. Run `cartographer sync` to build the local mirror."
         )
 
     conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
@@ -64,8 +63,7 @@ def fetch_notes_by_tag(tag: str, from_date: str, to_date: str, db_path: Path) ->
     """Return notes tagged with `tag` whose semantic date falls within [from_date, to_date] (inclusive, YYYY-MM-DD)."""
     if not db_path.exists():
         raise RuntimeError(
-            f"Cartographer DB not found at {db_path}. "
-            "Run `cartographer sync` to build the local mirror."
+            f"Cartographer DB not found at {db_path}. Run `cartographer sync` to build the local mirror."
         )
 
     conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)

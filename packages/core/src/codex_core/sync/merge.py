@@ -336,9 +336,7 @@ def _merge_atlas_nodes(
         # Remap remote parent_id → local parent_id via UUID
         local_parent_id = None
         if row["parent_id"] is not None:
-            remote_parent = remote.execute(
-                "SELECT uuid FROM atlas_nodes WHERE id = ?", (row["parent_id"],)
-            ).fetchone()
+            remote_parent = remote.execute("SELECT uuid FROM atlas_nodes WHERE id = ?", (row["parent_id"],)).fetchone()
             if remote_parent:
                 local_parent = local.execute(
                     "SELECT id FROM atlas_nodes WHERE uuid = ?", (remote_parent["uuid"],)
@@ -377,9 +375,7 @@ def _merge_atlas_pages(
             continue
 
         # Remap remote node_id → local node_id via node UUID
-        remote_node = remote.execute(
-            "SELECT uuid FROM atlas_nodes WHERE id = ?", (row["node_id"],)
-        ).fetchone()
+        remote_node = remote.execute("SELECT uuid FROM atlas_nodes WHERE id = ?", (row["node_id"],)).fetchone()
         if not remote_node:
             continue
         local_node = local.execute("SELECT id FROM atlas_nodes WHERE uuid = ?", (remote_node["uuid"],)).fetchone()

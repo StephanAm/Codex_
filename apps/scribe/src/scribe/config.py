@@ -76,9 +76,9 @@ def _int(section: str, key: str, env_var: str, default: int) -> int:
 # Public accessors
 # ---------------------------------------------------------------------------
 
+
 def get_cartographer_db() -> Path:
-    raw = _str("cartographer", "db", "CARTOGRAPHER_DB",
-               str(Path.home() / ".codex_" / "cartographer" / "index.db"))
+    raw = _str("cartographer", "db", "CARTOGRAPHER_DB", str(Path.home() / ".codex_" / "cartographer" / "index.db"))
     return Path(raw).expanduser()
 
 
@@ -110,6 +110,7 @@ def get_scribe_top_k() -> int:
 # Config file helpers
 # ---------------------------------------------------------------------------
 
+
 def write_default_config() -> None:
     """Write a default config.toml to SCRIBE_DIR. Raises FileExistsError if already present."""
     SCRIBE_DIR.mkdir(parents=True, exist_ok=True)
@@ -126,12 +127,12 @@ def resolved_config() -> dict[str, object]:
     """Return the fully resolved config as a plain dict (for display)."""
     return {
         "cartographer": {
-            "db":  str(get_cartographer_db()),
+            "db": str(get_cartographer_db()),
             "bin": get_cartographer_bin(),
         },
         "llm": {
-            "backend":    get_scribe_backend(),
-            "model":      get_scribe_model(),
+            "backend": get_scribe_backend(),
+            "model": get_scribe_model(),
             "ollama_url": get_ollama_url(),
             "claude_bin": get_claude_bin(),
         },

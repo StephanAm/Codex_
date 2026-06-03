@@ -23,8 +23,7 @@ class FastEmbedBackend:
                 from fastembed import TextEmbedding
             except ImportError as exc:
                 raise ImportError(
-                    "fastembed support requires the embeddings extra: "
-                    "uv sync --all-packages --extra embeddings"
+                    "fastembed support requires the embeddings extra: uv sync --all-packages --extra embeddings"
                 ) from exc
             self._model = TextEmbedding(self._model_name)
         return self._model

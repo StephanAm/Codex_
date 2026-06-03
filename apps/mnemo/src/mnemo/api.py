@@ -717,10 +717,17 @@ def create_atlas_page_endpoint(node_id: int, payload: AtlasPagePayload) -> dict[
         raise HTTPException(status_code=404, detail=f"Node #{node_id} not found")
     if get_atlas_page_by_node(node_id) is not None:
         raise HTTPException(status_code=409, detail=f"Node #{node_id} already has a page")
-    return asdict(create_atlas_page(
-        node_id, payload.title, payload.body, payload.tags, payload.references,
-        payload.date_annotation, payload.date_granularity,
-    ))
+    return asdict(
+        create_atlas_page(
+            node_id,
+            payload.title,
+            payload.body,
+            payload.tags,
+            payload.references,
+            payload.date_annotation,
+            payload.date_granularity,
+        )
+    )
 
 
 @app.put("/atlas/nodes/{node_id}/page", summary="Update the page for an atlas node")
@@ -729,8 +736,13 @@ def update_atlas_page_endpoint(node_id: int, payload: AtlasPagePayload) -> dict[
     if page is None:
         raise HTTPException(status_code=404, detail=f"No page for node #{node_id}")
     updated = update_atlas_page(
-        page.id, payload.title, payload.body, payload.tags, payload.references,
-        payload.date_annotation, payload.date_granularity,
+        page.id,
+        payload.title,
+        payload.body,
+        payload.tags,
+        payload.references,
+        payload.date_annotation,
+        payload.date_granularity,
     )
     if updated is None:
         raise HTTPException(status_code=404, detail=f"No page for node #{node_id}")

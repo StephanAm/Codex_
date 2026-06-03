@@ -14,14 +14,13 @@ def build_backend(
 ) -> EmbeddingBackend:
     if backend == "fastembed":
         from cartographer.embeddings.fastembed_backend import FastEmbedBackend
+
         return FastEmbedBackend(model or DEFAULT_MODELS["fastembed"])
     if backend == "ollama":
         from cartographer.embeddings.ollama_backend import OllamaBackend
+
         return OllamaBackend(model or DEFAULT_MODELS["ollama"], ollama_url)
-    raise ValueError(
-        f"Unknown embedding backend {backend!r}. "
-        f"Choose one of: {', '.join(VALID_BACKENDS)}"
-    )
+    raise ValueError(f"Unknown embedding backend {backend!r}. Choose one of: {', '.join(VALID_BACKENDS)}")
 
 
 __all__ = ["EmbeddingBackend", "build_backend", "VALID_BACKENDS", "DEFAULT_MODELS"]

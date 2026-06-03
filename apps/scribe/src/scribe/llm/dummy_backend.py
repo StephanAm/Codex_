@@ -7,7 +7,4 @@ class DummyBackend:
 
     def generate(self, system: str, user: str) -> str:
         divider = "─" * 60
-        return (
-            f"[SYSTEM]\n{divider}\n{system.strip()}\n\n"
-            f"[USER]\n{divider}\n{user.strip()}\n"
-        )
+        return f"[SYSTEM]\n{divider}\n{system.strip()}\n\n[USER]\n{divider}\n{user.strip()}\n"

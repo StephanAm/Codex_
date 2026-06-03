@@ -1,4 +1,3 @@
-
 import click
 
 from cartographer.config import (
@@ -22,6 +21,7 @@ from cartographer.sync import sync as do_sync
 # Root
 # ---------------------------------------------------------------------------
 
+
 @click.group()
 def cli() -> None:
     """Cartographer — vector indexing service for the Codex workspace."""
@@ -30,6 +30,7 @@ def cli() -> None:
 # ---------------------------------------------------------------------------
 # status
 # ---------------------------------------------------------------------------
+
 
 @cli.command()
 def status() -> None:
@@ -68,6 +69,7 @@ def status() -> None:
 # sync
 # ---------------------------------------------------------------------------
 
+
 @cli.group()
 def sync() -> None:
     """Sync the local mirror from the configured source."""
@@ -91,6 +93,7 @@ def sync_auth() -> None:
         raise click.ClickException("auth is only needed for the google_drive source.")
     from cartographer.adapters.google_drive import run_auth_flow
     from cartographer.config import get_drive_credentials_path, get_drive_token_path
+
     try:
         run_auth_flow(get_drive_credentials_path(), get_drive_token_path())
     except FileNotFoundError as exc:
@@ -179,6 +182,7 @@ def sync_config_mnemo_db(path: str | None) -> None:
 # remote
 # ---------------------------------------------------------------------------
 
+
 @cli.group()
 def remote() -> None:
     """Push or pull the Cartographer DB to/from the remote location."""
@@ -193,6 +197,7 @@ def remote_push(force: bool) -> None:
     is passed.
     """
     from cartographer.remote import RemoteNewerError, push
+
     try:
         name = push(force=force)
     except RemoteNewerError as exc:
@@ -209,6 +214,7 @@ def remote_pull() -> None:
     The local DB is overwritten; there is no merge.
     """
     from cartographer.remote import pull
+
     try:
         updated_at = pull()
     except FileNotFoundError as exc:
@@ -236,6 +242,7 @@ def remote_config(name: str | None) -> None:
 # ---------------------------------------------------------------------------
 # index
 # ---------------------------------------------------------------------------
+
 
 @cli.group(invoke_without_command=True)
 @click.option("--force", is_flag=True, help="Re-index even items that are already up-to-date.")
@@ -466,22 +473,27 @@ def retrieve(note_ids_str: str, top_k: int) -> None:
     except Exception as exc:
         raise click.ClickException(str(exc)) from exc
 
-    click.echo(json.dumps({
-        "chunks": [
+    click.echo(
+        json.dumps(
             {
-                "chunk_id": c.chunk_id,
-                "note_id": c.note_id,
-                "text": c.text,
-                "score": c.score,
+                "chunks": [
+                    {
+                        "chunk_id": c.chunk_id,
+                        "note_id": c.note_id,
+                        "text": c.text,
+                        "score": c.score,
+                    }
+                    for c in chunks
+                ]
             }
-            for c in chunks
-        ]
-    }))
+        )
+    )
 
 
 # ---------------------------------------------------------------------------
 # helpers
 # ---------------------------------------------------------------------------
+
 
 def _print_report(report: SyncReport) -> None:
     click.echo(f"source: {report.source_type}")
@@ -506,11 +518,11 @@ def _print_merge_result(label: str, result: MergeResult) -> None:
         return
     click.echo(f"  {label}:")
     pairs = [
-        ("notes",       result.notes_added,       result.notes_updated,       result.notes_deleted),
-        ("kinds",       result.kinds_added,        result.kinds_updated,       result.kinds_deleted),
-        ("instances",   result.instances_added,    result.instances_updated,   result.instances_deleted),
-        ("atlas nodes", result.atlas_nodes_added,  result.atlas_nodes_updated, result.atlas_nodes_deleted),
-        ("atlas pages", result.atlas_pages_added,  result.atlas_pages_updated, result.atlas_pages_deleted),
+        ("notes", result.notes_added, result.notes_updated, result.notes_deleted),
+        ("kinds", result.kinds_added, result.kinds_updated, result.kinds_deleted),
+        ("instances", result.instances_added, result.instances_updated, result.instances_deleted),
+        ("atlas nodes", result.atlas_nodes_added, result.atlas_nodes_updated, result.atlas_nodes_deleted),
+        ("atlas pages", result.atlas_pages_added, result.atlas_pages_updated, result.atlas_pages_deleted),
     ]
     for name, added, updated, deleted in pairs:
         if added or updated or deleted:

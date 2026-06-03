@@ -80,9 +80,7 @@ def run_index(
     # Current index state keyed by (uuid, source_type) → (source_updated_at, model)
     idx: dict[tuple[str, str], tuple[str, str]] = {
         (row["source_uuid"], row["source_type"]): (row["source_updated_at"], row["model"])
-        for row in conn.execute(
-            "SELECT source_uuid, source_type, source_updated_at, model FROM index_state"
-        ).fetchall()
+        for row in conn.execute("SELECT source_uuid, source_type, source_updated_at, model FROM index_state").fetchall()
     }
 
     model_name = backend.model_name
@@ -107,9 +105,7 @@ def run_index(
             notes_to_index.append(row)
 
     # --- Atlas pages ---
-    pages_rows = conn.execute(
-        "SELECT uuid, title, body, updated_at FROM atlas_pages"
-    ).fetchall()
+    pages_rows = conn.execute("SELECT uuid, title, body, updated_at FROM atlas_pages").fetchall()
     pages_to_index = []
     for row in pages_rows:
         cached = idx.get((row["uuid"], "atlas_page"))
@@ -119,9 +115,7 @@ def run_index(
             pages_to_index.append(row)
 
     # --- Instance kinds ---
-    kinds_rows = conn.execute(
-        "SELECT uuid, name, plural, description, updated_at FROM instance_kinds"
-    ).fetchall()
+    kinds_rows = conn.execute("SELECT uuid, name, plural, description, updated_at FROM instance_kinds").fetchall()
     kinds_to_index = []
     for row in kinds_rows:
         cached = idx.get((row["uuid"], "instance_kind"))

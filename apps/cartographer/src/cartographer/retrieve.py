@@ -21,8 +21,8 @@ from cartographer.db import connect
 
 @dataclass
 class RetrievedChunk:
-    chunk_id: str       # source_uuid from the embeddings table
-    note_id: int | None # integer note ID for note chunks; None for atlas/kinds/instances
+    chunk_id: str  # source_uuid from the embeddings table
+    note_id: int | None  # integer note ID for note chunks; None for atlas/kinds/instances
     text: str
     score: float
 
@@ -117,6 +117,7 @@ def retrieve(
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_chunk(row: Any, sim: float) -> RetrievedChunk | None:
     source_type: str = row["source_type"]

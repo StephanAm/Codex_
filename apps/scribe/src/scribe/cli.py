@@ -143,7 +143,7 @@ def bulletin(
         click.echo(f"Error: {exc}", err=True)
         sys.exit(1)
 
-    # ── 9. Write output ──────────────────────────────────────────────────────    
+    # ── 9. Write output ──────────────────────────────────────────────────────
     output_path.write_text(markdown, encoding="utf-8")
     click.echo(f"Written: {output_path}", err=True)
 
