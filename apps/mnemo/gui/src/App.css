@@ -200,6 +200,13 @@
   --date-dim:   rgba(127, 255, 0, 0.07);
   --danger:     #ff4d4d;
   --color-flag: #FF9500;
+
+  --tool-stylus:   #4F8EF7;
+  --tool-recall:   #FF6EB4;
+  --tool-registry: #9D84F5;
+  --tool-atlas:    #00CFA7;
+  --tool-bulletin: #F5C542;
+
   --sidebar-width: 300px;
 
   font-family: 'IBM Plex Mono', monospace;
@@ -355,11 +362,11 @@ body::after {
   transition: color 300ms ease, text-shadow 300ms ease;
 }
 
-.rail-glyph--log.rail-glyph--active    { color: var(--accent); }
-.rail-glyph--recall.rail-glyph--active { color: var(--color-flag); }
+.rail-glyph--log.rail-glyph--active    { color: var(--tool-stylus); }
+.rail-glyph--recall.rail-glyph--active { color: var(--tool-recall); }
 
-.rail-glyph--log:hover    { color: var(--accent);      text-shadow: 0 0 10px rgba(0, 229, 255, 0.45); }
-.rail-glyph--recall:hover { color: var(--color-flag);  text-shadow: 0 0 10px rgba(255, 149, 0, 0.45); }
+.rail-glyph--log:hover    { color: var(--tool-stylus); text-shadow: 0 0 10px rgba(79, 142, 247, 0.45); }
+.rail-glyph--recall:hover { color: var(--tool-recall); text-shadow: 0 0 10px rgba(255, 110, 180, 0.45); }
 
 .rail-glyph::after {
   content: attr(data-label);
@@ -420,7 +427,7 @@ body::after {
   font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.2em;
-  color: rgba(255, 149, 0, 0.7);
+  color: rgba(255, 110, 180, 0.7);
   flex-shrink: 0;
 }
 
@@ -431,7 +438,7 @@ body::after {
   color: var(--text-muted);
 }
 
-.recall-add-btn:hover { border-color: var(--color-flag) !important; color: var(--color-flag) !important; }
+.recall-add-btn:hover { border-color: var(--tool-recall) !important; color: var(--tool-recall) !important; }
 
 .recall-list {
   list-style: none;
@@ -454,14 +461,14 @@ body::after {
 
 .recall-item--active {
   background: var(--bg);
-  border-left: 2px solid var(--color-flag);
+  border-left: 2px solid var(--tool-recall);
 }
 
 .recall-item--dragging { opacity: 0.35; }
 
 .recall-list--dragging .recall-item > * { pointer-events: none; }
 
-.recall-item--drop-target { border-top-color: var(--color-flag); }
+.recall-item--drop-target { border-top-color: var(--tool-recall); }
 
 .recall-item-sentinel {
   height: 16px;
@@ -469,7 +476,7 @@ body::after {
   border-top: 1px solid transparent;
   transition: border-top-color 500ms ease;
 }
-.recall-item-sentinel--active { border-top-color: var(--color-flag); }
+.recall-item-sentinel--active { border-top-color: var(--tool-recall); }
 
 .recall-item-title {
   font-size: 11px;
@@ -963,7 +970,7 @@ body::after {
   font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.2em;
-  color: rgba(127, 223, 255, 0.7);
+  color: rgba(157, 132, 245, 0.7);
 }
 
 .instance-add-kind-btn {
@@ -977,7 +984,7 @@ body::after {
   padding: 0;
 }
 
-.instance-add-kind-btn:hover { color: var(--accent-ice); }
+.instance-add-kind-btn:hover { color: var(--tool-registry); }
 
 .instance-inline-form {
   padding: 4px 14px;
@@ -987,7 +994,7 @@ body::after {
 .instance-inline-input {
   width: 100%;
   background: var(--bg);
-  border: 1px solid var(--accent-ice);
+  border: 1px solid var(--tool-registry);
   color: var(--text);
   font-family: inherit;
   font-size: 11px;
@@ -1010,7 +1017,7 @@ body::after {
   border-bottom: 1px solid var(--border);
 }
 
-.instance-add-instance-btn:hover { color: var(--accent-ice); }
+.instance-add-instance-btn:hover { color: var(--tool-registry); }
 
 .instance-sidebar-empty {
   font-size: 9px;
@@ -1033,7 +1040,7 @@ body::after {
   padding: 6px 14px 6px 8px;
   background: transparent;
   border-bottom: 1px solid var(--border);
-  color: var(--accent-ice);
+  color: var(--tool-registry);
   font-family: inherit;
   font-size: 10px;
   font-weight: 500;
@@ -1047,7 +1054,7 @@ body::after {
 
 .instance-group-header--active {
   background: var(--bg);
-  border-left: 2px solid var(--accent-ice);
+  border-left: 2px solid var(--tool-registry);
   padding-left: 6px;
 }
 
@@ -1063,7 +1070,7 @@ body::after {
   line-height: 1;
 }
 
-.instance-group-toggle-btn:hover { color: var(--accent-ice); }
+.instance-group-toggle-btn:hover { color: var(--tool-registry); }
 
 .instance-group-name { flex: 1; }
 
@@ -1113,10 +1120,10 @@ body::after {
   margin-top: 1px;
 }
 
-.rail-glyph--instances.rail-glyph--active { color: var(--accent-ice); }
-.rail-glyph--instances:hover { color: var(--accent-ice); text-shadow: 0 0 10px rgba(127, 223, 255, 0.45); }
+.rail-glyph--instances.rail-glyph--active { color: var(--tool-registry); }
+.rail-glyph--instances:hover { color: var(--tool-registry); text-shadow: 0 0 10px rgba(157, 132, 245, 0.45); }
 
-.instance-item--active { background: var(--bg); border-left: 2px solid var(--accent-ice); padding-left: 26px; }
+.instance-item--active { background: var(--bg); border-left: 2px solid var(--tool-registry); padding-left: 26px; }
 .instance-item--active .instance-item-name { color: var(--text); }
 
 /* ── instance detail ──────────────────────────────────────────────────────── */
@@ -1151,7 +1158,7 @@ body::after {
   font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.15em;
-  color: var(--accent-ice);
+  color: var(--tool-registry);
 }
 
 .instance-detail-name {
@@ -1255,7 +1262,7 @@ body::after {
   font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.15em;
-  color: var(--accent-ice);
+  color: var(--tool-registry);
 }
 
 .kind-detail-name {
@@ -1331,7 +1338,7 @@ body::after {
 .kind-detail-instance-item:hover {
   background: var(--bg-hover);
   color: var(--text);
-  border-left-color: var(--accent-ice);
+  border-left-color: var(--tool-registry);
 }
 
 /* kind edit form */
@@ -1404,7 +1411,7 @@ body::after {
   font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.2em;
-  color: rgba(127, 223, 255, 0.7);
+  color: rgba(245, 197, 66, 0.7);
   flex-shrink: 0;
 }
 
@@ -1522,10 +1529,10 @@ body::after {
 
 /* ── atlas rail ───────────────────────────────────────────────────────────── */
 
-.rail-glyph--atlas.rail-glyph--active { color: var(--date); }
-.rail-glyph--bulletin.rail-glyph--active { color: var(--text-muted); }
-.rail-glyph--atlas:hover    { color: var(--date); text-shadow: 0 0 10px rgba(127, 255, 0, 0.35); }
-.rail-glyph--bulletin:hover { color: var(--text-muted); }
+.rail-glyph--atlas.rail-glyph--active { color: var(--tool-atlas); }
+.rail-glyph--bulletin.rail-glyph--active { color: var(--tool-bulletin); }
+.rail-glyph--atlas:hover    { color: var(--tool-atlas);    text-shadow: 0 0 10px rgba(0, 207, 167, 0.45); }
+.rail-glyph--bulletin:hover { color: var(--tool-bulletin); text-shadow: 0 0 10px rgba(245, 197, 66, 0.45); }
 
 /* ── atlas sidebar ────────────────────────────────────────────────────────── */
 
@@ -1556,13 +1563,13 @@ body::after {
   font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.2em;
-  color: var(--text-muted);
+  color: rgba(0, 207, 167, 0.7);
 }
 
 .atlas-add-root-btn {
   background: transparent;
   border: none;
-  color: var(--date);
+  color: var(--tool-atlas);
   font-family: inherit;
   font-size: 14px;
   cursor: pointer;
@@ -1605,7 +1612,7 @@ body::after {
 .atlas-node-row:hover { background: var(--bg-hover); }
 
 .atlas-node-row--has-page { border-left-color: transparent; }
-.atlas-node-row--active   { background: var(--bg-sel); border-left-color: var(--date) !important; }
+.atlas-node-row--active   { background: var(--bg-sel); border-left-color: var(--tool-atlas) !important; }
 
 .atlas-node-row--has-page .atlas-node-name   { color: var(--text); }
 .atlas-node-row:not(.atlas-node-row--has-page) .atlas-node-name { color: var(--text-muted); }
@@ -1635,7 +1642,7 @@ body::after {
 .atlas-node-add-child-btn {
   background: transparent;
   border: none;
-  color: var(--date);
+  color: var(--tool-atlas);
   font-family: inherit;
   font-size: 12px;
   cursor: pointer;
@@ -1676,7 +1683,7 @@ body::after {
   border-radius: 2px;
   box-sizing: border-box;
 }
-.atlas-inline-input:focus { border-color: var(--date); }
+.atlas-inline-input:focus { border-color: var(--tool-atlas); }
 
 .atlas-drop-zone {
   height: 2px;
@@ -1684,7 +1691,7 @@ body::after {
 }
 .atlas-drop-zone--active {
   height: 4px;
-  background: var(--date);
+  background: var(--tool-atlas);
   border-radius: 2px;
 }
 
@@ -1736,11 +1743,11 @@ body::after {
   padding: 5px 12px;
   border-radius: 2px;
 }
-.atlas-no-page__create:hover { border-color: var(--date); color: var(--date); }
+.atlas-no-page__create:hover { border-color: var(--tool-atlas); color: var(--tool-atlas); }
 .atlas-no-page__create kbd {
   font-family: inherit;
   font-size: 10px;
-  color: var(--date);
+  color: var(--tool-atlas);
   margin-right: 4px;
 }
 
@@ -1895,10 +1902,10 @@ body::after {
   padding: 12px;
   outline: none;
   border-radius: 2px;
-  caret-color: var(--date);
+  caret-color: var(--tool-atlas);
   min-height: 200px;
 }
-.atlas-page-textarea:focus { border-color: var(--date); }
+.atlas-page-textarea:focus { border-color: var(--tool-atlas); }
 
 .atlas-page-actions { display: flex; gap: 6px; align-items: center; }
 

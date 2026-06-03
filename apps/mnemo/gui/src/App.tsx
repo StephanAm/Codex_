@@ -461,7 +461,7 @@ export default function App() {
           <div className="rail">
             <span
               className={`rail-glyph rail-glyph--log${activeSidebar === "log" ? " rail-glyph--active" : ""}`}
-              data-label="log"
+              data-label="stylus"
               onClick={() => setActiveSidebar("log")}
             >≡</span>
             <span
@@ -471,19 +471,19 @@ export default function App() {
             >★</span>
             <span
               className={`rail-glyph rail-glyph--instances${activeSidebar === "instances" ? " rail-glyph--active" : ""}`}
-              data-label="instances"
+              data-label="registry"
               onClick={() => setActiveSidebar("instances")}
             >◈</span>
-            <span
-              className={`rail-glyph rail-glyph--bulletin${activeSidebar === "bulletin" ? " rail-glyph--active" : ""}`}
-              data-label="bulletin"
-              onClick={() => setActiveSidebar("bulletin")}
-            >∴</span>
             <span
               className={`rail-glyph rail-glyph--atlas${activeSidebar === "atlas" ? " rail-glyph--active" : ""}`}
               data-label="atlas"
               onClick={() => setActiveSidebar("atlas")}
             >⊕</span>
+            <span
+              className={`rail-glyph rail-glyph--bulletin${activeSidebar === "bulletin" ? " rail-glyph--active" : ""}`}
+              data-label="bulletin"
+              onClick={() => setActiveSidebar("bulletin")}
+            >∴</span>
           </div>
           {activeSidebar === "log" && (
             <NoteList

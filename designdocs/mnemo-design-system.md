@@ -36,6 +36,18 @@ Use only these values. No other colours permitted.
 **Date highlight:** `#7FFF00` at 7% opacity background.
 **Danger:** `#FF4D4D` — UI chrome only (delete buttons, destructive confirmations). Never rendered in note body.
 
+### Tool palette
+
+Each tool gets exactly one dedicated colour used for its rail glyph (hover/active state) and sidebar chrome (section labels, active indicators, interactive element accents). These colours are separate from the semantic palette above and must not be used for content (tags, references, dates, etc.).
+
+| Token | Hex | Tool |
+|---|---|---|
+| `--tool-stylus` | `#4F8EF7` | Stylus — ink blue |
+| `--tool-recall` | `#FF6EB4` | Recall — warm rose |
+| `--tool-registry` | `#9D84F5` | Registry — soft violet |
+| `--tool-atlas` | `#00CFA7` | Atlas — teal |
+| `--tool-bulletin` | `#F5C542` | Bulletin — amber gold |
+
 ### CSS custom properties
 
 ```css
@@ -50,6 +62,13 @@ Use only these values. No other colours permitted.
   --color-danger:  #FF4D4D;
   --color-text:    #E8E8F0;
   --color-muted:   #7878A0;
+
+  --tool-stylus:   #4F8EF7;
+  --tool-recall:   #FF6EB4;
+  --tool-registry: #9D84F5;
+  --tool-atlas:    #00CFA7;
+  --tool-bulletin: #F5C542;
+
   --font-mono:     'IBM Plex Mono', 'Courier New', monospace;
 }
 ```
