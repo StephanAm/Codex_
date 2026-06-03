@@ -33,7 +33,7 @@ PYEOF
 
 uv run pyinstaller \
   --onefile \
-  --name cartographer \
+  --name carto \
   --distpath "$TMP_DIR/dist" \
   --workpath "$TMP_DIR/work" \
   --specpath "$TMP_DIR" \
@@ -46,10 +46,10 @@ uv run pyinstaller \
   --noconfirm \
   "$ENTRY_PY"
 
-cp "$TMP_DIR/dist/cartographer" "$BUILD_DIR/cartographer"
-chmod +x "$BUILD_DIR/cartographer"
+cp "$TMP_DIR/dist/carto" "$BUILD_DIR/carto"
+chmod +x "$BUILD_DIR/carto"
 
 # ── cleanup ───────────────────────────────────────────────────────────────────
 rm -rf "$TMP_DIR"
 
-log "Done → build/cartographer"
+log "Done → build/carto"

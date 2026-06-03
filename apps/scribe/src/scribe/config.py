@@ -23,7 +23,7 @@ CONFIG_FILE = SCRIBE_DIR / "config.toml"
 _DEFAULT_CONFIG = """\
 [cartographer]
 db  = "{cartographer_db}"
-bin = "cartographer"
+bin = "carto"
 
 [llm]
 backend    = "claude"
@@ -86,7 +86,7 @@ def get_cartographer_db() -> Path:
 
 
 def get_cartographer_bin() -> str:
-    return _str("cartographer", "bin", "CARTOGRAPHER_BIN", "cartographer")
+    return _str("cartographer", "bin", "CARTOGRAPHER_BIN", "carto")
 
 
 def get_scribe_backend() -> str:

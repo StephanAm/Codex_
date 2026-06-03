@@ -34,7 +34,7 @@ PYEOF
 
 uv run pyinstaller \
   --onefile \
-  --name cartographer \
+  --name carto \
   --distpath "$TMP_DIR/dist" \
   --workpath "$TMP_DIR/work" \
   --specpath "$TMP_DIR" \
@@ -42,9 +42,9 @@ uv run pyinstaller \
   --noconfirm \
   "$ENTRY_PY"
 
-cp "$TMP_DIR/dist/cartographer.exe" "$BUILD_DIR/cartographer.exe"
+cp "$TMP_DIR/dist/carto.exe" "$BUILD_DIR/carto.exe"
 
 # ── cleanup ───────────────────────────────────────────────────────────────────
 rm -rf "$TMP_DIR"
 
-log "Done → build/cartographer.exe"
+log "Done → build/carto.exe"

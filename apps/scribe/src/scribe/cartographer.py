@@ -1,7 +1,7 @@
 # Copyright (C) 2026 Stephan Marais
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-"""Subprocess wrapper for the `cartographer retrieve` command."""
+"""Subprocess wrapper for the `carto retrieve` command."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ class Chunk:
 
 
 def retrieve_chunks(note_ids: list[int], top_k: int, bin_path: str) -> list[Chunk]:
-    """Call `cartographer retrieve` and return parsed chunks.
+    """Call `carto retrieve` and return parsed chunks.
 
     Returns an empty list immediately if note_ids is empty.
     Raises RuntimeError on non-zero exit or unparseable output.
@@ -37,7 +37,7 @@ def retrieve_chunks(note_ids: list[int], top_k: int, bin_path: str) -> list[Chun
 
     if result.returncode != 0:
         detail = result.stderr.strip() or "(no stderr)"
-        raise RuntimeError(f"`cartographer retrieve` failed (exit {result.returncode}): {detail}")
+        raise RuntimeError(f"`carto retrieve` failed (exit {result.returncode}): {detail}")
 
     try:
         data = json.loads(result.stdout)
@@ -51,4 +51,4 @@ def retrieve_chunks(note_ids: list[int], top_k: int, bin_path: str) -> list[Chun
             for c in data.get("chunks", [])
         ]
     except (json.JSONDecodeError, KeyError, TypeError) as exc:
-        raise RuntimeError(f"Failed to parse `cartographer retrieve` output: {exc}") from exc
+        raise RuntimeError(f"Failed to parse `carto retrieve` output: {exc}") from exc
