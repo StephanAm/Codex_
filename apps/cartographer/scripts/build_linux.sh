@@ -20,7 +20,7 @@ mkdir -p "$BUILD_DIR" "$TMP_DIR"
 # ── 1. Python dependencies ────────────────────────────────────────────────────
 log "Installing Python dependencies..."
 cd "$WORKSPACE_ROOT"
-uv sync --all-packages --extra google-drive
+uv sync --all-packages --extra google-drive --extra embeddings
 
 # ── 2. Freeze with PyInstaller ────────────────────────────────────────────────
 log "Freezing with PyInstaller..."
@@ -38,6 +38,11 @@ uv run pyinstaller \
   --workpath "$TMP_DIR/work" \
   --specpath "$TMP_DIR" \
   --collect-all cartographer \
+  --collect-all fastembed \
+  --collect-all google.auth \
+  --collect-all google.oauth2 \
+  --collect-all google_auth_oauthlib \
+  --collect-all googleapiclient \
   --noconfirm \
   "$ENTRY_PY"
 
