@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.2.0] — 2026-06-03
+
+- feat: add 'todo' command to generate to-do lists from tagged notes
+
 ## [1.1.0] — 2026-06-03
 
 - feat: add configuration commands for Scribe, including show and init
