@@ -3,9 +3,8 @@ Run a full release for the specified app: build, commit pending changes, bump ve
 Usage: /release <app> [major|minor|patch]  (e.g. /release mnemo patch)
 
 ```bash
-_args=(${ARGUMENTS:-})
-APP="${_args[0]:-}"
-BUMP="${_args[1]:-patch}"
+read -r APP BUMP <<< "${ARGUMENTS:-}"
+BUMP="${BUMP:-patch}"
 if [ -z "$APP" ]; then
   echo "Error: app name required. Usage: /release <app> [major|minor|patch]" >&2
   exit 1
