@@ -149,6 +149,45 @@ def bulletin(
 
 
 # ---------------------------------------------------------------------------
+# config
+# ---------------------------------------------------------------------------
+
+
+@main.group()
+def config() -> None:
+    """View or initialise Scribe configuration."""
+
+
+@config.command("show")
+def config_show() -> None:
+    """Print the resolved configuration (file + env overrides)."""
+    from scribe.config import CONFIG_FILE, resolved_config
+
+    source = str(CONFIG_FILE) if CONFIG_FILE.exists() else "(defaults — no config file)"
+    click.echo(f"config: {source}\n")
+
+    for section, values in resolved_config().items():
+        click.echo(f"[{section}]")
+        assert isinstance(values, dict)
+        for key, val in values.items():
+            click.echo(f"  {key} = {val!r}")
+        click.echo()
+
+
+@config.command("init")
+def config_init() -> None:
+    """Write a default config.toml to ~/.codex_/scribe/."""
+    from scribe.config import CONFIG_FILE, write_default_config
+
+    try:
+        write_default_config()
+        click.echo(f"Created: {CONFIG_FILE}")
+    except FileExistsError:
+        click.echo(f"Already exists: {CONFIG_FILE}", err=True)
+        sys.exit(1)
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
