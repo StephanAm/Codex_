@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.0] — 2026-06-03
+
+- feat: add configuration commands for Scribe, including show and init
+- feat: migrate user data to new ~/.codex_ layout and update paths in configuration
+- feat: add installation script and bulletin generation script for scribe
+
 ## [1.0.1] — 2026-06-02
 
 - fix(scribe): update build entry points to import main instead of cli
