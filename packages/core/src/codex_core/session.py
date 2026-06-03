@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 def _session_path() -> Path:
-    return Path(f"/tmp/note-taker-session-{os.getuid()}.json")
+    return Path(f"/tmp/codex-session-{os.getuid()}.json")
 
 
 def get_session_context() -> tuple[list[str], list[str]]:

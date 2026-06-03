@@ -10,7 +10,7 @@ try:
 except Exception:
     _APP_VERSION = "unknown"
 
-_DEFAULT_DB = Path.home() / ".note_taker" / "notes.db"
+_DEFAULT_DB = Path.home() / ".codex_" / "mnemo_" / "notes.db"
 
 
 def get_db_path() -> Path:

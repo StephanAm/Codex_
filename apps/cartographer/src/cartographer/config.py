@@ -10,10 +10,10 @@ from cartographer.db import connect
 
 _VALID_SOURCE_TYPES = ("google_drive", "local_folder", "mnemo_local")
 
-_CONFIG_DIR = Path.home() / ".cartographer"
+_CODEX_DIR = Path.home() / ".codex_"
 _DEFAULT_SOURCE_TYPE = "google_drive"
 _DEFAULT_DRIVE_FOLDER = "note-taker-sync"
-_DEFAULT_MNEMO_DB = str(Path.home() / ".note_taker" / "notes.db")
+_DEFAULT_MNEMO_DB = str(Path.home() / ".codex_" / "mnemo_" / "notes.db")
 _DEFAULT_EMBEDDING_BACKEND = "fastembed"
 _DEFAULT_OLLAMA_URL = "http://localhost:11434"
 
@@ -64,7 +64,7 @@ def set_drive_folder(name: str, db_path: Path | None = None) -> None:
 
 
 def get_drive_credentials_path(db_path: Path | None = None) -> Path:
-    raw = _get("google_drive_credentials_path", str(_CONFIG_DIR / "credentials.json"), db_path)
+    raw = _get("google_drive_credentials_path", str(_CODEX_DIR / "credentials.json"), db_path)
     return Path(raw)
 
 
@@ -73,7 +73,7 @@ def set_drive_credentials_path(path: Path, db_path: Path | None = None) -> None:
 
 
 def get_drive_token_path(db_path: Path | None = None) -> Path:
-    raw = _get("google_drive_token_path", str(_CONFIG_DIR / "token.json"), db_path)
+    raw = _get("google_drive_token_path", str(_CODEX_DIR / "token.json"), db_path)
     return Path(raw)
 
 

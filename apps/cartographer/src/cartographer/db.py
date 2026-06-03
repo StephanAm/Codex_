@@ -9,7 +9,7 @@ try:
 except Exception:
     _APP_VERSION = "unknown"
 
-_DEFAULT_DB = Path.home() / ".cartographer" / "index.db"
+_DEFAULT_DB = Path.home() / ".codex_" / "cartographer" / "index.db"
 
 
 def get_db_path() -> Path:

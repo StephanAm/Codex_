@@ -12,7 +12,8 @@
       "Bash(pnpm add *)",
       "Bash(pnpm --filter ./apps/mnemo/gui build)",
       "Bash(chmod +x /home/stephan/Code/codex/apps/cartographer/scripts/bump_version.sh /home/stephan/Code/codex/apps/cartographer/scripts/update_changelog.sh)",
-      "Bash(chmod +x /home/stephan/Code/codex/apps/scribe/gen_bulletins.sh)"
+      "Bash(chmod +x /home/stephan/Code/codex/apps/scribe/gen_bulletins.sh)",
+      "Bash(chmod +x /home/stephan/Code/codex/migrate_dotfiles.sh)"
     ],
     "additionalDirectories": [
       "/home/stephan/.claude/commands",

@@ -704,10 +704,10 @@ class _App:
             else:
                 from codex_core.sync.google_drive import GoogleDriveAdapter
 
-                config_dir = Path.home() / ".note_taker"
+                auth_dir = Path.home() / ".codex_"
                 adapter = GoogleDriveAdapter(
-                    config_dir / "credentials.json",
-                    config_dir / "token.json",
+                    auth_dir / "credentials.json",
+                    auth_dir / "token.json",
                     folder_name=get_sync_folder(),
                 )
             device_id = get_device_id()

@@ -27,7 +27,7 @@ Current modules:
 
 - **No app imports.** `codex_core` must never `import mnemo` (or any app). It is a leaf in the dependency graph.
 - **No UI dependencies.** No FastAPI, no Click, no curses, no React. (FastAPI handlers live in `apps/<app>/api.py`.)
-- **Runtime paths are stable.** `~/.note_taker/` and `/tmp/note-taker-session-*` are user-data paths and the on-disk session prefix. Do not rename — doing so would orphan user databases and live sessions. The Python package was renamed `note_taker` → `codex_core`; the runtime identifiers stayed put deliberately.
+- **Runtime paths are stable.** `~/.codex_/mnemo_/` (Mnemo data) and `/tmp/codex-session-{uid}.json` (session file) are user-data paths. Do not rename — doing so would orphan user databases and live sessions.
 
 ## Sync architecture
 

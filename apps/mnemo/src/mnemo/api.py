@@ -78,7 +78,7 @@ from codex_core.store import (  # noqa: E402
 
 PORT = 8765
 _log = get_logger("api")
-PID_FILE = Path.home() / ".note_taker" / "api.pid"
+PID_FILE = Path.home() / ".codex_" / "mnemo_" / "api.pid"
 
 
 def _write_pid_file() -> None:
@@ -437,10 +437,10 @@ def _build_adapter() -> Any:
         return LocalFolderAdapter(Path(raw))
     from codex_core.sync.google_drive import GoogleDriveAdapter
 
-    config_dir = Path.home() / ".note_taker"
+    auth_dir = Path.home() / ".codex_"
     return GoogleDriveAdapter(
-        config_dir / "credentials.json",
-        config_dir / "token.json",
+        auth_dir / "credentials.json",
+        auth_dir / "token.json",
         folder_name=get_sync_folder(),
     )
 
@@ -507,10 +507,10 @@ def _do_sync() -> tuple[str, bool]:
         else:
             from codex_core.sync.google_drive import GoogleDriveAdapter
 
-            config_dir = Path.home() / ".note_taker"
+            auth_dir = Path.home() / ".codex_"
             adapter = GoogleDriveAdapter(
-                config_dir / "credentials.json",
-                config_dir / "token.json",
+                auth_dir / "credentials.json",
+                auth_dir / "token.json",
                 folder_name=get_sync_folder(),
             )
         device_id = get_device_id()
@@ -752,7 +752,7 @@ def delete_atlas_page_endpoint(node_id: int) -> None:
 async def auth_google() -> dict[str, str]:
     """Run the Google Drive OAuth flow to obtain and store an access token.
 
-    Requires `credentials.json` to be present at `~/.note_taker/credentials.json`.
+    Requires `credentials.json` to be present at `~/.codex_/credentials.json`.
     Download it from the Google Cloud Console under APIs & Services → Credentials → OAuth 2.0 Client ID.
 
     This call opens a browser window for the user to complete the OAuth consent flow.
@@ -760,9 +760,9 @@ async def auth_google() -> dict[str, str]:
     """
     import asyncio
 
-    config_dir = Path.home() / ".note_taker"
-    creds_path = config_dir / "credentials.json"
-    token_path = config_dir / "token.json"
+    auth_dir = Path.home() / ".codex_"
+    creds_path = auth_dir / "credentials.json"
+    token_path = auth_dir / "token.json"
     if not creds_path.exists():
         raise HTTPException(
             status_code=400,

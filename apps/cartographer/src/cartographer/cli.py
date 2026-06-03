@@ -166,7 +166,7 @@ def sync_config_mnemo_db(path: str | None) -> None:
     """View or set the path to the local Mnemo instance's DB.
 
     With no argument, shows the current path.
-    Defaults to ~/.note_taker/notes.db.
+    Defaults to ~/.codex_/mnemo_/notes.db.
     """
     if path is None:
         click.echo(get_mnemo_db_path())

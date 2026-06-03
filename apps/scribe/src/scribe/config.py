@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-_DEFAULT_DB = Path.home() / ".cartographer" / "index.db"
+_DEFAULT_DB = Path.home() / ".codex_" / "cartographer" / "index.db"
 
 
 def get_cartographer_db() -> Path:
