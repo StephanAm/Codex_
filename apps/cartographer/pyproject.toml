@@ -22,7 +22,7 @@ embeddings = [
 ]
 
 [project.scripts]
-cartographer = "cartographer.cli:cli"
+carto = "cartographer.cli:cli"
 
 [tool.uv.sources]
 
