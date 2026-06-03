@@ -10,7 +10,7 @@ Feature requests and deferred ideas live in [`../../designdocs/wishlist.md`](../
 
 This application is called **Mnemo_**. The trailing underscore is part of the name, not punctuation — always written as `Mnemo_` in prose, `MNEMO_` as the wordmark. Short for mnemonic — the art of remembering.
 
-Mnemo_ is the application shell. The note-taking tool inside it is called **Stylus**. Other tools: Atlas (structured knowledge), Bulletin (summaries). Cartographer is a background service for vector indexing.
+Mnemo_ is the application shell with four tools: **Stylus** (fast capture / notes), **Atlas** (structured knowledge), **Bulletin** (summaries), **Registry** (Kinds & Instances). **Cartographer_** is a sibling branded app — a background service for vector indexing.
 
 Tagline: *"Remember everything."*
 
@@ -40,11 +40,11 @@ The full spec lives in [`../../designdocs/sync.md`](../../designdocs/sync.md). *
 - Merge is tombstone-first, last-write-wins on `updated_at`.
 - Instance Kinds and Instances sync fully — UUID + timestamp merge with tombstone tables, same pattern as notes.
 
-## Kind and Instance domain model
+## Registry (Kind & Instance domain model)
 
-The full spec lives in [`../../designdocs/things-and-instances.md`](../../designdocs/things-and-instances.md). **Read it before working on any Kind/Instance feature.** Key points:
+The full spec lives in [`../../designdocs/registry-design.md`](../../designdocs/registry-design.md). **Read it before working on any Registry / Kind / Instance feature.** Key points:
 
-- **Kind** — a user-defined common noun that classifies a named real-world subject (e.g. `Person`, `Team`, `Company`). This is what the code calls `Type`.
+- **Kind** — a user-defined common noun that classifies a named real-world subject (e.g. `Person`, `Team`, `Company`). This is what the code calls `InstanceKind`.
 - **Instance** — a specific named subject that belongs to a Kind (e.g. `John Smith` of kind `Person`). An Instance cannot exist without a Kind.
 - Instances connect to notes indirectly via `@reference` tokens — there is no direct note↔instance relationship.
 - The word **"entity" must never appear in the UI**. It is an internal engineering term only.
@@ -61,7 +61,7 @@ The full spec lives in [`../../designdocs/things-and-instances.md`](../../design
 
 ### Internal naming
 
-The code uses `Type` (Python model / DB table `types`) for Kind, and `Instance` (Python model / DB table `instances`) for Instance. The design doc's internal naming table (`entity_type`/`entity`) predates the code rename and can be ignored.
+The code uses `InstanceKind` (Python model / DB table `instance_kinds`) for Kind, and `Instance` (Python model / DB table `instances`) for Instance.
 
 ## Design system
 

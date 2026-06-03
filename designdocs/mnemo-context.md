@@ -17,7 +17,8 @@ Mnemo_ is the application shell. The tools and services that live inside it are:
 | **Stylus** | Tool | Fast capture — notes, thoughts, decisions, references |
 | **Atlas** | Tool | Structured knowledge — pages and long-form content |
 | **Bulletin** | Tool | Summaries — digest views over Stylus notes |
-| **Cartographer** | Service | Vector indexing — semantic search across the corpus |
+| **Registry** | Tool | Kinds & Instances — named real-world subjects |
+| **Cartographer_** | Sibling app | Vector indexing — semantic search across the corpus |
 
 ---
 

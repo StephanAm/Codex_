@@ -1,6 +1,6 @@
 # CLAUDE.md — `codex_core`
 
-The shared data layer for every app in the monorepo. Today consumed by Mnemo; tomorrow by Lexis_ and Pragma_.
+The shared data layer for every app in the monorepo: Mnemo_, Cartographer_, and Scribe_.
 
 ## What belongs here
 
@@ -38,9 +38,9 @@ The full spec lives in [`../../designdocs/sync.md`](../../designdocs/sync.md). *
 - Merge is tombstone-first, last-write-wins on `updated_at`.
 - Instance Kinds and Instances sync fully — UUID + timestamp merge with tombstone tables, same pattern as notes.
 
-## Kind / Instance domain model
+## Registry (Kind / Instance domain model)
 
-The full spec lives in [`../../designdocs/things-and-instances.md`](../../designdocs/things-and-instances.md). The code uses `Type` (Python model / DB table `types`) for Kind, and `Instance` (Python model / DB table `instances`) for Instance.
+The full spec lives in [`../../designdocs/registry-design.md`](../../designdocs/registry-design.md). The code uses `Type` (Python model / DB table `types`) for Kind, and `Instance` (Python model / DB table `instances`) for Instance.
 
 ## Tests
 

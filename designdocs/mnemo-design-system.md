@@ -25,7 +25,7 @@ Use only these values. No other colours permitted.
 | `--color-border` | `#1A1A2E` | All borders and dividers |
 | `--color-accent` | `#00E5FF` | Primary accent, `#tags`, icon cursor, active states |
 | `--color-ref` | `#7FDFFF` | `@references` |
-| `--color-flag` | `#FF9500` | `!flags` — urgent / attention |
+| `--color-flag` | `#FF9500` | Attention / recall UI |
 | `--color-date` | `#7FFF00` | Dates and times — auto-detected |
 | `--color-danger` | `#FF4D4D` | Destructive UI actions only. Never in note content. |
 | `--color-text` | `#E8E8F0` | Primary text |
@@ -33,7 +33,6 @@ Use only these values. No other colours permitted.
 
 **Tag highlight:** `#00E5FF` at 15% opacity background.
 **Reference highlight:** `#7FDFFF` at 8% opacity background.
-**Flag highlight:** `#FF9500` at 8% opacity background.
 **Date highlight:** `#7FFF00` at 7% opacity background.
 **Danger:** `#FF4D4D` — UI chrome only (delete buttons, destructive confirmations). Never rendered in note body.
 
@@ -140,7 +139,7 @@ Each note item shows:
 
 ### Inline syntax rendering
 
-Five colour roles. Four appear in note content. One (`--color-danger`) is UI chrome only.
+Four colour roles. Three appear in note content. One (`--color-danger`) is UI chrome only.
 
 ```css
 .tag {
@@ -158,16 +157,6 @@ Five colour roles. Four appear in note content. One (`--color-danger`) is UI chr
   font-size: 9px;
   color: var(--color-ref);
   background: rgba(127, 223, 255, 0.08);
-  padding: 3px 8px;
-  border-radius: 2px;
-  letter-spacing: 0.05em;
-}
-
-.flag {
-  display: inline-block;
-  font-size: 9px;
-  color: var(--color-flag);
-  background: rgba(255, 149, 0, 0.08);
   padding: 3px 8px;
   border-radius: 2px;
   letter-spacing: 0.05em;
@@ -209,9 +198,6 @@ Five colour roles. Four appear in note content. One (`--color-danger`) is UI chr
 
 // @references — apply .ref class
 /(@[a-zA-Z0-9_-]+)/g
-
-// !flags — apply .flag class
-/(![\w-]+)/g
 
 // Dates and times — apply .date class
 // Date detection is handled by the application's date parsing rules. Apply --color-date to any token identified as a date or time expression.

@@ -1,8 +1,12 @@
-# Mnemo — Domain Concepts: Kind & Instance
+# Mnemo_ — Registry Design
+
+> Registry is Mnemo_'s entity management tool. It provides the Kind / Instance domain model — a structured way to define and track named real-world subjects. Reference document for all Registry features, data model decisions, and UI copy rules.
+
+---
 
 ## Overview
 
-This document defines two new first-class domain concepts introduced as part of the entity feature. These definitions should be used as the reference point for all product, design, and engineering decisions related to this feature.
+Registry lets users define categories of things (Kinds) and the specific named subjects that belong to them (Instances). Where Stylus captures what happened, Registry defines who and what the notes are about.
 
 ---
 
@@ -73,5 +77,5 @@ For clarity, the mapping between user-facing language and internal naming is:
 
 | User-facing | Code model | DB table | API route |
 |---|---|---|---|
-| Kind | `InstanceKind` | `instance_kinds` | `/instance-kinds` |
+| Kind | `Type` | `types` | `/instance-kinds` |
 | Instance | `Instance` | `instances` | `/instances` |

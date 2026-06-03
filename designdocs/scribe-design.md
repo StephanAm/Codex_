@@ -1,14 +1,14 @@
-# Scribe — Design Document
+# Scribe_ — Design Document
 
-> Scribe is a standalone CLI tool that generates AI-written reports from Mnemo notes. It orchestrates retrieval from Cartographer, data from the Mnemo API, and an LLM to produce structured markdown documents.
+> Scribe_ is a standalone CLI app that generates AI-written documents from Mnemo_ notes. It reads notes from the Cartographer_ database, retrieves semantically relevant context chunks, and passes the structured input to an LLM to produce markdown output.
 
 ---
 
 ## What Scribe Does
 
-Takes a set of report parameters, fetches and groups notes from Mnemo, retrieves semantically relevant chunks from Cartographer, and passes the full structured context to an LLM to rewrite each section. Emits a markdown file.
+Takes a date range, reads notes from the Cartographer_ SQLite database, retrieves semantically relevant chunks via the Cartographer_ CLI, and passes the full structured context to an LLM to produce a markdown document. Emits a file.
 
-Scribe owns nothing persistent. It has no database, no daemon, no config beyond what it needs to talk to its three dependencies.
+Scribe_ owns nothing persistent. It has no database, no daemon, no config beyond what it needs to talk to its two dependencies.
 
 ---
 
@@ -16,18 +16,18 @@ Scribe owns nothing persistent. It has no database, no daemon, no config beyond 
 
 | Tool | Responsibility |
 |---|---|
-| Mnemo API | Notes, tags, references, grouping |
-| Cartographer | Embedding-based chunk retrieval |
-| LLM (via Ollama) | Section rewriting |
-| **Scribe** | Orchestration, prompt assembly, markdown export |
+| Cartographer_ DB | Notes, tags, semantic index |
+| Cartographer_ CLI | Embedding-based chunk retrieval |
+| LLM (Claude or Ollama) | Document generation |
+| **Scribe_** | Orchestration, prompt assembly, markdown export |
 
-Scribe is a consumer of all three. It adds no new data concepts.
+Scribe_ is a consumer of both. It adds no new data concepts.
 
 ---
 
 ## Location
 
-Scribe is a standalone app in the Codex monorepo, sibling to Mnemo and Cartographer:
+Scribe_ is a standalone app in the Codex monorepo, sibling to Mnemo_ and Cartographer_:
 
 ```
 codex/
@@ -35,118 +35,156 @@ codex/
     ├── mnemo/
     ├── cartographer/
     └── scribe/
-        ├── __init__.py
-        ├── cli.py          # Click CLI entry point
-        ├── pipeline.py     # Orchestration logic
-        ├── cartographer.py # Cartographer subprocess wrapper
-        ├── mnemo.py        # Mnemo API client
-        ├── llm.py          # Ollama client via ollama Python lib
-        ├── renderer.py     # Markdown assembly
-        ├── pyproject.toml
-        └── README.md
+        └── src/scribe/
+            ├── cli.py          # Click CLI entry point
+            ├── bulletin.py     # Bulletin generation logic
+            ├── todo.py         # To-do list generation logic
+            ├── store.py        # Reads notes from Cartographer DB
+            ├── cartographer.py # Cartographer subprocess wrapper
+            ├── config.py       # Configuration resolution
+            ├── llm/            # LLM backends (claude, ollama, dummy)
+            └── pyproject.toml
 ```
 
 ---
 
 ## Dependencies
 
-Add via `uv` from `apps/scribe/`:
-
 ```
-uv add click httpx ollama
+click>=8.0
+ollama>=0.3
 ```
 
 - `click` — CLI framework
-- `httpx` — HTTP client for Mnemo API calls
-- `ollama` — official Ollama Python library
-
-No new dependencies beyond these. Ollama is called via its existing REST API, same as Cartographer does.
+- `ollama` — Ollama Python library (used when `SCRIBE_BACKEND=ollama`)
+- Claude is invoked via the `claude` CLI subprocess (no Python SDK dependency)
 
 ---
 
 ## Configuration
 
-All configuration via environment variables with sensible defaults:
+Resolution order: environment variable → `~/.codex_/scribe/config.toml` → built-in default.
+
+Run `scribe config init` to write a default config file. Run `scribe config show` to see the resolved values.
+
+### Environment variables
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `MNEMO_API_URL` | `http://localhost:8765` | Mnemo API base URL |
+| `CARTOGRAPHER_DB` | `~/.codex_/cartographer/index.db` | Path to Cartographer SQLite DB |
 | `CARTOGRAPHER_BIN` | `cartographer` | Path to the Cartographer executable |
-| `SCRIBE_MODEL` | `llama3` | Ollama model to use for rewriting |
-| `SCRIBE_TOP_K` | `10` | Chunks to retrieve per section before dedup |
+| `SCRIBE_BACKEND` | `claude` | LLM backend: `claude` \| `ollama` \| `dummy` |
+| `SCRIBE_MODEL` | *(empty)* | Model override (backend-specific) |
+| `SCRIBE_OLLAMA_URL` | `http://localhost:11434` | Ollama server URL |
+| `SCRIBE_CLAUDE_BIN` | `claude` | Path to the `claude` CLI binary |
+| `SCRIBE_TOP_K` | `10` | Chunks to retrieve per command |
+
+### config.toml sections
+
+```toml
+[cartographer]
+db  = "~/.codex_/cartographer/index.db"
+bin = "cartographer"
+
+[llm]
+backend    = "claude"
+model      = ""
+ollama_url = "http://localhost:11434"
+claude_bin = "claude"
+
+[retrieval]
+top_k = 10
+```
 
 ---
 
 ## CLI Interface
 
 ```
-scribe report [OPTIONS]
+scribe bulletin [OPTIONS]
+scribe todo     [OPTIONS]
+scribe config show
+scribe config init
 ```
 
-### Options
+### `scribe bulletin`
+
+Generate a deduplicated bullet-list bulletin from all notes in a date range.
 
 | Option | Type | Description |
 |---|---|---|
-| `--tag` | string (multiple) | Include notes with this tag. Repeatable. |
-| `--reference` | string (multiple) | Include notes with this reference. Repeatable. |
-| `--group-by` | `tag` \| `reference` | How to split notes into sections. Default: `tag`. |
-| `--title` | string | Report title. Default: `Report`. |
-| `--output` | path | Output file path. Default: `./report.md`. |
-| `--top-k` | integer | Chunks per section. Overrides env var. |
-| `--dry-run` | flag | Fetch and group notes, print structure, skip LLM and export. |
+| `--date` | `YYYY-MM-DD` | Single day (default: today). Mutually exclusive with `--from`/`--to`. |
+| `--from` | `YYYY-MM-DD` | Start of date range (inclusive). |
+| `--to` | `YYYY-MM-DD` | End of date range (inclusive). |
+| `--title` | string | Report title. Default: `Bulletin — {date}`. |
+| `--output` | path | Output file. Default: `./bulletin-{date}.md`. |
+| `--top-k` | integer | Chunks to retrieve. Overrides `SCRIBE_TOP_K`. |
+| `--backend` | string | LLM backend override. |
+| `--dry-run` | flag | Print fetched notes; skip Cartographer retrieval and LLM. |
 
-### Example
+### `scribe todo`
+
+Generate a numbered action-item list from notes tagged `#todo` in a date range.
+
+| Option | Type | Description |
+|---|---|---|
+| `--date` | `YYYY-MM-DD` | Single day (default: today). Mutually exclusive with `--from`/`--to`. |
+| `--from` | `YYYY-MM-DD` | Start of date range (inclusive). |
+| `--to` | `YYYY-MM-DD` | End of date range (inclusive). |
+| `--title` | string | Report title. Default: `To-Do — {date}`. |
+| `--output` | path | Output file. Default: `./todo-{date}.md`. |
+| `--top-k` | integer | Chunks to retrieve. Overrides `SCRIBE_TOP_K`. |
+| `--backend` | string | LLM backend override. |
+| `--dry-run` | flag | Print fetched notes; skip Cartographer retrieval and LLM. |
+
+### Examples
 
 ```bash
-scribe report \
-  --tag backend \
-  --tag architecture \
-  --reference alice \
-  --group-by tag \
-  --title "Backend Review" \
-  --output ./backend-review.md
+scribe bulletin --date 2025-07-15
+scribe bulletin --from 2025-07-01 --to 2025-07-15 --output ./july-mid.md
+scribe todo --date 2025-07-15
+scribe todo --from 2025-07-01 --to 2025-07-15 --backend ollama
 ```
 
 ---
 
 ## Pipeline
 
-### Step 1 — Fetch notes
+Both commands follow the same pipeline:
 
-Call `GET /notes` on the Mnemo API for each tag/reference parameter. Merge and dedup by note ID.
+### Step 1 — Resolve date range
 
-### Step 2 — Group notes
+Parse `--date` / `--from` / `--to`. Default to today if none supplied. `--date` and `--from`/`--to` are mutually exclusive.
 
-Group the note set by the `--group-by` dimension. Each group becomes a report section with a heading derived from the tag or reference name.
+### Step 2 — Fetch notes from Cartographer DB
 
-A note may appear in multiple groups if it matches multiple tags/references.
+Open the Cartographer SQLite DB read-only. For `bulletin`: fetch all notes whose semantic date falls in the range. For `todo`: fetch only notes tagged `#todo`.
 
-### Step 3 — Retrieve chunks
+### Step 3 — Dry-run exit (if `--dry-run`)
 
-For each section, send the section's note IDs to Cartographer's retrieval endpoint. Request top-K chunks. Collect all chunks across all sections, then dedup by chunk ID.
+Print the period and note list to stdout. Exit without calling Cartographer or the LLM.
 
-### Step 4 — Assemble prompt
+### Step 4 — Check output path
 
-Build a single prompt containing:
+Create parent directories if needed. Touch the output file to verify it is writable before calling the LLM.
 
-- Report title and metadata
-- All sections with their grouped notes (raw body text)
-- All retrieved chunks as additional context
-- Instructions to rewrite each section as coherent prose, referencing the chunks where relevant, without repeating information across sections
+### Step 5 — Retrieve context chunks
 
-The LLM receives the full report structure in one call.
+Call `cartographer retrieve --note-ids <ids> --top-k <k>` as a subprocess. Capture and parse the JSON array from stdout.
 
-### Step 5 — Emit markdown
+### Step 6 — Generate with LLM
 
-Write the LLM's output to the specified output path. Prepend a metadata header (title, date, parameters used).
+Build the configured LLM backend, assemble the prompt, and call the LLM. `bulletin` asks for an ordered, deduplicated bullet list. `todo` asks for a numbered action-item list.
+
+### Step 7 — Write output
+
+Write the markdown to the output path and print the path to stderr.
 
 ---
 
-## Cartographer Subprocess Contract
+## Cartographer_ Subprocess Contract
 
-Cartographer is a CLI tool with no HTTP interface. Scribe invokes it as a subprocess.
-
-Cartographer requires a new `retrieve` subcommand:
+Cartographer_ is a CLI tool with no HTTP interface. Scribe_ invokes it as a subprocess.
 
 ```bash
 cartographer retrieve --note-ids 1,4,7,23 --top-k 10
@@ -167,77 +205,26 @@ Cartographer writes a JSON array to stdout and exits:
 }
 ```
 
-Scribe captures stdout, parses the JSON, and proceeds. Cartographer's stderr is left to pass through to the terminal.
+Scribe_ captures stdout, parses the JSON, and proceeds. Cartographer_'s stderr passes through to the terminal.
 
-The `cartographer retrieve` subcommand does not yet exist — it is part of the Cartographer work required to support Scribe.
-
-The path to the Cartographer binary is configured via:
-
-| Variable | Default | Purpose |
-|---|---|---|
-| `CARTOGRAPHER_BIN` | `cartographer` | Path to the Cartographer executable |
-
-If the subprocess exits non-zero, Scribe treats it as a fatal error and exits.
+If the subprocess exits non-zero, Scribe_ treats it as a fatal error and exits.
 
 ---
 
 ## Prompt Design
 
-The system prompt instructs the LLM to act as a technical writer producing a structured report. It must:
+The system prompt instructs the LLM to act as a technical writer. For `bulletin`: produce an ordered, deduplicated bullet list with no invented content beyond the notes. For `todo`: produce a numbered list of discrete action items extracted from `#todo`-tagged notes.
 
-- Rewrite each section as coherent prose, not a bullet dump
-- Draw on the provided chunks for additional context and depth
-- Avoid repeating the same information in multiple sections
-- Use the section headings as provided — do not invent new ones
-- Produce valid markdown
-
-The user message contains the full structured input: title, sections with notes, and the chunk corpus.
-
-Prompt templates live in `scribe/pipeline.py` as module-level constants, not external files.
-
----
-
-## Output Format
-
-```markdown
-# {title}
-
-*Generated: {ISO date}*
-*Tags: backend, architecture*
-*References: alice*
-
----
-
-## Backend
-
-{LLM-written prose for this section}
-
----
-
-## Architecture
-
-{LLM-written prose for this section}
-```
-
----
-
-## Entry Point
-
-Register in `apps/scribe/pyproject.toml`:
-
-```toml
-[project.scripts]
-scribe = "scribe.cli:main"
-```
+Prompt templates live in `scribe/bulletin.py` and `scribe/todo.py` as module-level constants.
 
 ---
 
 ## Error Handling
 
-- Mnemo API unreachable → exit with clear message, suggest checking `MNEMO_API_URL`
-- Cartographer binary not found or exits non-zero → exit with clear message; Cartographer is required, not optional
-- No notes found for parameters → exit with message, do not call LLM
-- LLM call fails → exit with message, do not write partial output; check that the model specified by `SCRIBE_MODEL` is available in Ollama
+- Cartographer DB not found → exit with message including the expected path
+- Cartographer_ binary not found or exits non-zero → fatal exit with message
+- No notes found for parameters → clean exit with message; do not call LLM
+- LLM call fails → exit with message; do not write partial output
 - Output path not writable → exit before calling LLM
 
 All errors print to stderr. Nothing is written to stdout except `--dry-run` output.
@@ -249,15 +236,15 @@ All errors print to stderr. Nothing is written to stdout except `--dry-run` outp
 - Not a note viewer or browser
 - Not a sync tool
 - Not a persistent service
-- Not aware of the Mnemo database directly — always via the API
-- Not responsible for managing Ollama models or Cartographer's embedding lifecycle
+- Not aware of the Mnemo_ API — reads Cartographer_ DB directly
+- Not responsible for managing Ollama models or Cartographer_'s embedding lifecycle
 
 ---
 
 ## Acceptance Criteria
 
-1. `scribe report` with valid parameters produces a markdown file at the specified output path.
-2. `--dry-run` prints the grouped note structure and exits without calling the LLM or Cartographer.
-3. All three dependencies being unreachable each produce a clear, distinct error message.
-4. No notes matching the parameters produces a clean exit with a message, not a crash.
-5. The Cartographer `POST /retrieve` contract is documented and agreed before implementation begins.
+1. `scribe bulletin` with a valid date range produces a markdown bulletin at the specified output path.
+2. `scribe todo` with a valid date range produces a markdown to-do list at the specified output path.
+3. `--dry-run` prints the fetched note structure and exits without calling Cartographer_ or the LLM.
+4. Cartographer_ DB missing and Cartographer_ binary missing each produce a clear, distinct error message.
+5. No notes matching the parameters produces a clean exit with a message, not a crash.

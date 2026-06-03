@@ -1,6 +1,6 @@
-# Mnemo — Atlas Design
+# Mnemo_ — Atlas Design
 
-> Reference document for the Atlas feature. Covers concept, data model, annotation behaviour, and Cartographer integration.
+> Reference document for the Atlas feature. Covers concept, data model, annotation behaviour, and Cartographer_ integration.
 
 ---
 
@@ -77,9 +77,9 @@ The hierarchy is navigation. Annotations are metadata. They are independent conc
 
 ---
 
-## Cartographer Integration
+## Cartographer_ Integration
 
-Cartographer embeds Atlas pages as part of its RAG pipeline. The following rules govern how Atlas pages are handled.
+Cartographer_ embeds Atlas pages as part of its RAG pipeline. The following rules govern how Atlas pages are handled.
 
 ### Embedding
 
@@ -87,7 +87,7 @@ Each Atlas page is embedded independently, on its own body content. Ancestor bod
 
 ### Annotation Inheritance
 
-At retrieval time, Cartographer walks the ancestor chain of each Atlas page and aggregates all annotations into a structured metadata payload for that page. A leaf page inherits the tags, references, and dates of every ancestor above it.
+At retrieval time, Cartographer_ walks the ancestor chain of each Atlas page and aggregates all annotations into a structured metadata payload for that page. A leaf page inherits the tags, references, and dates of every ancestor above it.
 
 This inherited metadata is used for hybrid retrieval -- as exact-match structured filters alongside the vector similarity search -- following the same pattern as tags and references on notes.
 

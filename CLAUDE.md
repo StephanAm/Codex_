@@ -4,16 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-`codex` is a `uv` + `pnpm` monorepo. It ships **Mnemo_** today and will host two companion apps in the future — **Lexis_** (reporting) and **Pragma_** (to-dos) — that share Mnemo_'s data layer.
+`codex` is a `uv` + `pnpm` monorepo. It ships three branded apps: **Mnemo_**, **Cartographer_**, and **Scribe_**.
 
-Mnemo_ is the application shell. Its current tools: **Stylus** (fast capture / notes), **Atlas** (structured knowledge), **Bulletin** (summaries). **Cartographer** is a background service for vector indexing. **Scribe** is a CLI tool that generates AI-written reports from Mnemo notes.
+**Mnemo_** is the application shell with four tools: **Stylus** (fast capture / notes), **Atlas** (structured knowledge), **Bulletin** (summaries), **Registry** (Kinds & Instances). **Cartographer_** is a background service for vector indexing. **Scribe_** is a CLI tool that generates AI-written reports from Mnemo_ notes.
 
 ```
 codex/
 ├── apps/
 │   ├── mnemo/            # Mnemo_ app: CLI, TUI, Tauri+React GUI (Stylus tool)
-│   ├── cartographer/     # Background vector indexing service
-│   └── scribe/           # AI report generation CLI (see designdocs/scribe-design.md)
+│   ├── cartographer/     # Cartographer_ — vector indexing service
+│   └── scribe/           # Scribe_ — AI report generation CLI (see designdocs/scribe-design.md)
 ├── packages/
 │   ├── core/             # codex_core — shared Python (models, store, sync, parser)
 │   └── ui/               # @codex/ui — shared React primitives + design-system CSS
@@ -53,14 +53,14 @@ uv run --package mnemo note-api
 
 - `packages/core` (`codex_core`) is the data layer. It must not import from any app.
 - `packages/ui` (`@codex/ui`) is generic UI primitives. No Mnemo-specific layout or copy.
-- Apps depend on packages, never on each other. If Lexis needs something from Mnemo, lift it into a package first.
+- Apps depend on packages, never on each other. If one app needs something from another, lift it into a package first.
 
 ## Design system
 
 Mnemo_'s UI follows [`designdocs/mnemo-design-system.md`](designdocs/mnemo-design-system.md). The shared `@codex/ui` package implements the design-system primitives; app-level CSS (in `apps/<app>/gui/src/App.css`) layers Mnemo_-specific layout on top.
 
 Key points (full rules in the design doc):
-- Name: `Mnemo_` — trailing underscore is part of the name; wordmark is `MNEMO_` in Cyan Pulse
+- Trailing underscore is part of each app name; wordmarks: `MNEMO_` (Cyan Pulse), `CARTO_` (Cartographer_), `SCRIBE_` (Scribe_)
 - One typeface only: **IBM Plex Mono** (weights 400 and 500)
 - Seven permitted colours — no others
 - No drop shadows, gradients, glows, or blur
@@ -77,7 +77,7 @@ Cross-app design references live in [`designdocs/`](designdocs/):
 - [`mnemo-context.md`](designdocs/mnemo-context.md) — what Mnemo_ is and why
 - [`mnemo-design-system.md`](designdocs/mnemo-design-system.md) — single source of truth for UI
 - [`sync.md`](designdocs/sync.md) — peer-to-peer sync architecture
-- [`things-and-instances.md`](designdocs/things-and-instances.md) — Kind / Instance domain model
+- [`registry-design.md`](designdocs/registry-design.md) — Registry tool: Kind / Instance domain model
 - [`dateparsingrules.md`](designdocs/dateparsingrules.md) — `~{...}` date expression rules
 - [`mnemo-mcp-design.md`](designdocs/mnemo-mcp-design.md) — MCP server design
 - [`scribe-design.md`](designdocs/scribe-design.md) — Scribe design: pipeline, CLI, Cartographer subprocess contract, prompt design

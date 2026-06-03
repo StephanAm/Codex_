@@ -4,7 +4,7 @@ This document describes how Mnemo synchronises data across multiple devices.
 
 ## Core model
 
-Each device maintains its own SQLite database (`~/.note_taker/notes.db`). Sync works by uploading the entire local DB to a shared storage location and merging the DBs of all other known devices into the local copy. There is no authoritative server — every device is a peer.
+Each device maintains its own SQLite database (`~/.codex_/mnemo_/notes.db`). Sync works by uploading the entire local DB to a shared storage location and merging the DBs of all other known devices into the local copy. There is no authoritative server — every device is a peer.
 
 A full sync (`POST /sync`) is always: **push first, then pull**. Push-only and pull-only variants also exist.
 
@@ -98,8 +98,8 @@ A tombstone is permanent: once a UUID appears in a tombstone table, that record 
 
 `GoogleDriveAdapter` requires an OAuth 2.0 access token.
 
-- `credentials.json` — downloaded from Google Cloud Console, placed at `~/.note_taker/credentials.json`. This is the OAuth client secret file, not a personal token.
-- `token.json` — obtained and refreshed automatically, stored at `~/.note_taker/token.json`.
+- `credentials.json` — downloaded from Google Cloud Console, placed at `~/.codex_/credentials.json`. This is the OAuth client secret file, not a personal token.
+- `token.json` — obtained and refreshed automatically, stored at `~/.codex_/token.json`.
 
 If no valid token exists, any adapter operation raises `AuthRequired`. The GUI surfaces this as a prompt to complete the OAuth flow via `POST /auth/google`. The CLI requires the user to run `note sync auth` (or equivalent) before syncing.
 
