@@ -14,6 +14,7 @@ out by a centroid dominated by other notes.
 from __future__ import annotations
 
 import math
+import sqlite3
 import struct
 from dataclasses import dataclass
 from pathlib import Path
@@ -114,7 +115,68 @@ def retrieve(
             if existing is None or sim > existing.score:
                 seen[chunk.chunk_id] = chunk
 
-    return sorted(seen.values(), key=lambda c: c.score, reverse=True)
+    results = sorted(seen.values(), key=lambda c: c.score, reverse=True)
+    results += _lookup_note_ref_definitions(conn, note_ids)
+    return results
+
+
+# ---------------------------------------------------------------------------
+# Registry definition lookup
+# ---------------------------------------------------------------------------
+
+
+def _lookup_note_ref_definitions(
+    conn: sqlite3.Connection,
+    note_ids: list[int],
+) -> list[RetrievedChunk]:
+    """Return Instance and Kind definition chunks for all @refs attached to the input notes."""
+    if not note_ids:
+        return []
+
+    placeholders = ",".join("?" * len(note_ids))
+    rows = conn.execute(
+        f"""
+        SELECT DISTINCT
+               i.uuid  AS inst_uuid,
+               i.name  AS inst_name,
+               i.description AS inst_desc,
+               ik.uuid AS kind_uuid,
+               ik.name AS kind_name,
+               ik.plural AS kind_plural,
+               ik.description AS kind_desc
+        FROM notes n
+        JOIN note_references nr ON nr.note_id = n.id
+        JOIN "references" r ON r.id = nr.reference_id
+        JOIN instance_references ir ON ir.reference_id = r.id
+        JOIN instances i ON i.id = ir.instance_id
+        JOIN instance_kinds ik ON ik.id = i.instance_kind_id
+        WHERE n.id IN ({placeholders})
+        """,
+        note_ids,
+    ).fetchall()
+
+    chunks: list[RetrievedChunk] = []
+    seen_uuids: set[str] = set()
+
+    for row in rows:
+        if row["inst_uuid"] not in seen_uuids:
+            seen_uuids.add(row["inst_uuid"])
+            kind = (row["kind_name"] or "").strip()
+            name = (row["inst_name"] or "").strip()
+            desc = (row["inst_desc"] or "").strip()
+            text = f"[{kind}] {name}\n{desc}".strip() if desc else f"[{kind}] {name}"
+            chunks.append(RetrievedChunk(chunk_id=row["inst_uuid"], note_id=None, text=text, score=1.0))
+
+        if row["kind_uuid"] not in seen_uuids:
+            seen_uuids.add(row["kind_uuid"])
+            name = (row["kind_name"] or "").strip()
+            plural = (row["kind_plural"] or "").strip()
+            desc = (row["kind_desc"] or "").strip()
+            label = f"{name} ({plural})" if plural and plural != name else name
+            text = f"{label}: {desc}" if desc else label
+            chunks.append(RetrievedChunk(chunk_id=row["kind_uuid"], note_id=None, text=text, score=1.0))
+
+    return chunks
 
 
 # ---------------------------------------------------------------------------

@@ -307,6 +307,8 @@ def ask(
     Calls `carto search` to find relevant context, then passes the question
     and context to the LLM to produce an answer.
     """
+    # ── 1. Retrieve context chunks via carto search ──────────────────────────
+    from scribe.cartographer import search_query
     from scribe.config import (
         get_cartographer_bin,
         get_claude_bin,
@@ -315,9 +317,6 @@ def ask(
         get_scribe_model,
         get_scribe_top_k,
     )
-
-    # ── 1. Retrieve context chunks via carto search ──────────────────────────
-    from scribe.cartographer import search_query
 
     effective_top_k = top_k if top_k is not None else get_scribe_top_k()
 

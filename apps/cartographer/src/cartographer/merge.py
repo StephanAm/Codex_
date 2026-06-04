@@ -422,12 +422,22 @@ def _insert_atlas_page(local: sqlite3.Connection, uuid: str, local_node_id: int,
 
 def _copy_all_atlas_page_annotations(local: sqlite3.Connection, source: sqlite3.Connection) -> None:
     """Sync atlas_page_tags and atlas_page_references for all pages present in local."""
+    has_tags = _has_table(source, "atlas_page_tags")
+    has_refs = _has_table(source, "atlas_page_references")
+    if not has_tags and not has_refs:
+        return
     for local_page in local.execute("SELECT id, uuid FROM atlas_pages").fetchall():
         source_page = source.execute("SELECT id FROM atlas_pages WHERE uuid = ?", (local_page["uuid"],)).fetchone()
         if not source_page:
             continue
-        _copy_atlas_page_tags(source, local, source_page["id"], local_page["id"])
-        _copy_atlas_page_references(source, local, source_page["id"], local_page["id"])
+        if has_tags:
+            _copy_atlas_page_tags(source, local, source_page["id"], local_page["id"])
+        if has_refs:
+            _copy_atlas_page_references(source, local, source_page["id"], local_page["id"])
+
+
+def _has_table(conn: sqlite3.Connection, name: str) -> bool:
+    return conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (name,)).fetchone() is not None
 
 
 def _copy_atlas_page_tags(

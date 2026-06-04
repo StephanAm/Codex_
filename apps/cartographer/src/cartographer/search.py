@@ -205,6 +205,72 @@ def _split_csv(s: str | None) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Registry definition lookup
+# ---------------------------------------------------------------------------
+
+
+def _lookup_ref_definitions(
+    conn: sqlite3.Connection,
+    ref_names: list[str],
+) -> tuple[list[ContextChunk], set[str]]:
+    """Return guaranteed Instance and Kind chunks for the given reference names."""
+    if not ref_names:
+        return [], set()
+
+    placeholders = ",".join("?" * len(ref_names))
+    rows = conn.execute(
+        f"""
+        SELECT DISTINCT
+               i.uuid  AS inst_uuid,
+               i.name  AS inst_name,
+               i.description AS inst_desc,
+               ik.uuid AS kind_uuid,
+               ik.name AS kind_name,
+               ik.description AS kind_desc
+        FROM instances i
+        JOIN instance_references ir ON ir.instance_id = i.id
+        JOIN "references" r ON r.id = ir.reference_id
+        JOIN instance_kinds ik ON ik.id = i.instance_kind_id
+        WHERE LOWER(r.name) IN ({placeholders})
+        """,
+        [n.lower() for n in ref_names],
+    ).fetchall()
+
+    chunks: list[ContextChunk] = []
+    seen_uuids: set[str] = set()
+
+    for row in rows:
+        if row["inst_uuid"] not in seen_uuids:
+            seen_uuids.add(row["inst_uuid"])
+            chunks.append(
+                ContextChunk(
+                    corpus_type="instance",
+                    content=(row["inst_desc"] or "").strip(),
+                    score=1.0,
+                    title=(row["inst_name"] or "").strip(),
+                    tags=[],
+                    references=[],
+                    time_stamp=None,
+                )
+            )
+        if row["kind_uuid"] not in seen_uuids:
+            seen_uuids.add(row["kind_uuid"])
+            chunks.append(
+                ContextChunk(
+                    corpus_type="instance_kind",
+                    content=(row["kind_desc"] or "").strip(),
+                    score=1.0,
+                    title=(row["kind_name"] or "").strip(),
+                    tags=[],
+                    references=[],
+                    time_stamp=None,
+                )
+            )
+
+    return chunks, seen_uuids
+
+
+# ---------------------------------------------------------------------------
 # Step 3 — Retrieve Candidates Per Corpus
 # ---------------------------------------------------------------------------
 
@@ -370,9 +436,16 @@ def _retrieve_definitions(
     query_vec: list[float],
     norm_q: float,
     n_dims: int,
+    exclude_uuids: frozenset[str] = frozenset(),
 ) -> list[dict[str, Any]]:
+    extra = ""
+    params: list[Any] = [model, n_dims * 4]
+    if exclude_uuids:
+        extra = f" AND e.source_uuid NOT IN ({','.join('?' * len(exclude_uuids))})"
+        params.extend(exclude_uuids)
+
     rows = conn.execute(
-        """
+        f"""
         SELECT e.source_uuid, e.source_type, e.vector,
                CASE e.source_type
                    WHEN 'instance_kind' THEN ik.name
@@ -389,9 +462,9 @@ def _retrieve_definitions(
                ON i.uuid = e.source_uuid AND e.source_type = 'instance'
         WHERE e.model = ? AND e.chunk_index = 0
           AND e.source_type IN ('instance_kind', 'instance')
-          AND LENGTH(e.vector) = ?
+          AND LENGTH(e.vector) = ?{extra}
         """,
-        [model, n_dims * 4],
+        params,
     ).fetchall()
 
     scored: list[dict[str, Any]] = []
@@ -530,11 +603,15 @@ def search(
 
     ancestor_annotations = _build_ancestor_annotations(conn)
 
+    ref_def_chunks, ref_def_uuids = _lookup_ref_definitions(conn, parsed.references_hard + parsed.references_soft)
+
     candidates = (
         _retrieve_notes(conn, backend.model_name, query_vec, norm_q, n_dims, parsed)
         + _retrieve_atlas(conn, backend.model_name, query_vec, norm_q, n_dims, ancestor_annotations)
-        + _retrieve_definitions(conn, backend.model_name, query_vec, norm_q, n_dims)
+        + _retrieve_definitions(conn, backend.model_name, query_vec, norm_q, n_dims, frozenset(ref_def_uuids))
     )
 
     results = _assemble(candidates, parsed, now)
-    return _build_context(results, parsed, query)
+    ctx = _build_context(results, parsed, query)
+    ctx.chunks = ref_def_chunks + ctx.chunks
+    return ctx

@@ -81,6 +81,7 @@ Cross-app design references live in [`designdocs/`](designdocs/):
 - [`dateparsingrules.md`](designdocs/dateparsingrules.md) — `~{...}` date expression rules
 - [`mnemo-mcp-design.md`](designdocs/mnemo-mcp-design.md) — MCP server design
 - [`scribe-design.md`](designdocs/scribe-design.md) — Scribe design: pipeline, CLI, Cartographer subprocess contract, prompt design
+- [`corpus-design.md`](designdocs/corpus-design.md) — Cartographer_ corpus: three content types, retrieval budgets, scoring, result assembly
 - [`wishlist.md`](designdocs/wishlist.md) — deferred feature ideas
 - [`buglist.md`](designdocs/buglist.md) — parked bugs
 
