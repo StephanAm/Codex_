@@ -12,6 +12,19 @@ When opening a note for editing, place the cursor on a new line at the end of th
 ## ~~#15 — Trailing newline on save~~ ✓
 When saving a note, ensure the body always ends with exactly one newline. Prevents notes from accumulating trailing whitespace or missing the final newline across repeated edits.
 
+## #19 — Archive output path in Scribe_ config
+
+Add a configurable `archive_dir` to Scribe_'s `config.toml` (and a `SCRIBE_ARCHIVE_DIR` env var). When set, commands that produce dated reports write to the appropriate subdirectory under `archive_dir` by default, rather than the current directory. This gives the Archive layer from the stack design a concrete, persistent filesystem location.
+
+## #18 — Extended Scribe_ commands
+
+Richer Scribe_ command set for common synthesis use cases:
+
+- `scribe brief @Reference` — Person or project briefing. Synthesises all relevant notes and KB context into a coherent narrative. Run before a 1:1 or meeting.
+- `scribe open-items` — Extracts explicit and implicit commitments, follow-ups, and unresolved questions from recent notes.
+- `scribe patterns` — Analyses a note corpus over a time window for recurring themes, sentiment shifts, and persistent blockers.
+- `scribe digest` — Structured summary of activity over a time window, grouped by team, project, or tag. The reporting-up tool.
+
 ## #17 — Markdown rendering in note body
 Render note bodies as markdown in the GUI (headings, bold, italic, code blocks, lists, blockquotes). Use `react-markdown` + `remark-gfm`. The existing date-highlighting in `NoteDetail.tsx` would need to be ported to a remark plugin. All markdown elements need styling to match the Mnemo design system.
 

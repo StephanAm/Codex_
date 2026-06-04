@@ -102,9 +102,13 @@ top_k = 10
 ## CLI Interface
 
 ```
-scribe ask      QUESTION [OPTIONS]
-scribe bulletin [OPTIONS]
-scribe todo     [OPTIONS]
+scribe ask        QUESTION [OPTIONS]
+scribe bulletin   [OPTIONS]
+scribe todo       [OPTIONS]
+scribe brief      REFERENCE [OPTIONS]
+scribe open-items [OPTIONS]
+scribe patterns   [OPTIONS]
+scribe digest     [OPTIONS]
 scribe config show
 scribe config init
 ```
@@ -151,6 +155,69 @@ Generate a numbered action-item list from notes tagged `#todo` in a date range.
 | `--backend` | string | LLM backend override. |
 | `--dry-run` | flag | Print fetched notes; skip Cartographer retrieval and LLM. |
 
+### `scribe brief`
+
+Generate a coherent narrative briefing on a specific person, team, or project. Synthesises all notes and KB context related to the reference into a prose summary. Run before a 1:1, a project review, or any meeting where you need fast context.
+
+| Option | Type | Description |
+|---|---|---|
+| `REFERENCE` | string (positional) | The reference to brief on (lowercase, no `@` prefix). |
+| `--from` | `YYYY-MM-DD` | Start of date window for note retrieval (optional). |
+| `--to` | `YYYY-MM-DD` | End of date window for note retrieval (optional). |
+| `--title` | string | Report title. Default: `Brief — @{reference}`. |
+| `--output` | path | Output file. Default: `./brief-{reference}-{date}.md`. |
+| `--top-k` | integer | Chunks to retrieve. Overrides `SCRIBE_TOP_K`. |
+| `--backend` | string | LLM backend override. |
+| `--dry-run` | flag | Print retrieved context; skip LLM. |
+
+### `scribe open-items`
+
+Extract explicit and implicit commitments, follow-ups, and unresolved questions from notes in a date range. Produces a numbered list of action items the user owns or has been asked about.
+
+| Option | Type | Description |
+|---|---|---|
+| `--date` | `YYYY-MM-DD` | Single day (default: today). Mutually exclusive with `--from`/`--to`. |
+| `--from` | `YYYY-MM-DD` | Start of date range (inclusive). |
+| `--to` | `YYYY-MM-DD` | End of date range (inclusive). |
+| `--title` | string | Report title. Default: `Open Items — {date}`. |
+| `--output` | path | Output file. Default: `./open-items-{date}.md`. |
+| `--top-k` | integer | Chunks to retrieve. Overrides `SCRIBE_TOP_K`. |
+| `--backend` | string | LLM backend override. |
+| `--dry-run` | flag | Print fetched notes; skip Cartographer_ retrieval and LLM. |
+
+### `scribe patterns`
+
+Analyse a note corpus over a time window for recurring themes, sentiment shifts, and persistent blockers. Optionally scoped to a specific tag or reference. Produces a prose analysis with named patterns and supporting evidence.
+
+| Option | Type | Description |
+|---|---|---|
+| `--from` | `YYYY-MM-DD` | Start of date range (inclusive). Required. |
+| `--to` | `YYYY-MM-DD` | End of date range (inclusive). Required. |
+| `--tag` | string | Scope analysis to notes tagged with this tag (lowercase, no `#`). |
+| `--ref` | string | Scope analysis to notes referencing this person or project (lowercase, no `@`). |
+| `--title` | string | Report title. Default: `Patterns — {from} to {to}`. |
+| `--output` | path | Output file. Default: `./patterns-{from}-{to}.md`. |
+| `--top-k` | integer | Chunks to retrieve. Overrides `SCRIBE_TOP_K`. |
+| `--backend` | string | LLM backend override. |
+| `--dry-run` | flag | Print fetched notes; skip Cartographer_ retrieval and LLM. |
+
+### `scribe digest`
+
+Structured summary of activity over a time window, grouped by team, project, or tag. The reporting-up tool: produces a scannable overview of what happened, what was decided, and what is outstanding.
+
+| Option | Type | Description |
+|---|---|---|
+| `--date` | `YYYY-MM-DD` | Single day. Mutually exclusive with `--from`/`--to`. |
+| `--from` | `YYYY-MM-DD` | Start of date range (inclusive). |
+| `--to` | `YYYY-MM-DD` | End of date range (inclusive). |
+| `--tag` | string | Group output by this tag (can be repeated). |
+| `--ref` | string | Scope digest to notes referencing this person or project (lowercase, no `@`). |
+| `--title` | string | Report title. Default: `Digest — {date}`. |
+| `--output` | path | Output file. Default: `./digest-{date}.md`. |
+| `--top-k` | integer | Chunks to retrieve. Overrides `SCRIBE_TOP_K`. |
+| `--backend` | string | LLM backend override. |
+| `--dry-run` | flag | Print fetched notes; skip Cartographer_ retrieval and LLM. |
+
 ### Examples
 
 ```bash
@@ -161,6 +228,12 @@ scribe bulletin --date 2025-07-15
 scribe bulletin --from 2025-07-01 --to 2025-07-15 --output ./july-mid.md
 scribe todo --date 2025-07-15
 scribe todo --from 2025-07-01 --to 2025-07-15 --backend ollama
+scribe brief alicesmith
+scribe brief pbhlproject --from 2025-06-01 --to 2025-07-15
+scribe open-items --from 2025-07-01 --to 2025-07-15
+scribe patterns --from 2025-06-01 --to 2025-07-01 --tag engineering
+scribe digest --from 2025-07-01 --to 2025-07-15 --output ./july-digest.md
+scribe digest --date 2025-07-15 --ref alicesmith
 ```
 
 ---
