@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.2] — 2026-06-04
+
+- feat: implement 'scribe ask' command for question answering with context retrieval
+- refactor: rename 'cartographer' to 'carto' for consistency across scripts and code
+- fix: update script name from 'cartographer' to 'carto' for consistency
+- Add copyright and license information to source files
+- Refactor code for improved readability and consistency
+- feat: migrate user data to new ~/.codex_ layout and update paths in configuration
+
 ## [1.1.1] — 2026-06-03
 
 - fix(cartographer): bundle fastembed and Google Drive libs in binary
