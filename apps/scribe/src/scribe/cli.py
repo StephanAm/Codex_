@@ -285,6 +285,100 @@ def todo(
 
 
 # ---------------------------------------------------------------------------
+# ask
+# ---------------------------------------------------------------------------
+
+
+@main.command()
+@click.argument("question")
+@click.option("--top-k", "top_k", default=None, type=int, help="Chunks to retrieve (overrides SCRIBE_TOP_K).")
+@click.option("--backend", "backend_name", default=None, help="LLM backend: ollama, dummy. Overrides SCRIBE_BACKEND.")
+@click.option("--output", "output_str", default=None, metavar="PATH", help="Output file. Default: stdout.")
+@click.option("--dry-run", is_flag=True, help="Print retrieved context; skip LLM.")
+def ask(
+    question: str,
+    top_k: int | None,
+    backend_name: str | None,
+    output_str: str | None,
+    dry_run: bool,
+) -> None:
+    """Answer a question using semantically retrieved context from your notes.
+
+    Calls `carto search` to find relevant context, then passes the question
+    and context to the LLM to produce an answer.
+    """
+    from scribe.config import (
+        get_cartographer_bin,
+        get_claude_bin,
+        get_ollama_url,
+        get_scribe_backend,
+        get_scribe_model,
+        get_scribe_top_k,
+    )
+
+    # ── 1. Retrieve context chunks via carto search ──────────────────────────
+    from scribe.cartographer import search_query
+
+    effective_top_k = top_k if top_k is not None else get_scribe_top_k()
+
+    try:
+        chunks = search_query(question, effective_top_k, get_cartographer_bin())
+    except RuntimeError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
+
+    # ── 2. Dry-run ───────────────────────────────────────────────────────────
+    if dry_run:
+        click.echo(f"Question: {question}\n")
+        if chunks:
+            click.echo(f"Context chunks: {len(chunks)}\n")
+            for i, c in enumerate(chunks, 1):
+                type_label = c.corpus_type.replace("_", " ")
+                click.echo(f"{i:>2}. ({c.score:.3f}) [{type_label}] {c.title}")
+                if c.content:
+                    click.echo(f"     {c.content[:200].replace(chr(10), ' ')}")
+        else:
+            click.echo("No context chunks found.")
+        sys.exit(0)
+
+    # ── 3. Build LLM backend ─────────────────────────────────────────────────
+    from scribe.llm import build_backend
+
+    resolved_backend = backend_name or get_scribe_backend()
+    try:
+        backend = build_backend(
+            resolved_backend,
+            get_scribe_model() or None,
+            get_ollama_url(),
+            get_claude_bin(),
+        )
+    except ValueError as exc:
+        raise click.UsageError(str(exc))
+
+    # ── 4. Generate answer ───────────────────────────────────────────────────
+    from scribe.ask import run_ask
+
+    try:
+        answer = run_ask(question, chunks, backend)
+    except RuntimeError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
+
+    # ── 5. Output ────────────────────────────────────────────────────────────
+    if output_str:
+        output_path = Path(output_str)
+        try:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(answer + "\n", encoding="utf-8")
+        except OSError as exc:
+            click.echo(f"Error: cannot write to {output_path}: {exc}", err=True)
+            sys.exit(1)
+        click.echo(f"Written: {output_path}", err=True)
+    else:
+        click.echo(answer)
+
+
+# ---------------------------------------------------------------------------
 # config
 # ---------------------------------------------------------------------------
 

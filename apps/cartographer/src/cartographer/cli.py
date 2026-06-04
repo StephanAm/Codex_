@@ -364,12 +364,16 @@ def index_config_ollama_url(url: str | None) -> None:
 
 @cli.command()
 @click.argument("query")
-def search(query: str) -> None:
+@click.option("--top-k", default=None, type=int, help="Maximum number of chunks to return.")
+@click.option("--json", "as_json", is_flag=True, help="Emit results as JSON to stdout (for machine consumers).")
+def search(query: str, top_k: int | None, as_json: bool) -> None:
     """Search the index for QUERY using the full retrieval pipeline.
 
     Parses @references, #tags, and date expressions from the query, then
     runs per-corpus vector search with temporal decay and boost scoring.
     """
+    import json as _json
+
     from cartographer.config import (
         get_embedding_backend,
         get_embedding_model,
@@ -388,7 +392,39 @@ def search(query: str) -> None:
     except Exception as exc:
         raise click.ClickException(str(exc)) from exc
 
-    if not ctx.chunks:
+    chunks = ctx.chunks[:top_k] if top_k is not None else ctx.chunks
+
+    if as_json:
+        click.echo(
+            _json.dumps(
+                {
+                    "query": ctx.query,
+                    "semantic_query": ctx.semantic_query,
+                    "references": ctx.references,
+                    "tags": ctx.tags,
+                    "date_window": (
+                        {"from_date": ctx.date_window.from_date, "to_date": ctx.date_window.to_date}
+                        if ctx.date_window
+                        else None
+                    ),
+                    "chunks": [
+                        {
+                            "corpus_type": c.corpus_type,
+                            "content": c.content,
+                            "score": c.score,
+                            "title": c.title,
+                            "tags": c.tags,
+                            "references": c.references,
+                            "time_stamp": c.time_stamp,
+                        }
+                        for c in chunks
+                    ],
+                }
+            )
+        )
+        return
+
+    if not chunks:
         click.echo("No results. Run `cartographer index` first, or try a different query.")
         return
 
@@ -405,7 +441,7 @@ def search(query: str) -> None:
     if ctx.semantic_query != query:
         click.echo(f"query:   {ctx.semantic_query}")
 
-    for rank, chunk in enumerate(ctx.chunks, 1):
+    for rank, chunk in enumerate(chunks, 1):
         type_label = chunk.corpus_type.replace("_", " ")
         click.echo(f"\n{rank:>2}. ({chunk.score:.3f}) [{type_label}] {chunk.title}")
         if chunk.content:

@@ -37,6 +37,7 @@ codex/
     └── scribe/
         └── src/scribe/
             ├── cli.py          # Click CLI entry point
+            ├── ask.py          # Ask (Q&A) generation logic
             ├── bulletin.py     # Bulletin generation logic
             ├── todo.py         # To-do list generation logic
             ├── store.py        # Reads notes from Cartographer DB
@@ -101,11 +102,24 @@ top_k = 10
 ## CLI Interface
 
 ```
+scribe ask      QUESTION [OPTIONS]
 scribe bulletin [OPTIONS]
 scribe todo     [OPTIONS]
 scribe config show
 scribe config init
 ```
+
+### `scribe ask`
+
+Answer a question using semantically retrieved context from the full Cartographer index (notes, atlas pages, definitions). No date range is required — the question itself can include natural-language time expressions (e.g. "last week", "yesterday") that Cartographer will parse.
+
+| Option | Type | Description |
+|---|---|---|
+| `QUESTION` | string (positional) | The question to answer. |
+| `--top-k` | integer | Chunks to retrieve. Overrides `SCRIBE_TOP_K`. |
+| `--backend` | string | LLM backend override. |
+| `--output` | path | Write answer to file instead of stdout. |
+| `--dry-run` | flag | Print retrieved context; skip LLM. |
 
 ### `scribe bulletin`
 
@@ -140,6 +154,9 @@ Generate a numbered action-item list from notes tagged `#todo` in a date range.
 ### Examples
 
 ```bash
+scribe ask "What did I decide about the auth redesign?"
+scribe ask "What is the sync protocol?" --top-k 5
+scribe ask "What were my goals last week?" --output ./answer.md
 scribe bulletin --date 2025-07-15
 scribe bulletin --from 2025-07-01 --to 2025-07-15 --output ./july-mid.md
 scribe todo --date 2025-07-15
@@ -186,20 +203,46 @@ Write the markdown to the output path and print the path to stderr.
 
 Cartographer_ is a CLI tool with no HTTP interface. Scribe_ invokes it as a subprocess.
 
+### `carto retrieve` — used by `bulletin` and `todo`
+
 ```bash
-cartographer retrieve --note-ids 1,4,7,23 --top-k 10
+carto retrieve --note-ids 1,4,7,23 --top-k 10
 ```
 
-Cartographer writes a JSON array to stdout and exits:
+Outputs a JSON object to stdout:
 
 ```json
 {
   "chunks": [
+    {"chunk_id": "abc123", "note_id": 4, "text": "...", "score": 0.91}
+  ]
+}
+```
+
+### `carto search --json` — used by `ask`
+
+```bash
+carto search --json --top-k 10 "What did I decide about auth?"
+```
+
+Outputs a JSON object to stdout:
+
+```json
+{
+  "query": "...",
+  "semantic_query": "...",
+  "references": [],
+  "tags": [],
+  "date_window": null,
+  "chunks": [
     {
-      "chunk_id": "abc123",
-      "note_id": 4,
-      "text": "...",
-      "score": 0.91
+      "corpus_type": "note",
+      "content": "...",
+      "score": 0.91,
+      "title": "...",
+      "tags": [],
+      "references": [],
+      "time_stamp": "2026-01-15T10:00:00"
     }
   ]
 }
@@ -245,6 +288,7 @@ All errors print to stderr. Nothing is written to stdout except `--dry-run` outp
 
 1. `scribe bulletin` with a valid date range produces a markdown bulletin at the specified output path.
 2. `scribe todo` with a valid date range produces a markdown to-do list at the specified output path.
-3. `--dry-run` prints the fetched note structure and exits without calling Cartographer_ or the LLM.
-4. Cartographer_ DB missing and Cartographer_ binary missing each produce a clear, distinct error message.
-5. No notes matching the parameters produces a clean exit with a message, not a crash.
+3. `scribe ask QUESTION` calls `carto search --json`, passes the retrieved context to the LLM, and prints the answer.
+4. `--dry-run` prints the fetched note/context structure and exits without calling the LLM.
+5. Cartographer_ binary missing produces a clear error message.
+6. No notes matching the parameters produces a clean exit with a message, not a crash.
