@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1] — 2026-06-04
+
+- feat: implement 'scribe ask' command for question answering with context retrieval
+- refactor: rename 'cartographer' to 'carto' for consistency across scripts and code
+- Add copyright and license information to source files
+- Refactor code for improved readability and consistency
+
 ## [1.2.0] — 2026-06-03
 
 - feat: add 'todo' command to generate to-do lists from tagged notes
