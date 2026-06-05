@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.5] — 2026-06-05
+
+- Add VERSION.PEP440; migrate version format to semver canonical
+- Migrate release scripts to RC-based flow
+
 ## [1.2.4] — 2026-06-05
 
 - Add period option to bulletin and todo commands for date range selection
