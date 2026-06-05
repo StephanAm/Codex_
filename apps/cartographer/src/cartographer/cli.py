@@ -3,6 +3,7 @@
 
 import click
 
+from cartographer import __version__
 from cartographer.config import (
     get_drive_folder,
     get_local_folder_path,
@@ -26,6 +27,7 @@ from cartographer.sync import sync as do_sync
 
 
 @click.group()
+@click.version_option(__version__, prog_name="carto")
 def cli() -> None:
     """Cartographer — vector indexing service for the Codex workspace."""
 
