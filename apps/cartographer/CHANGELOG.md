@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.1.4] — 2026-06-05
+
+- Add version option to CLI for Cartographer
+
 ## [1.1.3] — 2026-06-05
 
 - feat: enhance retrieval functions and add corpus design documentation
