@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.2.4] — 2026-06-05
+
+- Add period option to bulletin and todo commands for date range selection
+
 ## [1.2.2] — 2026-06-05
 
 - feat: add new Scribe commands for briefings, open items, patterns, and digests
