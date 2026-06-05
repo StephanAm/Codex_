@@ -94,10 +94,10 @@ scribe-release bump="patch":
 
 
 # ── Bulk ───────────────────────────────────────────────────────────────────
-release-all bump="patch": 
-    mnemo-release {{bump}}
-    scribe-release {{bump}}
-    carto-release {{bump}}
+release-all bump="patch":
+    just mnemo-release {{bump}}
+    just scribe-release {{bump}}
+    just carto-release {{bump}}
 
 build-all:
     just mnemo-build
