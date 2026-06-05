@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.1.3] — 2026-06-05
+
+- feat: enhance retrieval functions and add corpus design documentation
+
 ## [1.1.2] — 2026-06-04
 
 - feat: implement 'scribe ask' command for question answering with context retrieval
