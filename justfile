@@ -91,3 +91,7 @@ scribe-build:
 # Release Scribe_ — bump can be patch / minor / major / X.Y.Z (default: patch)
 scribe-release bump="patch":
     ./apps/scribe/scripts/release.sh {{bump}}
+
+
+# ── Bulk ───────────────────────────────────────────────────────────────────
+release-all: mnemo-release scribe-release carto-release
