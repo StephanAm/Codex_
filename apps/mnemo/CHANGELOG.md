@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.6.2] — 2026-06-05
+
+- Add VERSION.PEP440; migrate version format to semver canonical
+- Migrate release scripts to RC-based flow
+
 ## [1.6.1] — 2026-06-05
 
 - fix: update color for tool-stylus to cyan in design system and CSS
