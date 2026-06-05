@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.2] — 2026-06-05
+
+- feat: add new Scribe commands for briefings, open items, patterns, and digests
+- feat: enhance retrieval functions and add corpus design documentation
+
 ## [1.2.1] — 2026-06-04
 
 - feat: implement 'scribe ask' command for question answering with context retrieval
