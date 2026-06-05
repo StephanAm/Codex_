@@ -20,40 +20,33 @@ bump_patch() { IFS='.' read -r a b c <<< "$1"; echo "$a.$b.$((c + 1))"; }
 bump_minor() { IFS='.' read -r a b c <<< "$1"; echo "$a.$((b + 1)).0"; }
 bump_major() { IFS='.' read -r a b c <<< "$1"; echo "$((a + 1)).0.0"; }
 
-# Sync all release files (clean version only — tauri/npm require valid semver).
-sync_release_files() {
+# 1.2.3-rc.1 → 1.2.3rc1  |  1.2.3 → 1.2.3
+to_pep440() { echo "$1" | sed 's/-rc\.\([0-9]*\)/rc\1/'; }
+
+# Strip pre-release suffix: 1.2.3-rc.1 → 1.2.3
+base_ver() { echo "${1%%-*}"; }
+
+sync_files() {
     local ver="$1"
-    printf '%s\n' "$ver" > "$REPO_DIR/VERSION"
-    sed -i "s/^version = \"[^\"]*\"/version = \"$ver\"/"              "$REPO_DIR/pyproject.toml"
+    local pep440; pep440="$(to_pep440 "$ver")"
+    printf '%s\n' "$ver"    > "$REPO_DIR/VERSION"
+    printf '%s\n' "$pep440" > "$REPO_DIR/VERSION.PEP440"
+    sed -i "s/^version = \"[^\"]*\"/version = \"$pep440\"/"           "$REPO_DIR/pyproject.toml"
     sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$ver\"/"         "$REPO_DIR/gui/src-tauri/tauri.conf.json"
     sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$ver\"/"         "$REPO_DIR/gui/package.json"
     (cd "$WORKSPACE_ROOT" && uv sync --all-packages --extra google-drive --quiet)
     (cd "$WORKSPACE_ROOT" && pnpm install --silent)
 }
 
-# Sync only Python files for rc versions (tauri.conf.json rejects non-semver).
-sync_rc_files() {
-    local ver="$1"
-    printf '%s\n' "$ver" > "$REPO_DIR/VERSION"
-    sed -i "s/^version = \"[^\"]*\"/version = \"$ver\"/" "$REPO_DIR/pyproject.toml"
-    (cd "$WORKSPACE_ROOT" && uv sync --all-packages --extra google-drive --quiet)
-}
-
-stage_release_files() {
+stage_version_files() {
     git -C "$REPO_DIR" add \
         "$REPO_DIR/VERSION" \
+        "$REPO_DIR/VERSION.PEP440" \
         "$REPO_DIR/pyproject.toml" \
         "$REPO_DIR/gui/src-tauri/tauri.conf.json" \
         "$REPO_DIR/gui/package.json" \
         "$WORKSPACE_ROOT/uv.lock" \
         "$WORKSPACE_ROOT/pnpm-lock.yaml"
-}
-
-stage_rc_files() {
-    git -C "$REPO_DIR" add \
-        "$REPO_DIR/VERSION" \
-        "$REPO_DIR/pyproject.toml" \
-        "$WORKSPACE_ROOT/uv.lock"
 }
 
 # ── 1. Clean working tree ─────────────────────────────────────────────────────
@@ -63,7 +56,7 @@ fi
 
 # ── 2. Compute release version ────────────────────────────────────────────────
 CURRENT="$(tr -d '[:space:]' < "$REPO_DIR/VERSION")"
-BASE="${CURRENT%%rc*}"
+BASE="$(base_ver "$CURRENT")"
 
 LATEST_TAG="$(git -C "$REPO_DIR" tag --sort=-version:refname \
     | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$" | head -1 || true)"
@@ -98,14 +91,14 @@ fi
 
 # ── 4. Sync files to release version ─────────────────────────────────────────
 log "Syncing version files to $RELEASE_VER..."
-sync_release_files "$RELEASE_VER"
+sync_files "$RELEASE_VER"
 
 # ── 5. Generate changelog (stages CHANGELOG.md) ───────────────────────────────
 log "Updating changelog..."
 "$REPO_DIR/scripts/update_changelog.sh" "$RELEASE_VER"
 
 # ── 6. Commit + tag ───────────────────────────────────────────────────────────
-stage_release_files
+stage_version_files
 git -C "$REPO_DIR" commit -m "Release Mnemo_ $RELEASE_VER"
 git -C "$REPO_DIR" tag "${TAG_PREFIX}${RELEASE_VER}"
 log "Tagged ${TAG_PREFIX}${RELEASE_VER}"
@@ -120,10 +113,10 @@ if ! "$REPO_DIR/gui/gui.sh" build; then
 fi
 
 # ── 8. Bump to next rc ────────────────────────────────────────────────────────
-NEXT_RC="$(bump_patch "$RELEASE_VER")rc1"
+NEXT_RC="$(bump_patch "$RELEASE_VER")-rc.1"
 log "Bumping to $NEXT_RC..."
-sync_rc_files "$NEXT_RC"
-stage_rc_files
+sync_files "$NEXT_RC"
+stage_version_files
 git -C "$REPO_DIR" commit -m "Bump version to $NEXT_RC"
 
 # ── 9. Push branch + tag ──────────────────────────────────────────────────────

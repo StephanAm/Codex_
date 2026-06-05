@@ -20,10 +20,18 @@ bump_patch() { IFS='.' read -r a b c <<< "$1"; echo "$a.$b.$((c + 1))"; }
 bump_minor() { IFS='.' read -r a b c <<< "$1"; echo "$a.$((b + 1)).0"; }
 bump_major() { IFS='.' read -r a b c <<< "$1"; echo "$((a + 1)).0.0"; }
 
+# 1.2.3-rc.1 → 1.2.3rc1  |  1.2.3 → 1.2.3
+to_pep440() { echo "$1" | sed 's/-rc\.\([0-9]*\)/rc\1/'; }
+
+# Strip pre-release suffix: 1.2.3-rc.1 → 1.2.3
+base_ver() { echo "${1%%-*}"; }
+
 sync_files() {
     local ver="$1"
-    printf '%s\n' "$ver" > "$REPO_DIR/VERSION"
-    sed -i "s/^version = \"[^\"]*\"/version = \"$ver\"/"        "$REPO_DIR/pyproject.toml"
+    local pep440; pep440="$(to_pep440 "$ver")"
+    printf '%s\n' "$ver"    > "$REPO_DIR/VERSION"
+    printf '%s\n' "$pep440" > "$REPO_DIR/VERSION.PEP440"
+    sed -i "s/^version = \"[^\"]*\"/version = \"$pep440\"/"     "$REPO_DIR/pyproject.toml"
     sed -i "s/__version__ = \"[^\"]*\"/__version__ = \"$ver\"/" "$REPO_DIR/src/scribe/__init__.py"
     (cd "$WORKSPACE_ROOT" && uv sync --all-packages --quiet)
 }
@@ -31,6 +39,7 @@ sync_files() {
 stage_version_files() {
     git -C "$REPO_DIR" add \
         "$REPO_DIR/VERSION" \
+        "$REPO_DIR/VERSION.PEP440" \
         "$REPO_DIR/pyproject.toml" \
         "$REPO_DIR/src/scribe/__init__.py" \
         "$WORKSPACE_ROOT/uv.lock"
@@ -43,7 +52,7 @@ fi
 
 # ── 2. Compute release version ────────────────────────────────────────────────
 CURRENT="$(tr -d '[:space:]' < "$REPO_DIR/VERSION")"
-BASE="${CURRENT%%rc*}"
+BASE="$(base_ver "$CURRENT")"
 
 LATEST_TAG="$(git -C "$REPO_DIR" tag --sort=-version:refname \
     | grep -E "^${TAG_PREFIX}[0-9]+\.[0-9]+\.[0-9]+$" | head -1 || true)"
@@ -90,7 +99,7 @@ if ! "$REPO_DIR/scripts/build_linux.sh"; then
 fi
 
 # ── 7. Bump to next rc ────────────────────────────────────────────────────────
-NEXT_RC="$(bump_patch "$RELEASE_VER")rc1"
+NEXT_RC="$(bump_patch "$RELEASE_VER")-rc.1"
 log "Bumping to $NEXT_RC..."
 sync_files "$NEXT_RC"
 stage_version_files
