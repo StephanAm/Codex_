@@ -4,12 +4,17 @@
 from __future__ import annotations
 
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 import click
 
 from scribe import __version__
+
+_PERIOD_CHOICES = click.Choice(
+    ["today", "yesterday", "this-week", "this-month", "last-week", "last-month"],
+    case_sensitive=False,
+)
 
 
 @click.group()
@@ -27,6 +32,12 @@ def main() -> None:
 @click.option("--date", "date_str", default=None, metavar="YYYY-MM-DD", help="Single day (default: today).")
 @click.option("--from", "from_str", default=None, metavar="YYYY-MM-DD", help="Start of date range (inclusive).")
 @click.option("--to", "to_str", default=None, metavar="YYYY-MM-DD", help="End of date range (inclusive).")
+@click.option(
+    "--period",
+    default=None,
+    type=_PERIOD_CHOICES,
+    help="Named period: today, yesterday, this-week, this-month, last-week, last-month.",
+)
 @click.option("--title", default=None, help="Report title. Default: 'Bulletin — {date}'.")
 @click.option("--output", "output_str", default=None, metavar="PATH", help="Output file. Default: ./bulletin-{date}.md")
 @click.option("--top-k", "top_k", default=None, type=int, help="Chunks to retrieve (overrides SCRIBE_TOP_K).")
@@ -36,6 +47,7 @@ def bulletin(
     date_str: str | None,
     from_str: str | None,
     to_str: str | None,
+    period: str | None,
     title: str | None,
     output_str: str | None,
     top_k: int | None,
@@ -60,10 +72,14 @@ def bulletin(
     # ── 1. Resolve date range ────────────────────────────────────────────────
     if date_str and (from_str or to_str):
         raise click.UsageError("--date is mutually exclusive with --from/--to.")
+    if period and (date_str or from_str or to_str):
+        raise click.UsageError("--period is mutually exclusive with --date/--from/--to.")
 
     today = datetime.now(UTC).strftime("%Y-%m-%d")
 
-    if date_str:
+    if period:
+        from_date, to_date = _resolve_period(period)
+    elif date_str:
         from_date = to_date = date_str
     elif from_str or to_str:
         from_date = from_str or today
@@ -160,6 +176,12 @@ def bulletin(
 @click.option("--date", "date_str", default=None, metavar="YYYY-MM-DD", help="Single day (default: today).")
 @click.option("--from", "from_str", default=None, metavar="YYYY-MM-DD", help="Start of date range (inclusive).")
 @click.option("--to", "to_str", default=None, metavar="YYYY-MM-DD", help="End of date range (inclusive).")
+@click.option(
+    "--period",
+    default=None,
+    type=_PERIOD_CHOICES,
+    help="Named period: today, yesterday, this-week, this-month, last-week, last-month.",
+)
 @click.option("--title", default=None, help="Report title. Default: 'To-Do — {date}'.")
 @click.option("--output", "output_str", default=None, metavar="PATH", help="Output file. Default: ./todo-{date}.md")
 @click.option("--top-k", "top_k", default=None, type=int, help="Chunks to retrieve (overrides SCRIBE_TOP_K).")
@@ -169,6 +191,7 @@ def todo(
     date_str: str | None,
     from_str: str | None,
     to_str: str | None,
+    period: str | None,
     title: str | None,
     output_str: str | None,
     top_k: int | None,
@@ -193,10 +216,14 @@ def todo(
     # ── 1. Resolve date range ────────────────────────────────────────────────
     if date_str and (from_str or to_str):
         raise click.UsageError("--date is mutually exclusive with --from/--to.")
+    if period and (date_str or from_str or to_str):
+        raise click.UsageError("--period is mutually exclusive with --date/--from/--to.")
 
     today = datetime.now(UTC).strftime("%Y-%m-%d")
 
-    if date_str:
+    if period:
+        from_date, to_date = _resolve_period(period)
+    elif date_str:
         from_date = to_date = date_str
     elif from_str or to_str:
         from_date = from_str or today
@@ -386,6 +413,12 @@ def ask(
 @click.argument("reference")
 @click.option("--from", "from_str", default=None, metavar="YYYY-MM-DD", help="Start of date window (optional).")
 @click.option("--to", "to_str", default=None, metavar="YYYY-MM-DD", help="End of date window (optional).")
+@click.option(
+    "--period",
+    default=None,
+    type=_PERIOD_CHOICES,
+    help="Named period: today, yesterday, this-week, this-month, last-week, last-month.",
+)
 @click.option("--title", default=None, help="Report title. Default: 'Brief — @{reference}'.")
 @click.option("--output", "output_str", default=None, metavar="PATH", help="Output file.")
 @click.option("--top-k", "top_k", default=None, type=int, help="Chunks to retrieve (overrides SCRIBE_TOP_K).")
@@ -395,6 +428,7 @@ def brief(
     reference: str,
     from_str: str | None,
     to_str: str | None,
+    period: str | None,
     title: str | None,
     output_str: str | None,
     top_k: int | None,
@@ -416,10 +450,16 @@ def brief(
         get_scribe_top_k,
     )
 
-    if from_str:
-        _validate_date(from_str, "--from")
-    if to_str:
-        _validate_date(to_str, "--to")
+    if period and (from_str or to_str):
+        raise click.UsageError("--period is mutually exclusive with --from/--to.")
+
+    if period:
+        from_str, to_str = _resolve_period(period)
+    else:
+        if from_str:
+            _validate_date(from_str, "--from")
+        if to_str:
+            _validate_date(to_str, "--to")
 
     today = datetime.now(UTC).strftime("%Y-%m-%d")
     resolved_title = title or f"Brief — @{reference}"
@@ -504,6 +544,12 @@ def brief(
 @click.option("--date", "date_str", default=None, metavar="YYYY-MM-DD", help="Single day (default: today).")
 @click.option("--from", "from_str", default=None, metavar="YYYY-MM-DD", help="Start of date range (inclusive).")
 @click.option("--to", "to_str", default=None, metavar="YYYY-MM-DD", help="End of date range (inclusive).")
+@click.option(
+    "--period",
+    default=None,
+    type=_PERIOD_CHOICES,
+    help="Named period: today, yesterday, this-week, this-month, last-week, last-month.",
+)
 @click.option("--title", default=None, help="Report title. Default: 'Open Items — {date}'.")
 @click.option("--output", "output_str", default=None, metavar="PATH", help="Output file.")
 @click.option("--top-k", "top_k", default=None, type=int, help="Chunks to retrieve (overrides SCRIBE_TOP_K).")
@@ -513,6 +559,7 @@ def open_items(
     date_str: str | None,
     from_str: str | None,
     to_str: str | None,
+    period: str | None,
     title: str | None,
     output_str: str | None,
     top_k: int | None,
@@ -536,10 +583,14 @@ def open_items(
 
     if date_str and (from_str or to_str):
         raise click.UsageError("--date is mutually exclusive with --from/--to.")
+    if period and (date_str or from_str or to_str):
+        raise click.UsageError("--period is mutually exclusive with --date/--from/--to.")
 
     today = datetime.now(UTC).strftime("%Y-%m-%d")
 
-    if date_str:
+    if period:
+        from_date, to_date = _resolve_period(period)
+    elif date_str:
         from_date = to_date = date_str
     elif from_str or to_str:
         from_date = from_str or today
@@ -631,8 +682,14 @@ def open_items(
 
 
 @main.command()
-@click.option("--from", "from_str", required=True, metavar="YYYY-MM-DD", help="Start of date range (inclusive).")
-@click.option("--to", "to_str", required=True, metavar="YYYY-MM-DD", help="End of date range (inclusive).")
+@click.option("--from", "from_str", default=None, metavar="YYYY-MM-DD", help="Start of date range (inclusive).")
+@click.option("--to", "to_str", default=None, metavar="YYYY-MM-DD", help="End of date range (inclusive).")
+@click.option(
+    "--period",
+    default=None,
+    type=_PERIOD_CHOICES,
+    help="Named period: today, yesterday, this-week, this-month, last-week, last-month.",
+)
 @click.option("--tag", default=None, help="Scope to notes tagged with this tag (no # prefix).")
 @click.option("--ref", default=None, help="Scope to notes referencing this person or project (no @ prefix).")
 @click.option("--title", default=None, help="Report title. Default: 'Patterns — {from} to {to}'.")
@@ -641,8 +698,9 @@ def open_items(
 @click.option("--backend", "backend_name", default=None, help="LLM backend: ollama, dummy. Overrides SCRIBE_BACKEND.")
 @click.option("--dry-run", is_flag=True, help="Print fetched notes, skip Cartographer and LLM.")
 def patterns(
-    from_str: str,
-    to_str: str,
+    from_str: str | None,
+    to_str: str | None,
+    period: str | None,
     tag: str | None,
     ref: str | None,
     title: str | None,
@@ -667,9 +725,16 @@ def patterns(
 
     if tag and ref:
         raise click.UsageError("--tag and --ref are mutually exclusive.")
+    if period and (from_str or to_str):
+        raise click.UsageError("--period is mutually exclusive with --from/--to.")
+    if not period and not (from_str and to_str):
+        raise click.UsageError("Provide either --period or both --from and --to.")
 
-    _validate_date(from_str, "--from")
-    _validate_date(to_str, "--to")
+    if period:
+        from_str, to_str = _resolve_period(period)
+    else:
+        _validate_date(from_str, "--from")  # type: ignore[arg-type]
+        _validate_date(to_str, "--to")  # type: ignore[arg-type]
 
     resolved_title = title or f"Patterns — {from_str} to {to_str}"
     output_path = Path(output_str) if output_str else Path(f"patterns-{from_str}-{to_str}.md")
@@ -758,6 +823,12 @@ def patterns(
 @click.option("--date", "date_str", default=None, metavar="YYYY-MM-DD", help="Single day (default: today).")
 @click.option("--from", "from_str", default=None, metavar="YYYY-MM-DD", help="Start of date range (inclusive).")
 @click.option("--to", "to_str", default=None, metavar="YYYY-MM-DD", help="End of date range (inclusive).")
+@click.option(
+    "--period",
+    default=None,
+    type=_PERIOD_CHOICES,
+    help="Named period: today, yesterday, this-week, this-month, last-week, last-month.",
+)
 @click.option("--tag", default=None, help="Scope to notes tagged with this tag (no # prefix).")
 @click.option("--ref", default=None, help="Scope to notes referencing this person or project (no @ prefix).")
 @click.option("--title", default=None, help="Report title. Default: 'Digest — {date}'.")
@@ -769,6 +840,7 @@ def digest(
     date_str: str | None,
     from_str: str | None,
     to_str: str | None,
+    period: str | None,
     tag: str | None,
     ref: str | None,
     title: str | None,
@@ -794,12 +866,16 @@ def digest(
 
     if date_str and (from_str or to_str):
         raise click.UsageError("--date is mutually exclusive with --from/--to.")
+    if period and (date_str or from_str or to_str):
+        raise click.UsageError("--period is mutually exclusive with --date/--from/--to.")
     if tag and ref:
         raise click.UsageError("--tag and --ref are mutually exclusive.")
 
     today = datetime.now(UTC).strftime("%Y-%m-%d")
 
-    if date_str:
+    if period:
+        from_date, to_date = _resolve_period(period)
+    elif date_str:
         from_date = to_date = date_str
     elif from_str or to_str:
         from_date = from_str or today
@@ -932,6 +1008,32 @@ def config_init() -> None:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def _resolve_period(period: str) -> tuple[str, str]:
+    today = date.today()
+    p = period.lower()
+    if p == "today":
+        d = today.strftime("%Y-%m-%d")
+        return d, d
+    if p == "yesterday":
+        d = (today - timedelta(days=1)).strftime("%Y-%m-%d")
+        return d, d
+    if p == "this-week":
+        monday = today - timedelta(days=today.weekday())
+        return monday.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d")
+    if p == "this-month":
+        first = today.replace(day=1)
+        return first.strftime("%Y-%m-%d"), today.strftime("%Y-%m-%d")
+    if p == "last-week":
+        last_monday = today - timedelta(days=today.weekday() + 7)
+        last_sunday = last_monday + timedelta(days=6)
+        return last_monday.strftime("%Y-%m-%d"), last_sunday.strftime("%Y-%m-%d")
+    if p == "last-month":
+        first_this = today.replace(day=1)
+        last_day = first_this - timedelta(days=1)
+        return last_day.replace(day=1).strftime("%Y-%m-%d"), last_day.strftime("%Y-%m-%d")
+    raise ValueError(f"Unknown period: {period!r}")
 
 
 def _validate_date(value: str, flag: str) -> None:
