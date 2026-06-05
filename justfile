@@ -99,7 +99,7 @@ release-all bump="patch":
     scribe-release {{bump}}
     carto-release {{bump}}
 
-build_all:
+build-all:
     just mnemo-build
     just scribe-build
     just carto-build
