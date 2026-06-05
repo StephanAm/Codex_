@@ -1384,7 +1384,7 @@
     "/auth/google": {
       "post": {
         "summary": "Authorise Google Drive",
-        "description": "Run the Google Drive OAuth flow to obtain and store an access token.\n\nRequires `credentials.json` to be present at `~/.note_taker/credentials.json`.\nDownload it from the Google Cloud Console under APIs & Services \u2192 Credentials \u2192 OAuth 2.0 Client ID.\n\nThis call opens a browser window for the user to complete the OAuth consent flow.\nRaises **400** if `credentials.json` is missing, **500** if the flow fails.",
+        "description": "Run the Google Drive OAuth flow to obtain and store an access token.\n\nRequires `credentials.json` to be present at `~/.codex_/credentials.json`.\nDownload it from the Google Cloud Console under APIs & Services \u2192 Credentials \u2192 OAuth 2.0 Client ID.\n\nThis call opens a browser window for the user to complete the OAuth consent flow.\nRaises **400** if `credentials.json` is missing, **500** if the flow fails.",
         "operationId": "auth_google_auth_google_post",
         "responses": {
           "200": {
