@@ -1,29 +1,15 @@
 #!/usr/bin/env bash
-# Prepends a new release entry to CHANGELOG.md.
-# Tags use the prefix "scribe-v" to distinguish from other app tags.
-# Usage: update_changelog.sh [patch|minor|major|X.Y.Z]
+# Prepend a release entry to CHANGELOG.md for an explicit version.
+# Stages CHANGELOG.md but does NOT commit — release.sh owns the commit.
+# Usage: update_changelog.sh X.Y.Z
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CHANGELOG="$REPO_DIR/CHANGELOG.md"
-BUMP_ARG="${1:-patch}"
+RELEASE_VER="${1:?Usage: update_changelog.sh X.Y.Z}"
 TAG_PREFIX="scribe-v"
 
 log() { echo "▶ [changelog] $*"; }
-
-CUR_VER="$(tr -d '[:space:]' < "$REPO_DIR/VERSION")"
-
-bump_patch() { IFS='.' read -r a b c <<< "$1"; echo "$a.$b.$((c + 1))"; }
-bump_minor() { IFS='.' read -r a b c <<< "$1"; echo "$a.$((b + 1)).0"; }
-bump_major() { IFS='.' read -r a b c <<< "$1"; echo "$((a + 1)).0.0"; }
-
-case "$BUMP_ARG" in
-    patch)                 NEW_VER="$(bump_patch "$CUR_VER")" ;;
-    minor)                 NEW_VER="$(bump_minor "$CUR_VER")" ;;
-    major)                 NEW_VER="$(bump_major "$CUR_VER")" ;;
-    [0-9]*.[0-9]*.[0-9]*) NEW_VER="$BUMP_ARG" ;;
-    *) echo "✗ [changelog] Unknown bump arg: $BUMP_ARG" >&2; exit 1 ;;
-esac
 
 DATE="$(date +%Y-%m-%d)"
 
@@ -37,6 +23,7 @@ COMMITS="$(git -C "$REPO_DIR" log "$RANGE" \
     --no-merges \
     -- . \
     | grep -v '^- Bump scribe version' \
+    | grep -v '^- Release scribe' \
     | grep -v '^- Update changelog' \
     || true)"
 
@@ -48,13 +35,12 @@ fi
 TMP="$(mktemp)"
 {
     head -2 "$CHANGELOG"
-    printf '## [%s] — %s\n\n%s\n\n' "$NEW_VER" "$DATE" "$COMMITS"
+    printf '## [%s] — %s\n\n%s\n\n' "$RELEASE_VER" "$DATE" "$COMMITS"
     tail -n +3 "$CHANGELOG"
 } > "$TMP"
 mv "$TMP" "$CHANGELOG"
 
 git -C "$REPO_DIR" add "$CHANGELOG"
-git -C "$REPO_DIR" commit -m "Update changelog for scribe v$NEW_VER"
 
 COUNT="$(echo "$COMMITS" | wc -l | tr -d ' ')"
-log "Prepended v$NEW_VER ($COUNT commits) to CHANGELOG.md"
+log "Prepended v$RELEASE_VER ($COUNT commits) to CHANGELOG.md"

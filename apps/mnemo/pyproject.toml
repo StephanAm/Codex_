@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mnemo"
-version = "1.6.1"
+version = "1.6.2rc1"
 description = "Mnemo — capture, tag, and search plain-text notes. CLI, TUI, and Tauri GUI."
 readme = "README.md"
 requires-python = ">=3.11"
