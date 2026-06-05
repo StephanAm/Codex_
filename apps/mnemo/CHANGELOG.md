@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.6.1] — 2026-06-05
+
+- fix: update color for tool-stylus to cyan in design system and CSS
+- feat: add tool palette colors for UI elements in design system and update references in App component
+- Add copyright and license information to source files
+- Refactor code for improved readability and consistency
+- feat: update documentation and add build script for Codex apps
+- feat: migrate user data to new ~/.codex_ layout and update paths in configuration
+
 ## [1.6.0] — 2026-06-02
 
 - fix(mnemo): bundle Google Drive auth libs in AppImage and fix error message
