@@ -1855,7 +1855,7 @@ wheels = [
 
 [[package]]
 name = "scribe"
-version = "1.2.5"
+version = "1.2.6rc1"
 source = { editable = "apps/scribe" }
 dependencies = [
     { name = "click" },
