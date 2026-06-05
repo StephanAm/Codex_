@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.1.5] — 2026-06-05
+
+- Add VERSION.PEP440; migrate version format to semver canonical
+- Migrate release scripts to RC-based flow
+
 ## [1.1.4] — 2026-06-05
 
 - Add version option to CLI for Cartographer
