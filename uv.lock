@@ -109,7 +109,7 @@ wheels = [
 
 [[package]]
 name = "cartographer"
-version = "1.1.5"
+version = "1.1.6rc1"
 source = { editable = "apps/cartographer" }
 dependencies = [
     { name = "click" },
