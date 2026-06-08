@@ -83,6 +83,8 @@ def run_digest(
     tag: str | None,
     ref: str | None,
     backend: LLMBackend,
+    *,
+    frontmatter: bool = True,
 ) -> str:
     """Generate a digest markdown string via the LLM."""
     user_msg = _build_user_message(notes, chunks, from_date, to_date, tag, ref)
@@ -97,6 +99,11 @@ def run_digest(
     if ref:
         scope_parts.append(f"@{ref}")
 
+    fm = ""
+    if frontmatter:
+        week_range = f"{from_date}--{to_date}" if from_date != to_date else from_date
+        fm = f"---\ndate: {from_date}\nweek: {week_range}\ntags:\n  - weekly-digest\n---\n\n"
+
     meta_lines = [
         f"# {title}",
         "",
@@ -108,4 +115,4 @@ def run_digest(
     meta_lines.append(f"*Notes: {len(notes)}*")
     meta_lines += ["", "---", ""]
 
-    return "\n".join(meta_lines) + llm_output.strip() + "\n"
+    return fm + "\n".join(meta_lines) + llm_output.strip() + "\n"

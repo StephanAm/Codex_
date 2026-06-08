@@ -847,6 +847,7 @@ def patterns(
 @click.option("--top-k", "top_k", default=None, type=int, help="Chunks to retrieve (overrides SCRIBE_TOP_K).")
 @click.option("--backend", "backend_name", default=None, help="LLM backend: ollama, dummy. Overrides SCRIBE_BACKEND.")
 @click.option("--dry-run", is_flag=True, help="Print fetched notes, skip Cartographer and LLM.")
+@click.option("--frontmatter/--no-frontmatter", default=True, help="Prepend YAML frontmatter (default: on).")
 def digest(
     date_str: str | None,
     from_str: str | None,
@@ -859,6 +860,7 @@ def digest(
     top_k: int | None,
     backend_name: str | None,
     dry_run: bool,
+    frontmatter: bool,
 ) -> None:
     """Generate a structured activity digest for reporting.
 
@@ -866,6 +868,7 @@ def digest(
     and asks the LLM to produce a grouped summary suitable for reporting up.
     """
     from scribe.config import (
+        get_archive_dir,
         get_cartographer_bin,
         get_cartographer_db,
         get_claude_bin,
@@ -899,7 +902,12 @@ def digest(
 
     label = from_date if from_date == to_date else f"{from_date}_{to_date}"
     resolved_title = title or f"Digest — {label}"
-    output_path = Path(output_str) if output_str else Path(f"digest-{label}.md")
+    if output_str:
+        output_path = Path(output_str)
+    elif archive_dir := get_archive_dir():
+        output_path = archive_dir / "Weekly Reports" / f"{from_date}.md"
+    else:
+        output_path = Path(f"digest-{label}.md")
 
     # ── 1. Fetch notes ───────────────────────────────────────────────────────
     from scribe.store import fetch_notes_by_ref, fetch_notes_by_tag, fetch_notes_in_range
@@ -967,7 +975,9 @@ def digest(
     from scribe.digest import run_digest
 
     try:
-        markdown = run_digest(notes, chunks, resolved_title, from_date, to_date, tag, ref, backend)
+        markdown = run_digest(
+            notes, chunks, resolved_title, from_date, to_date, tag, ref, backend, frontmatter=frontmatter
+        )
     except RuntimeError as exc:
         click.echo(f"Error: {exc}", err=True)
         sys.exit(1)
