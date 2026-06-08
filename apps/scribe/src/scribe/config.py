@@ -33,6 +33,9 @@ claude_bin = "claude"
 
 [retrieval]
 top_k = 10
+
+[output]
+archive_dir = ""
 """
 
 _cache: dict[str, object] | None = None
@@ -109,6 +112,13 @@ def get_scribe_top_k() -> int:
     return _int("retrieval", "top_k", "SCRIBE_TOP_K", 10)
 
 
+def get_archive_dir() -> Path | None:
+    raw = _str("output", "archive_dir", "SCRIBE_ARCHIVE_DIR", "")
+    if not raw:
+        return None
+    return Path(raw).expanduser()
+
+
 # ---------------------------------------------------------------------------
 # Config file helpers
 # ---------------------------------------------------------------------------
@@ -141,5 +151,8 @@ def resolved_config() -> dict[str, object]:
         },
         "retrieval": {
             "top_k": get_scribe_top_k(),
+        },
+        "output": {
+            "archive_dir": str(get_archive_dir()) if get_archive_dir() else "",
         },
     }

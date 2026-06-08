@@ -12,7 +12,7 @@ When opening a note for editing, place the cursor on a new line at the end of th
 ## ~~#15 — Trailing newline on save~~ ✓
 When saving a note, ensure the body always ends with exactly one newline. Prevents notes from accumulating trailing whitespace or missing the final newline across repeated edits.
 
-## #19 — Archive output path in Scribe_ config
+## ~~#19 — Archive output path in Scribe_ config~~ ✓
 
 Add a configurable `archive_dir` to Scribe_'s `config.toml` (and a `SCRIBE_ARCHIVE_DIR` env var). When set, commands that produce dated reports write to the appropriate subdirectory under `archive_dir` by default, rather than the current directory. This gives the Archive layer from the stack design a concrete, persistent filesystem location.
 

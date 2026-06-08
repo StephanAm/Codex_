@@ -43,6 +43,7 @@ def main() -> None:
 @click.option("--top-k", "top_k", default=None, type=int, help="Chunks to retrieve (overrides SCRIBE_TOP_K).")
 @click.option("--backend", "backend_name", default=None, help="LLM backend: ollama, dummy. Overrides SCRIBE_BACKEND.")
 @click.option("--dry-run", is_flag=True, help="Print fetched notes, skip Cartographer and LLM.")
+@click.option("--frontmatter/--no-frontmatter", default=True, help="Prepend YAML frontmatter (default: on).")
 def bulletin(
     date_str: str | None,
     from_str: str | None,
@@ -53,6 +54,7 @@ def bulletin(
     top_k: int | None,
     backend_name: str,
     dry_run: bool,
+    frontmatter: bool,
 ) -> None:
     """Generate a bulletin from notes in the given date range.
 
@@ -60,6 +62,7 @@ def bulletin(
     and asks the LLM to produce an ordered, deduplicated bullet list.
     """
     from scribe.config import (
+        get_archive_dir,
         get_cartographer_bin,
         get_cartographer_db,
         get_claude_bin,
@@ -92,7 +95,12 @@ def bulletin(
 
     label = from_date if from_date == to_date else f"{from_date}_{to_date}"
     resolved_title = title or f"Bulletin — {label}"
-    output_path = Path(output_str) if output_str else Path(f"bulletin-{label}.md")
+    if output_str:
+        output_path = Path(output_str)
+    elif archive_dir := get_archive_dir():
+        output_path = archive_dir / "Daily Bulletins" / f"{to_date}.md"
+    else:
+        output_path = Path(f"bulletin-{label}.md")
 
     # ── 2. Fetch notes from Cartographer DB ──────────────────────────────────
     from scribe.store import fetch_notes_in_range
@@ -157,7 +165,7 @@ def bulletin(
     from scribe.bulletin import run_bulletin
 
     try:
-        markdown = run_bulletin(notes, chunks, resolved_title, from_date, to_date, backend)
+        markdown = run_bulletin(notes, chunks, resolved_title, from_date, to_date, backend, frontmatter=frontmatter)
     except RuntimeError as exc:
         click.echo(f"Error: {exc}", err=True)
         sys.exit(1)
@@ -735,6 +743,9 @@ def patterns(
     else:
         _validate_date(from_str, "--from")  # type: ignore[arg-type]
         _validate_date(to_str, "--to")  # type: ignore[arg-type]
+    # Both guaranteed non-None: period resolution assigns them, and the UsageError
+    # guard above rejects the case where period is absent but either is missing.
+    assert from_str is not None and to_str is not None
 
     resolved_title = title or f"Patterns — {from_str} to {to_str}"
     output_path = Path(output_str) if output_str else Path(f"patterns-{from_str}-{to_str}.md")

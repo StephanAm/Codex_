@@ -80,6 +80,8 @@ def run_bulletin(
     from_date: str,
     to_date: str,
     backend: LLMBackend,
+    *,
+    frontmatter: bool = True,
 ) -> str:
     """Generate a bulletin markdown string via the LLM."""
     user_msg = _build_user_message(notes, chunks, from_date, to_date)
@@ -88,6 +90,10 @@ def run_bulletin(
     generated = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
     period = from_date if from_date == to_date else f"{from_date} – {to_date}"
 
+    fm = ""
+    if frontmatter:
+        fm = f"---\ndate: {to_date}\ntags:\n  - daily-bulletin\n---\n\n"
+
     header = f"# {title}\n\n*Generated: {generated}*  \n*Period: {period}*  \n*Notes: {len(notes)}*\n\n---\n\n"
 
-    return header + llm_output.strip() + "\n"
+    return fm + header + llm_output.strip() + "\n"
