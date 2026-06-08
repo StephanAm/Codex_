@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.2.7] — 2026-06-08
+
+- Rename output files for bulletins and digests to include descriptive suffixes
+
 ## [1.2.6] — 2026-06-08
 
 - Add frontmatter option to digest generation for YAML metadata
