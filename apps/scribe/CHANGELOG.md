@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.6] — 2026-06-08
+
+- Add frontmatter option to digest generation for YAML metadata
+- Add frontmatter option to bulletin generation and archive directory configuration
+
 ## [1.2.5] — 2026-06-05
 
 - Add VERSION.PEP440; migrate version format to semver canonical
