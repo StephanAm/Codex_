@@ -45,7 +45,7 @@ export function ConfigPanel({ onClose }: Props) {
         sync_folder: folderInput.trim() || "note-taker-sync",
         sync_adapter: adapterInput,
         sync_local_path: localPathInput,
-        autosync_debounce_ms: parseInt(debounceInput, 10) || 600_000,
+        autosync_debounce_ms: parseInt(debounceInput, 10) || 30_000,
       });
       await invoke("set_gui_config", { config: guiCfg });
       setMsg("Saved.");

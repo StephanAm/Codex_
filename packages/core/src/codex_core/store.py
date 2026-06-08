@@ -530,7 +530,7 @@ def set_sync_local_path(path: str, db_path: Path | None = None) -> None:
 def get_autosync_debounce_ms(db_path: Path | None = None) -> int:
     conn = connect(db_path)
     row = conn.execute("SELECT value FROM config WHERE key = 'autosync_debounce_ms'").fetchone()
-    return int(row["value"]) if row else 600_000
+    return int(row["value"]) if row else 30_000
 
 
 def set_autosync_debounce_ms(ms: int, db_path: Path | None = None) -> None:
