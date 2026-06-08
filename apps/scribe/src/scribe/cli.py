@@ -98,7 +98,7 @@ def bulletin(
     if output_str:
         output_path = Path(output_str)
     elif archive_dir := get_archive_dir():
-        output_path = archive_dir / "Daily Bulletins" / f"{to_date}.md"
+        output_path = archive_dir / "Daily Bulletins" / f"{to_date} Bulletin.md"
     else:
         output_path = Path(f"bulletin-{label}.md")
 
@@ -905,7 +905,7 @@ def digest(
     if output_str:
         output_path = Path(output_str)
     elif archive_dir := get_archive_dir():
-        output_path = archive_dir / "Weekly Reports" / f"{from_date}.md"
+        output_path = archive_dir / "Weekly Reports" / f"{from_date} Digest.md"
     else:
         output_path = Path(f"digest-{label}.md")
 
