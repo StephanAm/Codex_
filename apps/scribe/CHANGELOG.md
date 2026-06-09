@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.2.9] — 2026-06-09
+
+- Capitalize kind directory names in registry and cli functions
+
 ## [1.2.8] — 2026-06-09
 
 - Add registry sync command and data models for Kinds and Instances
