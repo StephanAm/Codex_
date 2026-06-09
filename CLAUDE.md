@@ -30,7 +30,6 @@ All commands run from this directory (`/home/stephan/Code/codex/`).
 ```bash
 # Python (uv workspace)
 uv sync --all-packages                     # install everything into shared .venv
-uv sync --all-packages --extra google-drive  # + Google Drive sync deps
 uv run pytest                              # all tests, all packages
 uv run ruff check                          # lint
 uv run ruff format                         # format

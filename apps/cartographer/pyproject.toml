@@ -9,14 +9,12 @@ description = "Cartographer — background vector indexing service for the Codex
 requires-python = ">=3.11"
 dependencies = [
     "click>=8.0",
-]
-
-[project.optional-dependencies]
-google-drive = [
     "google-auth>=2.0",
     "google-auth-oauthlib>=1.0",
     "google-api-python-client>=2.0",
 ]
+
+[project.optional-dependencies]
 embeddings = [
     "fastembed>=0.3",
 ]

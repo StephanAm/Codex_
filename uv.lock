@@ -113,27 +113,25 @@ version = "1.1.7rc1"
 source = { editable = "apps/cartographer" }
 dependencies = [
     { name = "click" },
+    { name = "google-api-python-client" },
+    { name = "google-auth" },
+    { name = "google-auth-oauthlib" },
 ]
 
 [package.optional-dependencies]
 embeddings = [
     { name = "fastembed" },
 ]
-google-drive = [
-    { name = "google-api-python-client" },
-    { name = "google-auth" },
-    { name = "google-auth-oauthlib" },
-]
 
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.0" },
     { name = "fastembed", marker = "extra == 'embeddings'", specifier = ">=0.3" },
-    { name = "google-api-python-client", marker = "extra == 'google-drive'", specifier = ">=2.0" },
-    { name = "google-auth", marker = "extra == 'google-drive'", specifier = ">=2.0" },
-    { name = "google-auth-oauthlib", marker = "extra == 'google-drive'", specifier = ">=1.0" },
+    { name = "google-api-python-client", specifier = ">=2.0" },
+    { name = "google-auth", specifier = ">=2.0" },
+    { name = "google-auth-oauthlib", specifier = ">=1.0" },
 ]
-provides-extras = ["google-drive", "embeddings"]
+provides-extras = ["embeddings"]
 
 [[package]]
 name = "certifi"
