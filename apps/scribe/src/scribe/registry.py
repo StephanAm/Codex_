@@ -5,125 +5,74 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
+
+import frontmatter
 
 if TYPE_CHECKING:
     from scribe.store import InstanceRecord, KindRecord
 
-# Keys that Mnemo owns in each file type. Lines belonging to these keys (and
-# any list items directly under them) are replaced on every sync.
 _INSTANCE_OWNED: frozenset[str] = frozenset({"name", "description", "refs"})
 _MANIFEST_OWNED: frozenset[str] = frozenset({"name", "plural", "description"})
 
 SyncStatus = Literal["created", "updated", "unchanged"]
 
 
-# ---------------------------------------------------------------------------
-# Frontmatter builders
-# ---------------------------------------------------------------------------
-
-
-def _q(value: str) -> str:
-    """Quote a string as a JSON-style YAML scalar (handles colons, quotes, etc.)."""
-    return json.dumps(value)
-
-
-def _build_instance_frontmatter(instance: InstanceRecord) -> str:
+def _instance_metadata(instance: InstanceRecord) -> dict[str, object]:
+    meta: dict[str, object] = {
+        "name": instance.name,
+        "description": instance.description,
+    }
     refs = sorted(f"@{r}" for r in instance.references)
-    ref_lines = "".join(f"\n  - {r}" for r in refs)
-    ref_block = f"refs:{ref_lines}\n" if refs else ""
-    return f"---\nname: {_q(instance.name)}\ndescription: {_q(instance.description)}\n{ref_block}---\n"
+    if refs:
+        meta["refs"] = refs
+    return meta
 
 
-def _build_manifest_frontmatter(kind: KindRecord) -> str:
-    return f"---\nname: {_q(kind.name)}\nplural: {_q(kind.plural)}\ndescription: {_q(kind.description)}\n---\n"
+def _manifest_metadata(kind: KindRecord) -> dict[str, object]:
+    return {
+        "name": kind.name,
+        "plural": kind.plural,
+        "description": kind.description,
+    }
 
 
-# ---------------------------------------------------------------------------
-# Idempotent file sync
-# ---------------------------------------------------------------------------
-
-
-def _rewrite_frontmatter(fm_lines: list[str], new_fm: str, owned_keys: frozenset[str]) -> str:
-    """Return a new frontmatter block with owned keys replaced by new_fm content.
-
-    Preserves all lines that do not belong to an owned key. Owned scalar lines
-    and list items under owned keys are dropped; the new values are appended at
-    the end before the closing `---`.
-    """
-    kept: list[str] = []
-    in_owned_list = False
-
-    for line in fm_lines:
-        stripped = line.rstrip("\n")
-
-        # Detect start of an owned list field (e.g. "refs:")
-        if stripped.rstrip(":").rstrip() in owned_keys and stripped.endswith(":"):
-            in_owned_list = True
-            continue
-
-        # Detect a plain owned scalar field (e.g. "name: ...")
-        key = stripped.split(":")[0].strip()
-        if key in owned_keys and not in_owned_list:
-            continue
-
-        # Inside a list block, skip list items; exit on anything else
-        if in_owned_list:
-            if stripped.startswith("  - "):
-                continue
-            in_owned_list = False
-
-        kept.append(line)
-
-    # Extract just the field lines from new_fm (strip surrounding ---)
-    new_field_lines = new_fm.splitlines(keepends=True)[1:-1]  # skip opening and closing ---
-
-    return "---\n" + "".join(kept) + "".join(new_field_lines) + "---\n"
-
-
-def _sync_file(path: Path, new_frontmatter: str, owned_keys: frozenset[str]) -> SyncStatus:
+def _sync_file(path: Path, owned: dict[str, object], owned_keys: frozenset[str]) -> SyncStatus:
     """Create or update a file, preserving non-owned frontmatter and body."""
     if not path.exists():
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(new_frontmatter + "\n", encoding="utf-8")
+        post = frontmatter.Post("")
+        post.metadata.update(owned)
+        path.write_text(frontmatter.dumps(post) + "\n", encoding="utf-8")
         return "created"
 
-    content = path.read_text(encoding="utf-8")
-
-    if not content.startswith("---"):
-        # No existing frontmatter — prepend it
-        updated = new_frontmatter + "\n" + content
-        path.write_text(updated, encoding="utf-8")
-        return "updated"
-
-    # Split: opening ---, frontmatter lines, closing ---, body
-    lines = content.splitlines(keepends=True)
+    original = path.read_text(encoding="utf-8")
     try:
-        close_idx = next(i for i, ln in enumerate(lines) if i > 0 and ln.rstrip("\n") == "---")
-    except StopIteration:
-        # Malformed frontmatter (no closing ---) — prepend fresh block
-        updated = new_frontmatter + "\n" + content
-        path.write_text(updated, encoding="utf-8")
-        return "updated"
+        post = frontmatter.loads(original)
+    except Exception:
+        # Unparseable frontmatter (e.g. unquoted @ written by older code).
+        # Salvage the body by finding the closing --- manually.
+        lines = original.splitlines(keepends=True)
+        body = original
+        if lines and lines[0].strip() == "---":
+            try:
+                close = next(i for i, ln in enumerate(lines) if i > 0 and ln.strip() == "---")
+                body = "".join(lines[close + 1 :])
+            except StopIteration:
+                pass
+        post = frontmatter.Post(body)
 
-    fm_lines = lines[1:close_idx]  # lines between the two ---
-    body_lines = lines[close_idx + 1 :]  # everything after closing ---
+    for key in owned_keys:
+        post.metadata.pop(key, None)
+    post.metadata.update(owned)
 
-    new_fm_block = _rewrite_frontmatter(fm_lines, new_frontmatter, owned_keys)
-    updated = new_fm_block + "".join(body_lines)
-
-    if updated == content:
+    updated = frontmatter.dumps(post) + "\n"
+    if updated == original:
         return "unchanged"
 
     path.write_text(updated, encoding="utf-8")
     return "updated"
-
-
-# ---------------------------------------------------------------------------
-# Public entry point
-# ---------------------------------------------------------------------------
 
 
 def sync_registry(archive_dir: Path, db_path: Path) -> tuple[int, int, int]:
@@ -135,15 +84,11 @@ def sync_registry(archive_dir: Path, db_path: Path) -> tuple[int, int, int]:
 
     created = updated = unchanged = 0
 
-    kinds: list[KindRecord] = fetch_kinds(db_path)
-
-    for kind in kinds:
+    for kind in fetch_kinds(db_path):
         kind_dir = archive_dir / kind.plural.title()
         kind_dir.mkdir(parents=True, exist_ok=True)
 
-        # MANIFEST.md
-        manifest_path = kind_dir / "MANIFEST.md"
-        status = _sync_file(manifest_path, _build_manifest_frontmatter(kind), _MANIFEST_OWNED)
+        status = _sync_file(kind_dir / "MANIFEST.md", _manifest_metadata(kind), _MANIFEST_OWNED)
         if status == "created":
             created += 1
         elif status == "updated":
@@ -151,11 +96,8 @@ def sync_registry(archive_dir: Path, db_path: Path) -> tuple[int, int, int]:
         else:
             unchanged += 1
 
-        # Instance files
-        instances: list[InstanceRecord] = fetch_instances(kind.id, db_path)
-        for instance in instances:
-            inst_path = kind_dir / f"{instance.name}.md"
-            status = _sync_file(inst_path, _build_instance_frontmatter(instance), _INSTANCE_OWNED)
+        for instance in fetch_instances(kind.id, db_path):
+            status = _sync_file(kind_dir / f"{instance.name}.md", _instance_metadata(instance), _INSTANCE_OWNED)
             if status == "created":
                 created += 1
             elif status == "updated":

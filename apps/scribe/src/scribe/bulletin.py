@@ -8,6 +8,8 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+import frontmatter as fm_lib
+
 if TYPE_CHECKING:
     from scribe.cartographer import Chunk
     from scribe.llm.base import LLMBackend
@@ -94,9 +96,12 @@ def run_bulletin(
     if frontmatter:
         all_tags = ["#daily-bulletin"] + sorted({f"#{t}" for note in notes for t in note.tags})
         all_refs = sorted({f"@{r}" for note in notes for r in note.references})
-        tag_lines = "".join(f"\n  - {t}" for t in all_tags)
-        ref_block = ("refs:" + "".join(f"\n  - {r}" for r in all_refs) + "\n") if all_refs else ""
-        fm = f"---\ndate: {to_date}\ntags:{tag_lines}\n{ref_block}---\n\n"
+        meta: dict[str, object] = {"date": to_date, "tags": all_tags}
+        if all_refs:
+            meta["refs"] = all_refs
+        post = fm_lib.Post("")
+        post.metadata.update(meta)
+        fm = fm_lib.dumps(post) + "\n\n"
 
     header = f"# {title}\n\n*Generated: {generated}*  \n*Period: {period}*  \n*Notes: {len(notes)}*\n\n---\n\n"
 

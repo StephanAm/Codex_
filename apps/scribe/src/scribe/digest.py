@@ -8,6 +8,8 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+import frontmatter as fm_lib
+
 if TYPE_CHECKING:
     from scribe.cartographer import Chunk
     from scribe.llm.base import LLMBackend
@@ -102,7 +104,9 @@ def run_digest(
     fm = ""
     if frontmatter:
         week_range = f"{from_date}--{to_date}" if from_date != to_date else from_date
-        fm = f"---\ndate: {from_date}\nweek: {week_range}\ntags:\n  - weekly-digest\n---\n\n"
+        post = fm_lib.Post("")
+        post.metadata.update({"date": from_date, "week": week_range, "tags": ["#weekly-digest"]})
+        fm = fm_lib.dumps(post) + "\n\n"
 
     meta_lines = [
         f"# {title}",
