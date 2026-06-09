@@ -182,6 +182,7 @@ class InstanceRecord:
     name: str
     description: str
     references: list[str] = field(default_factory=list)
+    properties: dict[str, str] = field(default_factory=dict)
 
 
 def fetch_kinds(db_path: Path) -> list[KindRecord]:
@@ -196,7 +197,7 @@ def fetch_kinds(db_path: Path) -> list[KindRecord]:
 
 
 def fetch_instances(kind_id: int, db_path: Path) -> list[InstanceRecord]:
-    """Return all Instances of a Kind, with their references, ordered by name."""
+    """Return all Instances of a Kind, with their references and properties, ordered by name."""
     if not db_path.exists():
         raise RuntimeError(f"Cartographer DB not found at {db_path}. Run `carto sync pull` to build the local mirror.")
     conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
@@ -215,6 +216,24 @@ def fetch_instances(kind_id: int, db_path: Path) -> list[InstanceRecord]:
         """,
         (kind_id,),
     ).fetchall()
+
+    # Fetch all properties for this kind's instances in one query (name-ordered so
+    # the resulting dict is stable).
+    props_by_id: dict[int, dict[str, str]] = {}
+    has_props = conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='instance_properties'").fetchone()
+    if has_props:
+        for pr in conn.execute(
+            """
+            SELECT ip.instance_id, ip.name, ip.value
+            FROM instance_properties ip
+            JOIN instances i ON i.id = ip.instance_id
+            WHERE i.instance_kind_id = ?
+            ORDER BY ip.name
+            """,
+            (kind_id,),
+        ):
+            props_by_id.setdefault(int(pr["instance_id"]), {})[pr["name"]] = pr["value"]
+
     conn.close()
     return [
         InstanceRecord(
@@ -222,6 +241,7 @@ def fetch_instances(kind_id: int, db_path: Path) -> list[InstanceRecord]:
             name=r["name"],
             description=r["description"] or "",
             references=_split(r["ref_names"]),
+            properties=props_by_id.get(int(r["id"]), {}),
         )
         for r in rows
     ]

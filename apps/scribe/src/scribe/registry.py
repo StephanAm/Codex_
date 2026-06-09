@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
@@ -13,7 +14,7 @@ import frontmatter
 if TYPE_CHECKING:
     from scribe.store import InstanceRecord, KindRecord
 
-_INSTANCE_OWNED: frozenset[str] = frozenset({"name", "description", "refs"})
+_INSTANCE_OWNED: frozenset[str] = frozenset({"name", "description", "refs", "synced_at"})
 _MANIFEST_OWNED: frozenset[str] = frozenset({"name", "plural", "description"})
 
 SyncStatus = Literal["created", "updated", "unchanged"]
@@ -27,6 +28,9 @@ def _instance_metadata(instance: InstanceRecord) -> dict[str, object]:
     refs = sorted(f"@{r}" for r in instance.references)
     if refs:
         meta["refs"] = refs
+    if instance.properties:
+        meta.update(instance.properties)
+    meta["synced_at"] = datetime.now(UTC).isoformat()
     return meta
 
 
