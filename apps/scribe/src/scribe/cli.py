@@ -999,13 +999,26 @@ def registry() -> None:
 
 @registry.command("push")
 @click.option("--dry-run", is_flag=True, help="Print what would be created/updated without writing.")
-def registry_push(dry_run: bool) -> None:
+@click.option(
+    "--strategy",
+    default="timestamp",
+    type=click.Choice(["timestamp", "local", "remote", "clobber"], case_sensitive=False),
+    help=(
+        "Conflict resolution for KVP properties. "
+        "timestamp: local wins if updated after last sync (default). "
+        "local: local always wins. "
+        "remote: remote always wins. "
+        "clobber: clear frontmatter and rewrite from local."
+    ),
+    show_default=True,
+)
+def registry_push(dry_run: bool, strategy: str) -> None:
     """Push Mnemo Registry (Kinds + Instances) into the Obsidian vault.
 
     Creates a folder per Kind and a file per Instance under archive_dir.
     Existing files are updated idempotently: only name, description, refs,
     and properties are overwritten; body content and other frontmatter are
-    preserved.
+    preserved (except with --strategy=clobber).
     """
     from scribe.config import get_archive_dir, get_cartographer_db
 
@@ -1022,6 +1035,7 @@ def registry_push(dry_run: bool) -> None:
     if dry_run:
         from scribe.store import fetch_instances, fetch_kinds
 
+        click.echo(f"Strategy: {strategy}")
         for kind in fetch_kinds(db_path):
             kind_dir = archive_dir / kind.plural.title()
             click.echo(f"[kind]     {kind_dir / 'MANIFEST.md'}")
@@ -1031,7 +1045,7 @@ def registry_push(dry_run: bool) -> None:
 
     from scribe.registry import sync_registry
 
-    created, updated, unchanged = sync_registry(archive_dir, db_path)
+    created, updated, unchanged = sync_registry(archive_dir, db_path, strategy=strategy)  # type: ignore[arg-type]
     click.echo(f"Registry sync: {created} created, {updated} updated, {unchanged} unchanged", err=True)
 
 
