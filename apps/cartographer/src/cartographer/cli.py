@@ -10,7 +10,7 @@ import click
 from cartographer import __version__
 
 if TYPE_CHECKING:
-    from codex_core.models import Instance, InstanceKind
+    from codex_core.models import Instance, InstanceKind, InstanceProperty
 from cartographer.config import (
     get_drive_folder,
     get_local_folder_path,
@@ -582,6 +582,16 @@ def _find_instance(name: str, kind_id: int | None = None) -> Instance:
     return matches[0]
 
 
+def _find_property(instance_id: int, key: str) -> InstanceProperty:
+    from codex_core import store
+
+    all_props = store.list_instance_properties(instance_id=instance_id, db_path=get_db_path())
+    matches = [p for p in all_props if p.name.lower() == key.lower()]
+    if not matches:
+        raise click.ClickException(f"Property '{key}' not found on this instance.")
+    return matches[0]
+
+
 def _kind_name_by_id(kind_id: int | None) -> str:
     if kind_id is None:
         return ""
@@ -746,13 +756,20 @@ def instances_add(name: str, kind_name: str, description: str, refs: tuple[str, 
 @click.option("--kind", "kind_name", default=None, metavar="KIND", help="Kind name to disambiguate.")
 def instances_show(name: str, kind_name: str | None) -> None:
     """Show details for instance NAME."""
+    from codex_core import store
+
     kind_id = _find_kind(kind_name).id if kind_name else None
     inst = _find_instance(name, kind_id)
+    props = store.list_instance_properties(instance_id=inst.id, db_path=get_db_path())
     click.echo(f"name:        {inst.name}")
     click.echo(f"kind:        {inst.type.name}")
     click.echo(f"description: {inst.description or '(none)'}")
     refs = ", ".join(inst.references) if inst.references else "(none)"
     click.echo(f"references:  {refs}")
+    if props:
+        click.echo("properties:")
+        for p in props:
+            click.echo(f"  {p.name}: {p.value}")
     click.echo(f"created:     {inst.created_at}")
     click.echo(f"updated:     {inst.updated_at}")
 
@@ -806,6 +823,97 @@ def instances_delete(name: str, kind_name: str | None, yes: bool) -> None:
         click.confirm(f"Delete instance '{inst.name}' [{inst.type.name}]?", abort=True)
     store.delete_instance(instance_id=inst.id, db_path=get_db_path())
     click.echo(f"Instance '{inst.name}' deleted.")
+
+
+# ---- instance properties ----------------------------------------------------
+
+
+@instances.group()
+def properties() -> None:
+    """Manage properties (key-value pairs) on a Registry instance."""
+
+
+@properties.command("list")
+@click.argument("instance_name")
+@click.option("--kind", "kind_name", default=None, metavar="KIND", help="Kind name to disambiguate.")
+def properties_list(instance_name: str, kind_name: str | None) -> None:
+    """List all properties on instance INSTANCE_NAME."""
+    from codex_core import store
+
+    kind_id = _find_kind(kind_name).id if kind_name else None
+    inst = _find_instance(instance_name, kind_id)
+    props = store.list_instance_properties(instance_id=inst.id, db_path=get_db_path())
+    if not props:
+        click.echo(f"No properties on '{inst.name}'.")
+        return
+    for p in props:
+        click.echo(f"{p.name}: {p.value}")
+
+
+@properties.command("add")
+@click.argument("instance_name")
+@click.argument("key")
+@click.argument("value")
+@click.option("--kind", "kind_name", default=None, metavar="KIND", help="Kind name to disambiguate.")
+def properties_add(instance_name: str, key: str, value: str, kind_name: str | None) -> None:
+    """Add property KEY=VALUE to instance INSTANCE_NAME."""
+    from codex_core import store
+
+    kind_id = _find_kind(kind_name).id if kind_name else None
+    inst = _find_instance(instance_name, kind_id)
+    try:
+        prop = store.create_instance_property(instance_id=inst.id, name=key, value=value, db_path=get_db_path())
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(f"Property '{prop.name}' added to '{inst.name}'.")
+
+
+@properties.command("edit")
+@click.argument("instance_name")
+@click.argument("key")
+@click.option("--name", "new_key", default=None, metavar="KEY", help="New property name.")
+@click.option("--value", "new_value", default=None, metavar="VALUE", help="New property value.")
+@click.option("--kind", "kind_name", default=None, metavar="KIND", help="Kind name to disambiguate.")
+def properties_edit(
+    instance_name: str,
+    key: str,
+    new_key: str | None,
+    new_value: str | None,
+    kind_name: str | None,
+) -> None:
+    """Update property KEY on instance INSTANCE_NAME."""
+    from codex_core import store
+
+    kind_id = _find_kind(kind_name).id if kind_name else None
+    inst = _find_instance(instance_name, kind_id)
+    prop = _find_property(inst.id, key)
+    updated = store.update_instance_property(
+        property_id=prop.id,
+        name=new_key if new_key is not None else prop.name,
+        value=new_value if new_value is not None else prop.value,
+        db_path=get_db_path(),
+    )
+    if updated is None:
+        raise click.ClickException(f"Property '{key}' not found.")
+    click.echo(f"Property '{updated.name}' updated.")
+
+
+@properties.command("delete")
+@click.argument("instance_name")
+@click.argument("key")
+@click.option("--kind", "kind_name", default=None, metavar="KIND", help="Kind name to disambiguate.")
+@click.option("--yes", is_flag=True, help="Skip confirmation prompt.")
+def properties_delete(instance_name: str, key: str, kind_name: str | None, yes: bool) -> None:
+    """Delete property KEY from instance INSTANCE_NAME."""
+    from codex_core import store
+
+    kind_id = _find_kind(kind_name).id if kind_name else None
+    inst = _find_instance(instance_name, kind_id)
+    prop = _find_property(inst.id, key)
+    if not yes:
+        click.confirm(f"Delete property '{prop.name}' from '{inst.name}'?", abort=True)
+    store.delete_instance_property(property_id=prop.id, db_path=get_db_path())
+    click.echo(f"Property '{prop.name}' deleted.")
 
 
 # ---------------------------------------------------------------------------
