@@ -169,6 +169,19 @@ def _migrate(conn: sqlite3.Connection) -> None:
             reference_id INTEGER NOT NULL REFERENCES "references"(id) ON DELETE CASCADE,
             PRIMARY KEY (instance_id, reference_id)
         );
+        CREATE TABLE IF NOT EXISTS instance_properties (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            uuid        TEXT NOT NULL UNIQUE,
+            instance_id INTEGER NOT NULL REFERENCES instances(id) ON DELETE CASCADE,
+            name        TEXT NOT NULL,
+            value       TEXT NOT NULL DEFAULT '',
+            created_at  TEXT NOT NULL,
+            updated_at  TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS deleted_instance_properties (
+            uuid       TEXT PRIMARY KEY,
+            deleted_at TEXT NOT NULL
+        );
     """)
 
     # Add sync columns to instance_kinds

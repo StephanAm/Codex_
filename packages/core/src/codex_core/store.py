@@ -10,7 +10,7 @@ from uuid import uuid4
 
 from .dates import normalize_dates
 from .db import connect
-from .models import AtlasNode, AtlasPage, Instance, InstanceKind, Note, Reference
+from .models import AtlasNode, AtlasPage, Instance, InstanceKind, InstanceProperty, Note, Reference
 from .parser import normalise, parse
 
 
@@ -475,6 +475,96 @@ def delete_instance(instance_id: int, db_path: Path | None = None) -> bool:
         )
     conn.commit()
     return cur.rowcount > 0
+
+
+def create_instance_property(
+    instance_id: int,
+    name: str,
+    value: str = "",
+    db_path: Path | None = None,
+) -> InstanceProperty:
+    conn = connect(db_path)
+    now = datetime.now(UTC).isoformat()
+    prop_uuid = str(uuid4())
+    conn.execute(
+        "INSERT INTO instance_properties (uuid, instance_id, name, value, created_at, updated_at)"
+        " VALUES (?, ?, ?, ?, ?, ?)",
+        (prop_uuid, instance_id, name.strip(), value.strip(), now, now),
+    )
+    conn.commit()
+    row = conn.execute("SELECT * FROM instance_properties WHERE uuid = ?", (prop_uuid,)).fetchone()
+    return _load_instance_property(row)
+
+
+def get_instance_property(
+    property_id: int,
+    db_path: Path | None = None,
+) -> InstanceProperty | None:
+    conn = connect(db_path)
+    row = conn.execute("SELECT * FROM instance_properties WHERE id = ?", (property_id,)).fetchone()
+    return _load_instance_property(row) if row else None
+
+
+def list_instance_properties(
+    instance_id: int,
+    db_path: Path | None = None,
+) -> list[InstanceProperty]:
+    conn = connect(db_path)
+    rows = conn.execute(
+        "SELECT * FROM instance_properties WHERE instance_id = ? ORDER BY name",
+        (instance_id,),
+    ).fetchall()
+    return [_load_instance_property(r) for r in rows]
+
+
+def update_instance_property(
+    property_id: int,
+    name: str,
+    value: str,
+    db_path: Path | None = None,
+) -> InstanceProperty | None:
+    conn = connect(db_path)
+    now = datetime.now(UTC).isoformat()
+    cur = conn.execute(
+        "UPDATE instance_properties SET name = ?, value = ?, updated_at = ? WHERE id = ?",
+        (name.strip(), value.strip(), now, property_id),
+    )
+    if cur.rowcount == 0:
+        return None
+    conn.commit()
+    row = conn.execute("SELECT * FROM instance_properties WHERE id = ?", (property_id,)).fetchone()
+    return _load_instance_property(row)
+
+
+def delete_instance_property(
+    property_id: int,
+    db_path: Path | None = None,
+) -> bool:
+    conn = connect(db_path)
+    row = conn.execute("SELECT uuid FROM instance_properties WHERE id = ?", (property_id,)).fetchone()
+    if row is None:
+        return False
+    now = datetime.now(UTC).isoformat()
+    cur = conn.execute("DELETE FROM instance_properties WHERE id = ?", (property_id,))
+    if cur.rowcount and row["uuid"]:
+        conn.execute(
+            "INSERT OR IGNORE INTO deleted_instance_properties (uuid, deleted_at) VALUES (?, ?)",
+            (row["uuid"], now),
+        )
+    conn.commit()
+    return cur.rowcount > 0
+
+
+def _load_instance_property(row: sqlite3.Row) -> InstanceProperty:
+    return InstanceProperty(
+        id=row["id"],
+        uuid=row["uuid"],
+        instance_id=row["instance_id"],
+        name=row["name"],
+        value=row["value"],
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+    )
 
 
 def get_sync_folder(db_path: Path | None = None) -> str:

@@ -11,10 +11,13 @@ from codex_core.db import connect
 from codex_core.store import (
     add_note,
     create_instance,
+    create_instance_property,
     create_type,
     delete_instance,
+    delete_instance_property,
     delete_note,
     delete_type,
+    list_instance_properties,
     list_instances,
     list_notes,
     list_types,
@@ -271,6 +274,93 @@ def test_merge_kinds_and_instances_idempotent(local_db: Path, remote_db: Path) -
 # ---------------------------------------------------------------------------
 # Order-of-operations: instance tombstone before kind tombstone
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# Instance property merge tests
+# ---------------------------------------------------------------------------
+
+
+def test_merge_adds_new_property(local_db: Path, remote_db: Path) -> None:
+    k = create_type("People", db_path=remote_db)
+    inst = create_instance("Alice", k.id, db_path=remote_db)
+    create_instance_property(inst.id, "role", "CEO", db_path=remote_db)
+    local_conn = connect(local_db)
+    result = merge_remote(local_conn, _db_bytes(remote_db))
+    assert result.properties_added == 1
+    local_inst = list_instances(db_path=local_db)[0]
+    props = list_instance_properties(local_inst.id, db_path=local_db)
+    assert len(props) == 1
+    assert props[0].name == "role"
+    assert props[0].value == "CEO"
+
+
+def test_merge_property_fk_remapped(local_db: Path, remote_db: Path) -> None:
+    # Verify the property's instance_id is the local integer ID, not the remote one.
+    k = create_type("People", db_path=remote_db)
+    inst = create_instance("Alice", k.id, db_path=remote_db)
+    create_instance_property(inst.id, "role", "CEO", db_path=remote_db)
+    local_conn = connect(local_db)
+    merge_remote(local_conn, _db_bytes(remote_db))
+    local_inst = list_instances(db_path=local_db)[0]
+    props = list_instance_properties(local_inst.id, db_path=local_db)
+    assert props[0].instance_id == local_inst.id
+
+
+def test_merge_property_last_write_wins(local_db: Path, remote_db: Path) -> None:
+    k = create_type("People", db_path=remote_db)
+    inst = create_instance("Alice", k.id, db_path=remote_db)
+    create_instance_property(inst.id, "role", "CEO", db_path=remote_db)
+    shutil.copy(remote_db, local_db)
+    time.sleep(0.01)
+    from codex_core.store import update_instance_property
+
+    remote_prop_id = connect(remote_db).execute("SELECT id FROM instance_properties").fetchone()["id"]
+    update_instance_property(remote_prop_id, "role", "COO", db_path=remote_db)
+    local_conn = connect(local_db)
+    result = merge_remote(local_conn, _db_bytes(remote_db))
+    assert result.properties_updated == 1
+    local_inst = list_instances(db_path=local_db)[0]
+    props = list_instance_properties(local_inst.id, db_path=local_db)
+    assert props[0].value == "COO"
+
+
+def test_merge_property_tombstone_deletes_local(local_db: Path, remote_db: Path) -> None:
+    k = create_type("People", db_path=local_db)
+    inst = create_instance("Alice", k.id, db_path=local_db)
+    create_instance_property(inst.id, "role", "CEO", db_path=local_db)
+    shutil.copy(local_db, remote_db)
+    remote_prop_id = connect(remote_db).execute("SELECT id FROM instance_properties").fetchone()["id"]
+    delete_instance_property(remote_prop_id, db_path=remote_db)
+    local_conn = connect(local_db)
+    result = merge_remote(local_conn, _db_bytes(remote_db))
+    assert result.properties_deleted == 1
+    assert list_instance_properties(inst.id, db_path=local_db) == []
+
+
+def test_merge_property_tombstone_prevents_reimport(local_db: Path, remote_db: Path) -> None:
+    k = create_type("People", db_path=local_db)
+    inst = create_instance("Alice", k.id, db_path=local_db)
+    create_instance_property(inst.id, "role", "CEO", db_path=local_db)
+    shutil.copy(local_db, remote_db)
+    remote_prop_id = connect(remote_db).execute("SELECT id FROM instance_properties").fetchone()["id"]
+    delete_instance_property(remote_prop_id, db_path=remote_db)
+    local_conn = connect(local_db)
+    merge_remote(local_conn, _db_bytes(remote_db))
+    result = merge_remote(local_conn, _db_bytes(remote_db))
+    assert result.properties_added == 0
+    assert list_instance_properties(inst.id, db_path=local_db) == []
+
+
+def test_merge_property_skipped_when_not_newer(local_db: Path, remote_db: Path) -> None:
+    k = create_type("People", db_path=remote_db)
+    inst = create_instance("Alice", k.id, db_path=remote_db)
+    create_instance_property(inst.id, "role", "CEO", db_path=remote_db)
+    shutil.copy(remote_db, local_db)
+    local_conn = connect(local_db)
+    result = merge_remote(local_conn, _db_bytes(remote_db))
+    assert result.properties_added == 0
+    assert result.properties_updated == 0
 
 
 def test_merge_instance_then_kind_tombstones(local_db: Path, remote_db: Path) -> None:

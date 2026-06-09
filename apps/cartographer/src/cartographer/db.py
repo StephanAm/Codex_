@@ -97,6 +97,19 @@ def _migrate(conn: sqlite3.Connection) -> None:
             uuid       TEXT PRIMARY KEY,
             deleted_at TEXT NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS instance_properties (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            uuid        TEXT NOT NULL UNIQUE,
+            instance_id INTEGER NOT NULL REFERENCES instances(id) ON DELETE CASCADE,
+            name        TEXT NOT NULL,
+            value       TEXT NOT NULL DEFAULT '',
+            created_at  TEXT NOT NULL,
+            updated_at  TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS deleted_instance_properties (
+            uuid       TEXT PRIMARY KEY,
+            deleted_at TEXT NOT NULL
+        );
         CREATE TABLE IF NOT EXISTS atlas_nodes (
             id         INTEGER PRIMARY KEY AUTOINCREMENT,
             uuid       TEXT NOT NULL UNIQUE,

@@ -10,16 +10,21 @@ from codex_core.db import connect
 from codex_core.store import (
     add_note,
     create_instance,
+    create_instance_property,
     create_type,
     delete_instance,
+    delete_instance_property,
     delete_note,
     delete_type,
     get_default_tags,
+    get_instance_property,
+    list_instance_properties,
     list_notes,
     list_references,
     search_notes,
     set_default_tags,
     update_instance,
+    update_instance_property,
     update_note,
     update_type,
 )
@@ -242,3 +247,87 @@ def test_set_default_tags_clear(db: Path) -> None:
     set_default_tags(["work"], db_path=db)
     set_default_tags([], db_path=db)
     assert get_default_tags(db_path=db) == []
+
+
+# ---------------------------------------------------------------------------
+# Instance properties
+# ---------------------------------------------------------------------------
+
+
+def test_create_instance_property(db: Path) -> None:
+    k = create_type("People", db_path=db)
+    inst = create_instance("Alice", k.id, db_path=db)
+    prop = create_instance_property(inst.id, "role", "CEO", db_path=db)
+    assert prop.id > 0
+    assert prop.uuid != ""
+    assert prop.instance_id == inst.id
+    assert prop.name == "role"
+    assert prop.value == "CEO"
+    assert prop.created_at != ""
+    assert prop.created_at == prop.updated_at
+
+
+def test_get_instance_property(db: Path) -> None:
+    k = create_type("People", db_path=db)
+    inst = create_instance("Alice", k.id, db_path=db)
+    prop = create_instance_property(inst.id, "role", "CEO", db_path=db)
+    fetched = get_instance_property(prop.id, db_path=db)
+    assert fetched is not None
+    assert fetched.id == prop.id
+    assert fetched.name == "role"
+
+
+def test_get_instance_property_missing_returns_none(db: Path) -> None:
+    assert get_instance_property(9999, db_path=db) is None
+
+
+def test_list_instance_properties(db: Path) -> None:
+    k = create_type("People", db_path=db)
+    inst = create_instance("Alice", k.id, db_path=db)
+    other = create_instance("Bob", k.id, db_path=db)
+    create_instance_property(inst.id, "role", "CEO", db_path=db)
+    create_instance_property(inst.id, "birth_date", "1980-01-01", db_path=db)
+    create_instance_property(other.id, "role", "CTO", db_path=db)
+    props = list_instance_properties(inst.id, db_path=db)
+    assert len(props) == 2
+    assert all(p.instance_id == inst.id for p in props)
+    assert [p.name for p in props] == ["birth_date", "role"]  # ordered by name
+
+
+def test_update_instance_property(db: Path) -> None:
+    k = create_type("People", db_path=db)
+    inst = create_instance("Alice", k.id, db_path=db)
+    prop = create_instance_property(inst.id, "role", "CEO", db_path=db)
+    time.sleep(0.01)
+    updated = update_instance_property(prop.id, "role", "COO", db_path=db)
+    assert updated is not None
+    assert updated.value == "COO"
+    assert updated.updated_at > prop.updated_at
+
+
+def test_update_instance_property_missing_returns_none(db: Path) -> None:
+    assert update_instance_property(9999, "x", "y", db_path=db) is None
+
+
+def test_delete_instance_property_writes_tombstone(db: Path) -> None:
+    k = create_type("People", db_path=db)
+    inst = create_instance("Alice", k.id, db_path=db)
+    prop = create_instance_property(inst.id, "role", "CEO", db_path=db)
+    result = delete_instance_property(prop.id, db_path=db)
+    assert result is True
+    assert get_instance_property(prop.id, db_path=db) is None
+    row = connect(db).execute("SELECT * FROM deleted_instance_properties WHERE uuid = ?", (prop.uuid,)).fetchone()
+    assert row is not None
+
+
+def test_delete_instance_property_missing_returns_false(db: Path) -> None:
+    assert delete_instance_property(9999, db_path=db) is False
+
+
+def test_delete_instance_cascades_to_properties(db: Path) -> None:
+    k = create_type("People", db_path=db)
+    inst = create_instance("Alice", k.id, db_path=db)
+    create_instance_property(inst.id, "role", "CEO", db_path=db)
+    delete_instance(inst.id, db_path=db)
+    props = list_instance_properties(inst.id, db_path=db)
+    assert props == []

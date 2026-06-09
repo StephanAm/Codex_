@@ -47,6 +47,17 @@ class Instance:
 
 
 @dataclass
+class InstanceProperty:
+    id: int
+    uuid: str
+    instance_id: int
+    name: str
+    value: str
+    created_at: str = ""
+    updated_at: str = ""
+
+
+@dataclass
 class AtlasNode:
     id: int
     uuid: str

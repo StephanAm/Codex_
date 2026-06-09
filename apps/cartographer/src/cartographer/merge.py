@@ -32,6 +32,9 @@ class MergeResult:
     atlas_pages_added: int = 0
     atlas_pages_updated: int = 0
     atlas_pages_deleted: int = 0
+    properties_added: int = 0
+    properties_updated: int = 0
+    properties_deleted: int = 0
 
     @property
     def total_changes(self) -> int:
@@ -51,6 +54,9 @@ class MergeResult:
             + self.atlas_pages_added
             + self.atlas_pages_updated
             + self.atlas_pages_deleted
+            + self.properties_added
+            + self.properties_updated
+            + self.properties_deleted
         )
 
 
@@ -87,11 +93,15 @@ def merge(local: sqlite3.Connection, source: sqlite3.Connection) -> MergeResult:
     """
     result = MergeResult()
 
+    # Property tombstones before instance tombstones so each deletion is recorded;
+    # the subsequent instance CASCADE will clean up any remaining property rows.
+    _apply_instance_property_tombstones(local, source, result)
     # Delete order matters: instances before kinds (RESTRICT FK).
     _apply_instance_tombstones(local, source, result)
     _apply_kind_tombstones(local, source, result)
     _merge_instance_kinds(local, source, result)
     _merge_instances(local, source, result)
+    _merge_instance_properties(local, source, result)
 
     _apply_note_tombstones(local, source, result)
     _merge_notes(local, source, result)
@@ -286,6 +296,53 @@ def _merge_instances(local: sqlite3.Connection, source: sqlite3.Connection, resu
             local.execute("DELETE FROM instance_references WHERE instance_id = ?", (local_id,))
             _copy_instance_references(source, local, row["id"], local_id)
             result.instances_updated += 1
+
+
+def _apply_instance_property_tombstones(
+    local: sqlite3.Connection, source: sqlite3.Connection, result: MergeResult
+) -> None:
+    for row in source.execute("SELECT uuid, deleted_at FROM deleted_instance_properties"):
+        cur = local.execute("DELETE FROM instance_properties WHERE uuid = ?", (row["uuid"],))
+        if cur.rowcount:
+            result.properties_deleted += 1
+        local.execute(
+            "INSERT OR IGNORE INTO deleted_instance_properties (uuid, deleted_at) VALUES (?, ?)",
+            (row["uuid"], row["deleted_at"]),
+        )
+
+
+def _merge_instance_properties(local: sqlite3.Connection, source: sqlite3.Connection, result: MergeResult) -> None:
+    tombstoned = {r["uuid"] for r in local.execute("SELECT uuid FROM deleted_instance_properties")}
+
+    for row in source.execute("SELECT * FROM instance_properties"):
+        uuid = row["uuid"]
+        if not uuid or uuid in tombstoned:
+            continue
+
+        source_instance = source.execute("SELECT uuid FROM instances WHERE id = ?", (row["instance_id"],)).fetchone()
+        if not source_instance:
+            continue  # orphaned property; skip
+        local_instance = local.execute("SELECT id FROM instances WHERE uuid = ?", (source_instance["uuid"],)).fetchone()
+        if not local_instance:
+            continue  # instance not present locally; skip
+        local_instance_id = local_instance["id"]
+
+        local_row = local.execute("SELECT id, updated_at FROM instance_properties WHERE uuid = ?", (uuid,)).fetchone()
+
+        if local_row is None:
+            local.execute(
+                "INSERT INTO instance_properties"
+                " (uuid, instance_id, name, value, created_at, updated_at)"
+                " VALUES (?, ?, ?, ?, ?, ?)",
+                (uuid, local_instance_id, row["name"], row["value"], row["created_at"], row["updated_at"]),
+            )
+            result.properties_added += 1
+        elif row["updated_at"] > local_row["updated_at"]:
+            local.execute(
+                "UPDATE instance_properties SET name = ?, value = ?, updated_at = ? WHERE uuid = ?",
+                (row["name"], row["value"], row["updated_at"], uuid),
+            )
+            result.properties_updated += 1
 
 
 def _copy_instance_references(
