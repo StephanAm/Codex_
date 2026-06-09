@@ -7,7 +7,9 @@ Configuration accessors for Cartographer's source settings.
 All values are stored in the `config` table as key-value pairs.
 """
 
+import socket
 from pathlib import Path
+from uuid import uuid4
 
 from cartographer.db import connect
 
@@ -39,6 +41,18 @@ def _set(key: str, value: str, db_path: Path | None = None) -> None:
 # ---------------------------------------------------------------------------
 # Source type
 # ---------------------------------------------------------------------------
+
+
+def get_device_id(db_path: Path | None = None) -> str:
+    conn = connect(db_path)
+    row = conn.execute("SELECT value FROM config WHERE key = 'device_id'").fetchone()
+    if row:
+        return str(row["value"])
+    host = socket.gethostname().split(".")[0][:12]
+    device_id = f"carto-{host}-{str(uuid4())[:8]}"
+    conn.execute("INSERT INTO config (key, value) VALUES ('device_id', ?)", (device_id,))
+    conn.commit()
+    return device_id
 
 
 def get_source_type(db_path: Path | None = None) -> str:

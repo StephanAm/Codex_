@@ -20,6 +20,7 @@ from cartographer.db import connect, get_db_path
 from cartographer.merge import MergeResult
 from cartographer.sync import SyncReport
 from cartographer.sync import sync as do_sync
+from cartographer.sync import sync_push as do_sync_push
 
 # ---------------------------------------------------------------------------
 # Root
@@ -89,6 +90,18 @@ def sync_pull() -> None:
         raise click.ClickException(str(exc)) from exc
 
     _print_report(report)
+
+
+@sync.command("push")
+def sync_push() -> None:
+    """Upload the local mirror to the configured source as this device's DB."""
+    try:
+        device_id, source_type = do_sync_push()
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(f"pushed: {device_id} → {source_type}")
 
 
 @sync.command("auth")
