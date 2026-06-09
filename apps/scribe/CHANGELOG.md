@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.2.8] — 2026-06-09
+
+- Add registry sync command and data models for Kinds and Instances
+
 ## [1.2.7] — 2026-06-08
 
 - Rename output files for bulletins and digests to include descriptive suffixes
