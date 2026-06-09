@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.1.7] — 2026-06-09
+
+- Refactor optional dependencies in pyproject.toml and uv.lock, removing google-drive support
+
 ## [1.1.6] — 2026-06-09
 
 - Add frontmatter option to bulletin generation and archive directory configuration
