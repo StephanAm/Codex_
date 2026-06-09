@@ -988,6 +988,47 @@ def digest(
 
 
 # ---------------------------------------------------------------------------
+# registry
+# ---------------------------------------------------------------------------
+
+
+@main.command()
+@click.option("--dry-run", is_flag=True, help="Print what would be created/updated without writing.")
+def registry(dry_run: bool) -> None:
+    """Sync Mnemo Registry (Kinds + Instances) into the Obsidian vault.
+
+    Creates a folder per Kind and a file per Instance under archive_dir.
+    Existing files are updated idempotently: only name, description, and refs
+    are overwritten; body content and other frontmatter are preserved.
+    """
+    from scribe.config import get_archive_dir, get_cartographer_db
+
+    archive_dir = get_archive_dir()
+    if archive_dir is None:
+        click.echo("Error: archive_dir is not configured. Set [output] archive_dir in config.toml.", err=True)
+        sys.exit(1)
+
+    db_path = get_cartographer_db()
+    if not db_path.exists():
+        click.echo(f"Error: Cartographer DB not found at {db_path}. Run `carto sync pull`.", err=True)
+        sys.exit(1)
+
+    if dry_run:
+        from scribe.store import fetch_instances, fetch_kinds
+
+        for kind in fetch_kinds(db_path):
+            click.echo(f"[kind]     {archive_dir / kind.plural / 'MANIFEST.md'}")
+            for instance in fetch_instances(kind.id, db_path):
+                click.echo(f"[instance] {archive_dir / kind.plural / (instance.name + '.md')}")
+        sys.exit(0)
+
+    from scribe.registry import sync_registry
+
+    created, updated, unchanged = sync_registry(archive_dir, db_path)
+    click.echo(f"Registry sync: {created} created, {updated} updated, {unchanged} unchanged", err=True)
+
+
+# ---------------------------------------------------------------------------
 # config
 # ---------------------------------------------------------------------------
 

@@ -168,6 +168,65 @@ def fetch_notes_by_ref(
     ]
 
 
+@dataclass
+class KindRecord:
+    id: int
+    name: str
+    plural: str
+    description: str
+
+
+@dataclass
+class InstanceRecord:
+    id: int
+    name: str
+    description: str
+    references: list[str] = field(default_factory=list)
+
+
+def fetch_kinds(db_path: Path) -> list[KindRecord]:
+    """Return all Kinds from the Cartographer DB, ordered by name."""
+    if not db_path.exists():
+        raise RuntimeError(f"Cartographer DB not found at {db_path}. Run `carto sync pull` to build the local mirror.")
+    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute("SELECT id, name, plural, description FROM instance_kinds ORDER BY name").fetchall()
+    conn.close()
+    return [KindRecord(id=int(r["id"]), name=r["name"], plural=r["plural"], description=r["description"]) for r in rows]
+
+
+def fetch_instances(kind_id: int, db_path: Path) -> list[InstanceRecord]:
+    """Return all Instances of a Kind, with their references, ordered by name."""
+    if not db_path.exists():
+        raise RuntimeError(f"Cartographer DB not found at {db_path}. Run `carto sync pull` to build the local mirror.")
+    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute(
+        """
+        SELECT i.id,
+               i.name,
+               i.description,
+               (SELECT GROUP_CONCAT(r.name, ',')
+                FROM instance_references ir JOIN "references" r ON r.id = ir.reference_id
+                WHERE ir.instance_id = i.id) AS ref_names
+        FROM instances i
+        WHERE i.instance_kind_id = ?
+        ORDER BY i.name
+        """,
+        (kind_id,),
+    ).fetchall()
+    conn.close()
+    return [
+        InstanceRecord(
+            id=int(r["id"]),
+            name=r["name"],
+            description=r["description"] or "",
+            references=_split(r["ref_names"]),
+        )
+        for r in rows
+    ]
+
+
 def _split(csv: str | None) -> list[str]:
     if not csv:
         return []

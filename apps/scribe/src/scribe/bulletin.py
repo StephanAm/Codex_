@@ -92,7 +92,11 @@ def run_bulletin(
 
     fm = ""
     if frontmatter:
-        fm = f"---\ndate: {to_date}\ntags:\n  - daily-bulletin\n---\n\n"
+        all_tags = ["#daily-bulletin"] + sorted({f"#{t}" for note in notes for t in note.tags})
+        all_refs = sorted({f"@{r}" for note in notes for r in note.references})
+        tag_lines = "".join(f"\n  - {t}" for t in all_tags)
+        ref_block = ("refs:" + "".join(f"\n  - {r}" for r in all_refs) + "\n") if all_refs else ""
+        fm = f"---\ndate: {to_date}\ntags:{tag_lines}\n{ref_block}---\n\n"
 
     header = f"# {title}\n\n*Generated: {generated}*  \n*Period: {period}*  \n*Notes: {len(notes)}*\n\n---\n\n"
 
