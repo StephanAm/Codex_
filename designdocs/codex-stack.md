@@ -114,6 +114,28 @@ Marshal reasons over intelligence, not noise. The hard retrieval and synthesis w
 
 ---
 
+## Databases
+
+Two SQLite databases. Each has a single owner and a single purpose.
+
+### Mnemo DB (`~/.codex_/mnemo_/notes.db`)
+Data only. Mnemo_'s exclusive source of truth. It stores notes, Atlas pages, Registry Kinds and Instances, and sync metadata. Nothing else writes to it. Scribe_ and Cartographer_ are consumers, not owners.
+
+### Cartographer DB (`~/.codex_/cartographer/index.db`)
+Cartographer_'s exclusive source of truth. A superset of the Mnemo DB: it mirrors all Mnemo_ data (notes, registry, atlas) and extends the schema with its own indexing tables (`embeddings`, `index_state`). Cartographer_ populates it by merging from one or more Mnemo DBs. It is not read-only — Cartographer_ owns and writes to it freely. Scribe_ reads from it but never writes to it.
+
+The key distinction: **Mnemo DB is the input; Cartographer DB is the working copy.** Changes written to Cartographer DB are overwritten on the next sync. Durable changes go to Mnemo DB.
+
+### Separation rules — non-negotiable
+
+- **Mnemo_ never touches the Cartographer DB.** It does not read from it, write to it, or call any Cartographer_ API. Mnemo_ is completely ignorant that Cartographer_ exists.
+- **Cartographer_ never touches the Mnemo DB.** It reads Mnemo DBs as an input to populate its own DB, but it never writes to them.
+- **All other tools that need access to Mnemo_ data must go through Cartographer_** — either by querying Cartographer_ directly or by reading the Cartographer DB. They must never read from the Mnemo DB.
+- **Only Cartographer_ may write to the Cartographer DB.** All other tools are read-only consumers of it.
+- Each app owns exactly one DB. Writing to anything else is an architectural violation.
+
+---
+
 ## Stack Summary
 
 | Tool | Layer | Input | Output |
