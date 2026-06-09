@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.1.6] — 2026-06-09
+
+- Add frontmatter option to bulletin generation and archive directory configuration
+
 ## [1.1.5] — 2026-06-05
 
 - Add VERSION.PEP440; migrate version format to semver canonical
