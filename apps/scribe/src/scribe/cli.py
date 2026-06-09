@@ -992,14 +992,20 @@ def digest(
 # ---------------------------------------------------------------------------
 
 
-@main.command()
+@main.group()
+def registry() -> None:
+    """Commands for syncing the Mnemo Registry into the Obsidian vault."""
+
+
+@registry.command("push")
 @click.option("--dry-run", is_flag=True, help="Print what would be created/updated without writing.")
-def registry(dry_run: bool) -> None:
-    """Sync Mnemo Registry (Kinds + Instances) into the Obsidian vault.
+def registry_push(dry_run: bool) -> None:
+    """Push Mnemo Registry (Kinds + Instances) into the Obsidian vault.
 
     Creates a folder per Kind and a file per Instance under archive_dir.
-    Existing files are updated idempotently: only name, description, and refs
-    are overwritten; body content and other frontmatter are preserved.
+    Existing files are updated idempotently: only name, description, refs,
+    and properties are overwritten; body content and other frontmatter are
+    preserved.
     """
     from scribe.config import get_archive_dir, get_cartographer_db
 
