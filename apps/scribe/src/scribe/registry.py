@@ -20,7 +20,19 @@ _MANIFEST_OWNED: frozenset[str] = frozenset({"name", "plural", "description"})
 SyncStatus = Literal["created", "updated", "unchanged"]
 
 
-def _instance_metadata(instance: InstanceRecord) -> dict[str, object]:
+def _read_post(path: Path) -> frontmatter.Post | None:
+    if not path.exists():
+        return None
+    try:
+        return frontmatter.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
+def _instance_metadata(
+    instance: InstanceRecord,
+    existing_post: frontmatter.Post | None,
+) -> dict[str, object]:
     meta: dict[str, object] = {
         "name": instance.name,
         "description": instance.description,
@@ -28,8 +40,19 @@ def _instance_metadata(instance: InstanceRecord) -> dict[str, object]:
     refs = sorted(f"@{r}" for r in instance.references)
     if refs:
         meta["refs"] = refs
-    if instance.properties:
-        meta.update(instance.properties)
+
+    synced_at = str(existing_post.metadata.get("synced_at", "")) if existing_post else ""
+
+    for name, (value, updated_at) in instance.properties.items():
+        remote_value = existing_post.metadata.get(name) if existing_post else None
+        if remote_value is not None and str(remote_value) != value:
+            # Values differ — local wins only if it was updated after the last sync
+            if synced_at and updated_at > synced_at:
+                meta[name] = value
+            # else: remote is newer (user edited in vault), leave it alone
+        else:
+            meta[name] = value  # new property or identical value
+
     meta["synced_at"] = datetime.now(UTC).isoformat()
     return meta
 
@@ -101,7 +124,8 @@ def sync_registry(archive_dir: Path, db_path: Path) -> tuple[int, int, int]:
             unchanged += 1
 
         for instance in fetch_instances(kind.id, db_path):
-            status = _sync_file(kind_dir / f"{instance.name}.md", _instance_metadata(instance), _INSTANCE_OWNED)
+            file_path = kind_dir / f"{instance.name}.md"
+            status = _sync_file(file_path, _instance_metadata(instance, _read_post(file_path)), _INSTANCE_OWNED)
             if status == "created":
                 created += 1
             elif status == "updated":

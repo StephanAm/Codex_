@@ -182,7 +182,7 @@ class InstanceRecord:
     name: str
     description: str
     references: list[str] = field(default_factory=list)
-    properties: dict[str, str] = field(default_factory=dict)
+    properties: dict[str, tuple[str, str]] = field(default_factory=dict)  # name → (value, updated_at)
 
 
 def fetch_kinds(db_path: Path) -> list[KindRecord]:
@@ -219,12 +219,12 @@ def fetch_instances(kind_id: int, db_path: Path) -> list[InstanceRecord]:
 
     # Fetch all properties for this kind's instances in one query (name-ordered so
     # the resulting dict is stable).
-    props_by_id: dict[int, dict[str, str]] = {}
+    props_by_id: dict[int, dict[str, tuple[str, str]]] = {}
     has_props = conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='instance_properties'").fetchone()
     if has_props:
         for pr in conn.execute(
             """
-            SELECT ip.instance_id, ip.name, ip.value
+            SELECT ip.instance_id, ip.name, ip.value, ip.updated_at
             FROM instance_properties ip
             JOIN instances i ON i.id = ip.instance_id
             WHERE i.instance_kind_id = ?
@@ -232,7 +232,7 @@ def fetch_instances(kind_id: int, db_path: Path) -> list[InstanceRecord]:
             """,
             (kind_id,),
         ):
-            props_by_id.setdefault(int(pr["instance_id"]), {})[pr["name"]] = pr["value"]
+            props_by_id.setdefault(int(pr["instance_id"]), {})[pr["name"]] = (pr["value"], pr["updated_at"])
 
     conn.close()
     return [
