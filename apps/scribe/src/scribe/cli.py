@@ -1017,9 +1017,10 @@ def registry(dry_run: bool) -> None:
         from scribe.store import fetch_instances, fetch_kinds
 
         for kind in fetch_kinds(db_path):
-            click.echo(f"[kind]     {archive_dir / kind.plural / 'MANIFEST.md'}")
+            kind_dir = archive_dir / kind.plural.title()
+            click.echo(f"[kind]     {kind_dir / 'MANIFEST.md'}")
             for instance in fetch_instances(kind.id, db_path):
-                click.echo(f"[instance] {archive_dir / kind.plural / (instance.name + '.md')}")
+                click.echo(f"[instance] {kind_dir / (instance.name + '.md')}")
         sys.exit(0)
 
     from scribe.registry import sync_registry

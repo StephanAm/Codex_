@@ -138,7 +138,7 @@ def sync_registry(archive_dir: Path, db_path: Path) -> tuple[int, int, int]:
     kinds: list[KindRecord] = fetch_kinds(db_path)
 
     for kind in kinds:
-        kind_dir = archive_dir / kind.plural
+        kind_dir = archive_dir / kind.plural.title()
         kind_dir.mkdir(parents=True, exist_ok=True)
 
         # MANIFEST.md
