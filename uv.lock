@@ -113,6 +113,7 @@ version = "1.1.8rc1"
 source = { editable = "apps/cartographer" }
 dependencies = [
     { name = "click" },
+    { name = "codex-core" },
     { name = "google-api-python-client" },
     { name = "google-auth" },
     { name = "google-auth-oauthlib" },
@@ -126,6 +127,7 @@ embeddings = [
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.0" },
+    { name = "codex-core", editable = "packages/core" },
     { name = "fastembed", marker = "extra == 'embeddings'", specifier = ">=0.3" },
     { name = "google-api-python-client", specifier = ">=2.0" },
     { name = "google-auth", specifier = ">=2.0" },

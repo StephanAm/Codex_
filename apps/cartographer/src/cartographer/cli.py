@@ -1,9 +1,16 @@
 # Copyright (C) 2026 Stephan Marais
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import click
 
 from cartographer import __version__
+
+if TYPE_CHECKING:
+    from codex_core.models import Instance, InstanceKind
 from cartographer.config import (
     get_drive_folder,
     get_local_folder_path,
@@ -542,6 +549,263 @@ def retrieve(note_ids_str: str, top_k: int) -> None:
             }
         )
     )
+
+
+# ---------------------------------------------------------------------------
+# registry
+# ---------------------------------------------------------------------------
+
+
+def _find_kind(name: str) -> InstanceKind:
+    from codex_core import store
+
+    matches = [k for k in store.list_types(db_path=get_db_path()) if k.name.lower() == name.lower()]
+    if not matches:
+        raise click.ClickException(f"Kind '{name}' not found.")
+    return matches[0]
+
+
+def _find_instance(name: str, kind_id: int | None = None) -> Instance:
+    from codex_core import store
+
+    matches = [
+        i
+        for i in store.list_instances(instance_kind_id=kind_id, db_path=get_db_path())
+        if i.name.lower() == name.lower()
+    ]
+    if not matches:
+        scope = f" in kind '{_kind_name_by_id(kind_id)}'" if kind_id is not None else ""
+        raise click.ClickException(f"Instance '{name}' not found{scope}.")
+    if len(matches) > 1:
+        kinds_str = ", ".join(f"'{m.type.name}'" for m in matches)
+        raise click.ClickException(f"Multiple instances named '{name}' ({kinds_str}). Use --kind to disambiguate.")
+    return matches[0]
+
+
+def _kind_name_by_id(kind_id: int | None) -> str:
+    if kind_id is None:
+        return ""
+    from codex_core import store
+
+    kind = store.get_type(kind_id, db_path=get_db_path())
+    return kind.name if kind else str(kind_id)
+
+
+@cli.group()
+def registry() -> None:
+    """Manage the Registry — kinds and instances."""
+
+
+# ---- kinds ------------------------------------------------------------------
+
+
+@registry.group()
+def kinds() -> None:
+    """Manage Registry kinds (common noun classifiers, e.g. Person, Company)."""
+
+
+@kinds.command("list")
+def kinds_list() -> None:
+    """List all kinds."""
+    from codex_core import store
+
+    all_kinds = store.list_types(db_path=get_db_path())
+    if not all_kinds:
+        click.echo("No kinds found.")
+        return
+    for k in all_kinds:
+        line = f"{k.name} ({k.plural})" if k.plural else k.name
+        if k.description:
+            line += f"  — {k.description}"
+        click.echo(line)
+
+
+@kinds.command("add")
+@click.argument("name")
+@click.option("--plural", "-p", default="", metavar="PLURAL", help="Plural form (e.g. People).")
+@click.option("--description", "-d", default="", help="Optional description.")
+def kinds_add(name: str, plural: str, description: str) -> None:
+    """Create a new kind NAME."""
+    from codex_core import store
+
+    try:
+        kind = store.create_type(name=name, plural=plural, description=description, db_path=get_db_path())
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(f"Kind '{kind.name}' created.")
+
+
+@kinds.command("show")
+@click.argument("name")
+def kinds_show(name: str) -> None:
+    """Show details for kind NAME."""
+    from codex_core import store
+
+    kind = _find_kind(name)
+    instances = store.list_instances(instance_kind_id=kind.id, db_path=get_db_path())
+    click.echo(f"name:        {kind.name}")
+    click.echo(f"plural:      {kind.plural or '(not set)'}")
+    click.echo(f"description: {kind.description or '(none)'}")
+    click.echo(f"instances:   {len(instances)}")
+    click.echo(f"created:     {kind.created_at}")
+    click.echo(f"updated:     {kind.updated_at}")
+
+
+@kinds.command("edit")
+@click.argument("name")
+@click.option("--name", "new_name", default=None, metavar="NAME", help="New name.")
+@click.option("--plural", "-p", default=None, metavar="PLURAL", help="New plural form.")
+@click.option("--description", "-d", default=None, help="New description.")
+def kinds_edit(name: str, new_name: str | None, plural: str | None, description: str | None) -> None:
+    """Update kind NAME."""
+    from codex_core import store
+
+    kind = _find_kind(name)
+    updated = store.update_type(
+        instance_kind_id=kind.id,
+        name=new_name if new_name is not None else kind.name,
+        plural=plural if plural is not None else kind.plural,
+        description=description if description is not None else kind.description,
+        db_path=get_db_path(),
+    )
+    if updated is None:
+        raise click.ClickException(f"Kind '{name}' not found.")
+    click.echo(f"Kind '{updated.name}' updated.")
+
+
+@kinds.command("delete")
+@click.argument("name")
+@click.option("--yes", is_flag=True, help="Skip confirmation prompt.")
+def kinds_delete(name: str, yes: bool) -> None:
+    """Delete kind NAME.
+
+    All instances belonging to this kind must be deleted first.
+    """
+    from codex_core import store
+
+    kind = _find_kind(name)
+    instances = store.list_instances(instance_kind_id=kind.id, db_path=get_db_path())
+    if instances:
+        raise click.ClickException(f"Kind '{kind.name}' has {len(instances)} instance(s). Delete them first.")
+    if not yes:
+        click.confirm(f"Delete kind '{kind.name}'?", abort=True)
+    store.delete_type(instance_kind_id=kind.id, db_path=get_db_path())
+    click.echo(f"Kind '{kind.name}' deleted.")
+
+
+# ---- instances --------------------------------------------------------------
+
+
+@registry.group()
+def instances() -> None:
+    """Manage Registry instances (specific named subjects, e.g. John Smith)."""
+
+
+@instances.command("list")
+@click.option("--kind", "kind_name", default=None, metavar="KIND", help="Filter by kind name.")
+def instances_list(kind_name: str | None) -> None:
+    """List all instances, optionally filtered by kind."""
+    from codex_core import store
+
+    kind_id = None
+    if kind_name:
+        kind_id = _find_kind(kind_name).id
+    all_instances = store.list_instances(instance_kind_id=kind_id, db_path=get_db_path())
+    if not all_instances:
+        click.echo("No instances found.")
+        return
+    for inst in all_instances:
+        click.echo(f"{inst.name}  [{inst.type.name}]")
+
+
+@instances.command("add")
+@click.argument("name")
+@click.option("--kind", "kind_name", required=True, metavar="KIND", help="Kind this instance belongs to.")
+@click.option("--description", "-d", default="", help="Optional description.")
+@click.option("--ref", "refs", multiple=True, metavar="REF", help="Additional @reference token (repeatable).")
+def instances_add(name: str, kind_name: str, description: str, refs: tuple[str, ...]) -> None:
+    """Create a new instance NAME of the given kind."""
+    from codex_core import store
+
+    kind = _find_kind(kind_name)
+    try:
+        inst = store.create_instance(
+            name=name,
+            instance_kind_id=kind.id,
+            description=description,
+            references=list(refs) if refs else None,
+            db_path=get_db_path(),
+        )
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(f"Instance '{inst.name}' [{inst.type.name}] created.")
+
+
+@instances.command("show")
+@click.argument("name")
+@click.option("--kind", "kind_name", default=None, metavar="KIND", help="Kind name to disambiguate.")
+def instances_show(name: str, kind_name: str | None) -> None:
+    """Show details for instance NAME."""
+    kind_id = _find_kind(kind_name).id if kind_name else None
+    inst = _find_instance(name, kind_id)
+    click.echo(f"name:        {inst.name}")
+    click.echo(f"kind:        {inst.type.name}")
+    click.echo(f"description: {inst.description or '(none)'}")
+    refs = ", ".join(inst.references) if inst.references else "(none)"
+    click.echo(f"references:  {refs}")
+    click.echo(f"created:     {inst.created_at}")
+    click.echo(f"updated:     {inst.updated_at}")
+
+
+@instances.command("edit")
+@click.argument("name")
+@click.option("--kind", "kind_name", default=None, metavar="KIND", help="Kind name to disambiguate.")
+@click.option("--name", "new_name", default=None, metavar="NAME", help="New name.")
+@click.option("--description", "-d", default=None, help="New description.")
+@click.option("--ref", "refs", multiple=True, metavar="REF", help="Replace @references with these (repeatable).")
+def instances_edit(
+    name: str,
+    kind_name: str | None,
+    new_name: str | None,
+    description: str | None,
+    refs: tuple[str, ...],
+) -> None:
+    """Update instance NAME.
+
+    Pass --ref one or more times to replace all explicit references.
+    Omit --ref to leave references unchanged.
+    """
+    from codex_core import store
+
+    kind_id = _find_kind(kind_name).id if kind_name else None
+    inst = _find_instance(name, kind_id)
+    updated = store.update_instance(
+        instance_id=inst.id,
+        name=new_name if new_name is not None else inst.name,
+        description=description if description is not None else inst.description,
+        instance_kind_id=inst.type.id,
+        references=list(refs) if refs else None,
+        db_path=get_db_path(),
+    )
+    if updated is None:
+        raise click.ClickException(f"Instance '{name}' not found.")
+    click.echo(f"Instance '{updated.name}' updated.")
+
+
+@instances.command("delete")
+@click.argument("name")
+@click.option("--kind", "kind_name", default=None, metavar="KIND", help="Kind name to disambiguate.")
+@click.option("--yes", is_flag=True, help="Skip confirmation prompt.")
+def instances_delete(name: str, kind_name: str | None, yes: bool) -> None:
+    """Delete instance NAME."""
+    from codex_core import store
+
+    kind_id = _find_kind(kind_name).id if kind_name else None
+    inst = _find_instance(name, kind_id)
+    if not yes:
+        click.confirm(f"Delete instance '{inst.name}' [{inst.type.name}]?", abort=True)
+    store.delete_instance(instance_id=inst.id, db_path=get_db_path())
+    click.echo(f"Instance '{inst.name}' deleted.")
 
 
 # ---------------------------------------------------------------------------

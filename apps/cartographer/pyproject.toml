@@ -9,6 +9,7 @@ description = "Cartographer — background vector indexing service for the Codex
 requires-python = ">=3.11"
 dependencies = [
     "click>=8.0",
+    "codex-core",
     "google-auth>=2.0",
     "google-auth-oauthlib>=1.0",
     "google-api-python-client>=2.0",
@@ -23,6 +24,7 @@ embeddings = [
 carto = "cartographer.cli:cli"
 
 [tool.uv.sources]
+codex-core = { workspace = true }
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/cartographer"]
