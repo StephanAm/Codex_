@@ -18,7 +18,10 @@ _VALID_SOURCE_TYPES = ("google_drive", "local_folder", "mnemo_local")
 _CODEX_DIR = Path.home() / ".codex_"
 _DEFAULT_SOURCE_TYPE = "google_drive"
 _DEFAULT_DRIVE_FOLDER = "note-taker-sync"
-_DEFAULT_MNEMO_DB = str(Path.home() / ".codex_" / "mnemo_" / "notes.db")
+_DEFAULT_MNEMO_DB = str(_CODEX_DIR / "mnemo_" / "notes.db")
+
+CREDENTIALS_PATH: Path = _CODEX_DIR / "credentials.json"
+TOKEN_PATH: Path = _CODEX_DIR / "token.json"
 _DEFAULT_EMBEDDING_BACKEND = "fastembed"
 _DEFAULT_OLLAMA_URL = "http://localhost:11434"
 
@@ -78,24 +81,6 @@ def set_drive_folder(name: str, db_path: Path | None = None) -> None:
     _set("google_drive_folder", name.strip(), db_path)
 
 
-def get_drive_credentials_path(db_path: Path | None = None) -> Path:
-    raw = _get("google_drive_credentials_path", str(_CODEX_DIR / "credentials.json"), db_path)
-    return Path(raw)
-
-
-def set_drive_credentials_path(path: Path, db_path: Path | None = None) -> None:
-    _set("google_drive_credentials_path", str(path), db_path)
-
-
-def get_drive_token_path(db_path: Path | None = None) -> Path:
-    raw = _get("google_drive_token_path", str(_CODEX_DIR / "token.json"), db_path)
-    return Path(raw)
-
-
-def set_drive_token_path(path: Path, db_path: Path | None = None) -> None:
-    _set("google_drive_token_path", str(path), db_path)
-
-
 # ---------------------------------------------------------------------------
 # Local folder
 # ---------------------------------------------------------------------------
@@ -120,6 +105,42 @@ def get_mnemo_db_path(db_path: Path | None = None) -> str:
 
 def set_mnemo_db_path(path: str, db_path: Path | None = None) -> None:
     _set("mnemo_db_path", path.strip(), db_path)
+
+
+# ---------------------------------------------------------------------------
+# Remote adapter (independent from sync — source type, location, credentials)
+# ---------------------------------------------------------------------------
+
+_VALID_REMOTE_SOURCE_TYPES = ("google_drive", "local_folder")
+_DEFAULT_REMOTE_SOURCE_TYPE = "google_drive"
+
+
+def get_remote_source_type(db_path: Path | None = None) -> str:
+    return _get("remote_source_type", _DEFAULT_REMOTE_SOURCE_TYPE, db_path)
+
+
+def set_remote_source_type(source_type: str, db_path: Path | None = None) -> None:
+    if source_type not in _VALID_REMOTE_SOURCE_TYPES:
+        raise ValueError(
+            f"Unknown remote source type {source_type!r}. Choose one of: {', '.join(_VALID_REMOTE_SOURCE_TYPES)}"
+        )
+    _set("remote_source_type", source_type, db_path)
+
+
+def get_remote_drive_folder(db_path: Path | None = None) -> str:
+    return _get("remote_drive_folder", "cartographer-remote", db_path)
+
+
+def set_remote_drive_folder(name: str, db_path: Path | None = None) -> None:
+    _set("remote_drive_folder", name.strip(), db_path)
+
+
+def get_remote_local_folder_path(db_path: Path | None = None) -> str:
+    return _get("remote_local_folder_path", "", db_path)
+
+
+def set_remote_local_folder_path(path: str, db_path: Path | None = None) -> None:
+    _set("remote_local_folder_path", path.strip(), db_path)
 
 
 # ---------------------------------------------------------------------------

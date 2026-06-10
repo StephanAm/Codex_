@@ -12,15 +12,23 @@ from cartographer import __version__
 if TYPE_CHECKING:
     from codex_core.models import Instance, InstanceKind, InstanceProperty
 from cartographer.config import (
+    CREDENTIALS_PATH,
+    TOKEN_PATH,
     get_drive_folder,
     get_local_folder_path,
     get_mnemo_db_path,
+    get_remote_drive_folder,
+    get_remote_local_folder_path,
     get_remote_name,
+    get_remote_source_type,
     get_source_type,
     set_drive_folder,
     set_local_folder_path,
     set_mnemo_db_path,
+    set_remote_drive_folder,
+    set_remote_local_folder_path,
     set_remote_name,
+    set_remote_source_type,
     set_source_type,
 )
 from cartographer.db import connect, get_db_path
@@ -117,10 +125,9 @@ def sync_auth() -> None:
     if get_source_type() != "google_drive":
         raise click.ClickException("auth is only needed for the google_drive source.")
     from cartographer.adapters.google_drive import run_auth_flow
-    from cartographer.config import get_drive_credentials_path, get_drive_token_path
 
     try:
-        run_auth_flow(get_drive_credentials_path(), get_drive_token_path())
+        run_auth_flow(CREDENTIALS_PATH, TOKEN_PATH)
     except FileNotFoundError as exc:
         raise click.ClickException(str(exc)) from exc
     click.echo("Authorisation complete.")
@@ -249,13 +256,91 @@ def remote_pull() -> None:
     click.echo(f"pulled (remote updated_at: {updated_at})")
 
 
-@remote.command("config")
+@remote.command("auth")
+def remote_auth() -> None:
+    """Run the Google Drive OAuth flow (google_drive remote source only)."""
+    if get_remote_source_type() != "google_drive":
+        raise click.ClickException("auth is only needed for the google_drive remote source.")
+    from cartographer.adapters.google_drive import run_auth_flow
+
+    try:
+        run_auth_flow(CREDENTIALS_PATH, TOKEN_PATH)
+    except FileNotFoundError as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo("Authorisation complete.")
+
+
+@remote.group("config")
+def remote_config() -> None:
+    """View or update remote adapter configuration."""
+
+
+@remote_config.command("show")
+def remote_config_show() -> None:
+    """Show current remote configuration."""
+    source_type = get_remote_source_type()
+    click.echo(f"source:       {source_type}")
+    click.echo(f"name:         {get_remote_name()}")
+    if source_type == "google_drive":
+        click.echo(f"drive folder: {get_remote_drive_folder()}")
+    elif source_type == "local_folder":
+        click.echo(f"local path:   {get_remote_local_folder_path() or '(not set)'}")
+
+
+@remote_config.command("source")
+@click.argument("source_type", required=False, metavar="TYPE")
+def remote_config_source(source_type: str | None) -> None:
+    """View or set the remote source type.
+
+    TYPE must be one of: google_drive, local_folder.
+    With no argument, shows the current value.
+    """
+    if source_type is None:
+        click.echo(get_remote_source_type())
+        return
+    try:
+        set_remote_source_type(source_type)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(f"remote source set to: {source_type}")
+
+
+@remote_config.command("drive-folder")
 @click.argument("name", required=False)
-def remote_config(name: str | None) -> None:
+def remote_config_drive_folder(name: str | None) -> None:
+    """View or set the Google Drive folder name used for the remote.
+
+    With no argument, shows the current folder name.
+    """
+    if name is None:
+        click.echo(get_remote_drive_folder())
+        return
+    set_remote_drive_folder(name)
+    click.echo(f"remote drive folder set to: {name}")
+
+
+@remote_config.command("local-path")
+@click.argument("path", required=False)
+def remote_config_local_path(path: str | None) -> None:
+    """View or set the local folder path used for the remote.
+
+    With no argument, shows the current path.
+    """
+    if path is None:
+        current = get_remote_local_folder_path()
+        click.echo(current if current else "(not set)")
+        return
+    set_remote_local_folder_path(path)
+    click.echo(f"remote local path set to: {path}")
+
+
+@remote_config.command("name")
+@click.argument("name", required=False)
+def remote_config_name(name: str | None) -> None:
     """View or set the remote DB filename (default: cartographer).
 
-    This is the key used in the remote adapter — the actual file stored
-    remotely will be NAME.db.
+    The actual file stored remotely will be NAME.db.
+    With no argument, shows the current value.
     """
     if name is None:
         click.echo(get_remote_name())

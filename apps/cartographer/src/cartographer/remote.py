@@ -21,12 +21,12 @@ import tempfile
 from pathlib import Path
 
 from cartographer.config import (
-    get_drive_credentials_path,
-    get_drive_folder,
-    get_drive_token_path,
-    get_local_folder_path,
+    CREDENTIALS_PATH,
+    TOKEN_PATH,
+    get_remote_drive_folder,
+    get_remote_local_folder_path,
     get_remote_name,
-    get_source_type,
+    get_remote_source_type,
 )
 from cartographer.db import connect, get_db_path
 
@@ -36,22 +36,20 @@ class RemoteNewerError(Exception):
 
 
 def _build_adapter(db_path: Path | None) -> object:
-    source_type = get_source_type(db_path)
+    source_type = get_remote_source_type(db_path)
     if source_type == "local_folder":
         from cartographer.adapters.local_folder import LocalFolderAdapter
 
-        raw = get_local_folder_path(db_path)
+        raw = get_remote_local_folder_path(db_path)
         if not raw:
-            raise ValueError("Local folder path is not configured. Run: cartographer sync config local-path <PATH>")
+            raise ValueError("Remote local folder path is not configured. Run: carto remote config local-path <PATH>")
         return LocalFolderAdapter(Path(raw))
-    # default: google_drive (also covers mnemo_local — remote operations always
-    # need a network/folder location, so mnemo_local falls back to google_drive)
     from cartographer.adapters.google_drive import GoogleDriveAdapter
 
     return GoogleDriveAdapter(
-        credentials_path=get_drive_credentials_path(db_path),
-        token_path=get_drive_token_path(db_path),
-        folder_name=get_drive_folder(db_path),
+        credentials_path=CREDENTIALS_PATH,
+        token_path=TOKEN_PATH,
+        folder_name=get_remote_drive_folder(db_path),
     )
 
 

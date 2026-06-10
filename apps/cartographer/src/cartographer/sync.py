@@ -18,10 +18,10 @@ from pathlib import Path
 from typing import Any
 
 from cartographer.config import (
+    CREDENTIALS_PATH,
+    TOKEN_PATH,
     get_device_id,
-    get_drive_credentials_path,
     get_drive_folder,
-    get_drive_token_path,
     get_local_folder_path,
     get_mnemo_db_path,
     get_source_type,
@@ -95,8 +95,8 @@ def _build_adapter(source_type: str, db_path: Path | None) -> Any:
         from cartographer.adapters.google_drive import GoogleDriveAdapter
 
         return GoogleDriveAdapter(
-            credentials_path=get_drive_credentials_path(db_path),
-            token_path=get_drive_token_path(db_path),
+            credentials_path=CREDENTIALS_PATH,
+            token_path=TOKEN_PATH,
             folder_name=get_drive_folder(db_path),
         )
     if source_type == "local_folder":
