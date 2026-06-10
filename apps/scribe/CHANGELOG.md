@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.10] — 2026-06-10
+
+- Add codex-core dependency and implement registry pull command for KVP properties
+- Add conflict resolution strategy options to registry push command
+- Enhance instance properties to include updated timestamps and improve metadata synchronization
+- Refactor registry command structure and update push functionality to include properties in Mnemo Registry sync
+- Add properties field to InstanceRecord and update fetch_instances to include properties
+- Add python-frontmatter dependency and update related code for bulletin and digest processing
+
 ## [1.2.9] — 2026-06-09
 
 - Capitalize kind directory names in registry and cli functions
