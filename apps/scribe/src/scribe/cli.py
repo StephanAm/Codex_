@@ -1049,6 +1049,74 @@ def registry_push(dry_run: bool, strategy: str) -> None:
     click.echo(f"Registry sync: {created} created, {updated} updated, {unchanged} unchanged", err=True)
 
 
+@registry.command("pull")
+@click.option("--dry-run", is_flag=True, help="Print what would be updated/created without writing.")
+@click.option(
+    "--strategy",
+    default="update",
+    type=click.Choice(["update", "import"], case_sensitive=False),
+    help=(
+        "update: refresh existing DB properties from the archive (default). "
+        "import: update existing and create new properties from the archive."
+    ),
+    show_default=True,
+)
+def registry_pull(dry_run: bool, strategy: str) -> None:
+    """Pull KVP properties from the Obsidian vault back into the Cartographer DB.
+
+    Reads frontmatter from each instance file in archive_dir and writes
+    the KVP properties back to the DB. Name, description, and refs are
+    never updated — the DB owns those.
+    """
+    from scribe.config import get_archive_dir, get_cartographer_db
+
+    archive_dir = get_archive_dir()
+    if archive_dir is None:
+        click.echo("Error: archive_dir is not configured. Set [output] archive_dir in config.toml.", err=True)
+        sys.exit(1)
+
+    db_path = get_cartographer_db()
+    if not db_path.exists():
+        click.echo(f"Error: Cartographer DB not found at {db_path}. Run `carto sync pull`.", err=True)
+        sys.exit(1)
+
+    if dry_run:
+        from codex_core import store as core_store
+        from scribe.registry import _INSTANCE_OWNED, _read_post
+        from scribe.store import fetch_instances, fetch_kinds
+
+        click.echo(f"Strategy: {strategy}")
+        for kind in fetch_kinds(db_path):
+            kind_dir = archive_dir / kind.plural.title()
+            if not kind_dir.exists():
+                continue
+            for instance in fetch_instances(kind.id, db_path):
+                post = _read_post(kind_dir / f"{instance.name}.md")
+                if post is None:
+                    continue
+                archive_kvps = {k: str(v) for k, v in post.metadata.items() if k not in _INSTANCE_OWNED}
+                db_props = core_store.list_instance_properties(instance.id, db_path=db_path)
+                by_name = {p.name: p for p in db_props}
+                if strategy == "update":
+                    for prop in db_props:
+                        val = archive_kvps.get(prop.name)
+                        if val and val != prop.value:
+                            click.echo(f"  [{kind.name}] {instance.name}.{prop.name}: {prop.value!r} → {val!r}")
+                else:  # "import"
+                    for key, val in archive_kvps.items():
+                        existing = by_name.get(key)
+                        if existing is None:
+                            click.echo(f"  [{kind.name}] {instance.name}.{key}: (new) → {val!r}")
+                        elif val != existing.value:
+                            click.echo(f"  [{kind.name}] {instance.name}.{key}: {existing.value!r} → {val!r}")
+        sys.exit(0)
+
+    from scribe.registry import pull_registry
+
+    updated, created, unchanged = pull_registry(archive_dir, db_path, strategy=strategy)  # type: ignore[arg-type]
+    click.echo(f"Registry pull: {updated} updated, {created} created, {unchanged} unchanged", err=True)
+
+
 # ---------------------------------------------------------------------------
 # config
 # ---------------------------------------------------------------------------

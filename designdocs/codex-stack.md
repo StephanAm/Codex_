@@ -122,16 +122,14 @@ Two SQLite databases. Each has a single owner and a single purpose.
 Data only. Mnemo_'s exclusive source of truth. It stores notes, Atlas pages, Registry Kinds and Instances, and sync metadata. Nothing else writes to it. Scribe_ and Cartographer_ are consumers, not owners.
 
 ### Cartographer DB (`~/.codex_/cartographer/index.db`)
-Cartographer_'s exclusive source of truth. A superset of the Mnemo DB: it mirrors all Mnemo_ data (notes, registry, atlas) and extends the schema with its own indexing tables (`embeddings`, `index_state`). Cartographer_ populates it by merging from one or more Mnemo DBs. It is not read-only — Cartographer_ owns and writes to it freely. All other tools are read-only consumers of it.
-
-The key distinction: **Mnemo DB is the input; Cartographer DB is the working copy.** Changes written to Cartographer DB are overwritten on the next sync. Durable changes go to Mnemo DB.
+A superset of the Mnemo DB: mirrors all Mnemo_ data (notes, registry, atlas) and extends the schema with its own indexing tables (`embeddings`, `index_state`). Cartographer_ populates it by merging from one or more Mnemo DBs and is the primary owner. Other tools in the stack may also read from and write to it, but only through the functions in `codex_core` — never raw SQL. `codex_core` functions handle UUID generation, timestamp management, and tombstone writes; bypassing them breaks the sync invariants.
 
 ### Separation rules — non-negotiable
 
 - **Mnemo_ never touches the Cartographer DB.** It does not read from it, write to it, or call any Cartographer_ API. Mnemo_ is completely ignorant that Cartographer_ exists.
 - **Cartographer_ never touches the Mnemo DB.** It reads Mnemo DBs as an input to populate its own DB, but it never writes to them.
 - **All other tools that need access to Mnemo_ data must go through Cartographer_** — either by querying Cartographer_ directly or by reading the Cartographer DB. They must never touch the Mnemo DB. The Mnemo DB is never the answer for any tool outside Mnemo_.
-- **Only Cartographer_ may write to the Cartographer DB.** All other tools are strictly read-only consumers of it.
+- **All reads and writes to the Cartographer DB must go through `codex_core` functions.** Direct SQL against the Cartographer DB is not permitted. `codex_core` is the data layer; it owns the schema, UUID generation, timestamps, and tombstone logic that keep sync correct.
 - No tool ever calls or imports from Mnemo_ directly.
 
 ### Interaction matrix
@@ -142,14 +140,13 @@ Rows = actor. Columns = target. `R` = read, `W` = write, `X` = calls/invokes, `�
 |---|---|---|---|---|---|
 | **Mnemo_** | R/W | — | — | — | — |
 | **Cartographer_** | R | R/W | — | — | — |
-| **Scribe_** | — | R | X | R/W | — |
+| **Scribe_** | — | R/W | X | R/W | — |
 | **Carto2** | — | R | X | R | — |
 | **Marshal** | — | — | — | R | — |
 
 **Notes:**
 - Cartographer_ reads the Mnemo DB only as a sync source — it never writes to it.
-- Scribe_ is a read-only consumer of the Carto DB. It never writes to the Carto DB directly.
-- When Scribe_ needs to trigger a write (e.g. `registry pull`), it does so by calling the Carto process via subprocess. Carto receives the request and applies the write to its own DB. Carto always gatekeeps the Carto DB.
+- Scribe_ may read and write the Carto DB, but only through `codex_core` functions — never raw SQL.
 - No tool ever calls or imports from Mnemo_ directly.
 
 ---

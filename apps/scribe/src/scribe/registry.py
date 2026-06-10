@@ -19,6 +19,7 @@ _MANIFEST_OWNED: frozenset[str] = frozenset({"name", "plural", "description"})
 
 SyncStatus = Literal["created", "updated", "unchanged"]
 Strategy = Literal["timestamp", "local", "remote", "clobber"]
+PullStrategy = Literal["update", "import"]
 
 
 def _read_post(path: Path) -> frontmatter.Post | None:
@@ -156,3 +157,58 @@ def sync_registry(archive_dir: Path, db_path: Path, strategy: Strategy = "timest
                 unchanged += 1
 
     return created, updated, unchanged
+
+
+def pull_registry(
+    archive_dir: Path,
+    db_path: Path,
+    strategy: PullStrategy = "update",
+) -> tuple[int, int, int]:
+    """Pull KVP properties from the archive into the Cartographer DB.
+
+    update: refresh only properties that already exist in the DB.
+    import: update existing and create new properties from the archive.
+
+    Returns (updated, created, unchanged).
+    """
+    from codex_core import store as core_store
+    from scribe.store import fetch_instances, fetch_kinds
+
+    updated = created = unchanged = 0
+
+    for kind in fetch_kinds(db_path):
+        kind_dir = archive_dir / kind.plural.title()
+        if not kind_dir.exists():
+            continue
+
+        for instance in fetch_instances(kind.id, db_path):
+            post = _read_post(kind_dir / f"{instance.name}.md")
+            if post is None:
+                continue
+
+            archive_kvps = {k: str(v) for k, v in post.metadata.items() if k not in _INSTANCE_OWNED}
+
+            db_props = core_store.list_instance_properties(instance.id, db_path=db_path)
+
+            if strategy == "update":
+                for prop in db_props:
+                    val = archive_kvps.get(prop.name)
+                    if val is None or val == prop.value:
+                        unchanged += 1
+                    else:
+                        core_store.update_instance_property(prop.id, name=prop.name, value=val, db_path=db_path)
+                        updated += 1
+            else:  # "import"
+                by_name = {p.name: p for p in db_props}
+                for key, val in archive_kvps.items():
+                    existing = by_name.get(key)
+                    if existing is None:
+                        core_store.create_instance_property(instance.id, name=key, value=val, db_path=db_path)
+                        created += 1
+                    elif val == existing.value:
+                        unchanged += 1
+                    else:
+                        core_store.update_instance_property(existing.id, name=key, value=val, db_path=db_path)
+                        updated += 1
+
+    return updated, created, unchanged
