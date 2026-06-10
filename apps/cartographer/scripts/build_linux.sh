@@ -58,4 +58,11 @@ chmod +x "$BUILD_DIR/carto"
 # ── cleanup ───────────────────────────────────────────────────────────────────
 rm -rf "$TMP_DIR"
 
-log "Done → build/carto"
+# Verify the binary reports the expected version.
+EXPECTED_VER="$(tr -d '[:space:]' < "$REPO_DIR/VERSION")"
+BINARY_VER="$("$BUILD_DIR/carto" --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+([.-]rc\.[0-9]+)?' | head -1)"
+if [ "$BINARY_VER" != "$EXPECTED_VER" ]; then
+    die "Version mismatch: binary reports '$BINARY_VER' but VERSION file says '$EXPECTED_VER'"
+fi
+
+log "Done → build/carto  ($BINARY_VER)"
