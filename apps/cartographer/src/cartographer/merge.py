@@ -301,6 +301,8 @@ def _merge_instances(local: sqlite3.Connection, source: sqlite3.Connection, resu
 def _apply_instance_property_tombstones(
     local: sqlite3.Connection, source: sqlite3.Connection, result: MergeResult
 ) -> None:
+    if not _has_table(source, "deleted_instance_properties"):
+        return
     for row in source.execute("SELECT uuid, deleted_at FROM deleted_instance_properties"):
         cur = local.execute("DELETE FROM instance_properties WHERE uuid = ?", (row["uuid"],))
         if cur.rowcount:
@@ -312,6 +314,8 @@ def _apply_instance_property_tombstones(
 
 
 def _merge_instance_properties(local: sqlite3.Connection, source: sqlite3.Connection, result: MergeResult) -> None:
+    if not _has_table(source, "instance_properties"):
+        return
     tombstoned = {r["uuid"] for r in local.execute("SELECT uuid FROM deleted_instance_properties")}
 
     for row in source.execute("SELECT * FROM instance_properties"):
