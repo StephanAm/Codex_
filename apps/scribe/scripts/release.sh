@@ -33,7 +33,7 @@ sync_files() {
     printf '%s\n' "$pep440" > "$REPO_DIR/VERSION.PEP440"
     sed -i "s/^version = \"[^\"]*\"/version = \"$pep440\"/"     "$REPO_DIR/pyproject.toml"
     sed -i "s/__version__ = \"[^\"]*\"/__version__ = \"$ver\"/" "$REPO_DIR/src/scribe/__init__.py"
-    (cd "$WORKSPACE_ROOT" && uv sync --all-packages --quiet)
+    (cd "$WORKSPACE_ROOT" && uv lock --quiet)
 }
 
 stage_version_files() {

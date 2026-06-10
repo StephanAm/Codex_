@@ -5,16 +5,11 @@ import io
 from pathlib import Path
 from typing import Any
 
-try:
-    from google.auth.transport.requests import Request
-    from google.oauth2.credentials import Credentials
-    from google_auth_oauthlib.flow import InstalledAppFlow
-    from googleapiclient.discovery import build
-    from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
-except ImportError as exc:  # pragma: no cover
-    raise ImportError(
-        "Google Drive support requires the google-drive extra: uv sync --all-packages --extra google-drive"
-    ) from exc
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 
 from codex_core.logger import get_logger
 

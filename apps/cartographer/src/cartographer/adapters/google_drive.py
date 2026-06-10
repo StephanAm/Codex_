@@ -5,7 +5,6 @@
 Read-only Google Drive adapter for Cartographer.
 
 Downloads all device DBs from a shared Drive folder; never uploads.
-Requires the google-drive extra: uv pip install 'cartographer[google-drive]'
 """
 
 import io
@@ -19,9 +18,7 @@ try:
     from googleapiclient.discovery import build
     from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 except ImportError as exc:  # pragma: no cover
-    raise ImportError(
-        "Google Drive support requires the google-drive extra: uv sync --all-packages --extra google-drive"
-    ) from exc
+    raise ImportError("Google Drive dependencies are missing. Run: uv sync --all-packages") from exc
 
 _SCOPES = ["https://www.googleapis.com/auth/drive.file"]
 _DEFAULT_FOLDER = "note-taker-sync"

@@ -114,26 +114,21 @@ source = { editable = "apps/cartographer" }
 dependencies = [
     { name = "click" },
     { name = "codex-core" },
+    { name = "fastembed" },
     { name = "google-api-python-client" },
     { name = "google-auth" },
     { name = "google-auth-oauthlib" },
-]
-
-[package.optional-dependencies]
-embeddings = [
-    { name = "fastembed" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.0" },
     { name = "codex-core", editable = "packages/core" },
-    { name = "fastembed", marker = "extra == 'embeddings'", specifier = ">=0.3" },
+    { name = "fastembed", specifier = ">=0.3" },
     { name = "google-api-python-client", specifier = ">=2.0" },
     { name = "google-auth", specifier = ">=2.0" },
     { name = "google-auth-oauthlib", specifier = ">=1.0" },
 ]
-provides-extras = ["embeddings"]
 
 [[package]]
 name = "certifi"
@@ -320,30 +315,25 @@ name = "codex-core"
 version = "1.2.7"
 source = { editable = "packages/core" }
 dependencies = [
+    { name = "google-api-python-client" },
+    { name = "google-auth-httplib2" },
+    { name = "google-auth-oauthlib" },
     { name = "platformdirs" },
     { name = "pyyaml" },
     { name = "tqdm" },
     { name = "truststore" },
 ]
 
-[package.optional-dependencies]
-google-drive = [
-    { name = "google-api-python-client" },
-    { name = "google-auth-httplib2" },
-    { name = "google-auth-oauthlib" },
-]
-
 [package.metadata]
 requires-dist = [
-    { name = "google-api-python-client", marker = "extra == 'google-drive'", specifier = ">=2.0" },
-    { name = "google-auth-httplib2", marker = "extra == 'google-drive'", specifier = ">=0.1" },
-    { name = "google-auth-oauthlib", marker = "extra == 'google-drive'", specifier = ">=1.0" },
+    { name = "google-api-python-client", specifier = ">=2.0" },
+    { name = "google-auth-httplib2", specifier = ">=0.1" },
+    { name = "google-auth-oauthlib", specifier = ">=1.0" },
     { name = "platformdirs", specifier = ">=4.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "tqdm", specifier = ">=4.0" },
     { name = "truststore", specifier = ">=0.9" },
 ]
-provides-extras = ["google-drive"]
 
 [[package]]
 name = "colorama"
@@ -1054,20 +1044,13 @@ dependencies = [
     { name = "uvicorn", extra = ["standard"] },
 ]
 
-[package.optional-dependencies]
-google-drive = [
-    { name = "codex-core", extra = ["google-drive"] },
-]
-
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.0" },
     { name = "codex-core", editable = "packages/core" },
-    { name = "codex-core", extras = ["google-drive"], marker = "extra == 'google-drive'", editable = "packages/core" },
     { name = "fastapi", specifier = ">=0.110" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.29" },
 ]
-provides-extras = ["google-drive"]
 
 [[package]]
 name = "mypy"

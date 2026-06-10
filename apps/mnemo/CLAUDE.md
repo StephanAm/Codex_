@@ -85,7 +85,7 @@ Mnemo must build and run correctly on both **Linux** and **Windows**. When writi
 Run from the workspace root (`/home/stephan/Code/codex/`):
 
 ```bash
-uv sync --all-packages --extra google-drive  # install everything (incl. Google Drive)
+uv sync --all-packages
 uv run pytest                                # all tests
 uv run pytest packages/core/tests/test_store.py::test_foo  # single test
 uv run ruff check                            # lint

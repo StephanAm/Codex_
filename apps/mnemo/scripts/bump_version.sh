@@ -25,7 +25,7 @@ printf '%s\n' "$PEP440"  > "$REPO_DIR/VERSION.PEP440"
 sed -i "s/^version = \"[^\"]*\"/version = \"$PEP440\"/"           "$REPO_DIR/pyproject.toml"
 sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$NEW_VER\"/"     "$REPO_DIR/gui/src-tauri/tauri.conf.json"
 sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$NEW_VER\"/"     "$REPO_DIR/gui/package.json"
-(cd "$WORKSPACE_ROOT" && uv sync --all-packages --extra google-drive --quiet)
+(cd "$WORKSPACE_ROOT" && uv lock --quiet)
 (cd "$WORKSPACE_ROOT" && pnpm install --silent)
 
 git -C "$REPO_DIR" add \

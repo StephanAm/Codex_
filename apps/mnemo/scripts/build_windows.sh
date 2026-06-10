@@ -37,7 +37,7 @@ log "Target: $TARGET_TRIPLE"
 # ── 1. Python dependencies ────────────────────────────────────────────────────
 log "Installing Python dependencies..."
 cd "$WORKSPACE_ROOT"
-uv sync --all-packages --extra google-drive
+uv sync --all-packages
 
 # ── 2. Freeze Python backend ──────────────────────────────────────────────────
 log "Freezing Python backend with PyInstaller..."

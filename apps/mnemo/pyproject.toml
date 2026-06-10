@@ -15,11 +15,6 @@ dependencies = [
     "uvicorn[standard]>=0.29",
 ]
 
-[project.optional-dependencies]
-google-drive = [
-    "codex-core[google-drive]",
-]
-
 [project.scripts]
 note          = "mnemo.cli:cli"
 note-tui      = "mnemo.tui:launch"

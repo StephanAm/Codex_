@@ -21,7 +21,7 @@ mkdir -p "$BUILD_DIR" "$TMP_DIR"
 # ── 1. Python dependencies ────────────────────────────────────────────────────
 log "Installing Python dependencies..."
 cd "$WORKSPACE_ROOT"
-uv sync --all-packages --extra google-drive
+uv sync --all-packages
 
 # ── 2. Freeze with PyInstaller ────────────────────────────────────────────────
 log "Freezing with PyInstaller..."

@@ -20,7 +20,7 @@ mkdir -p "$BUILD_DIR" "$TMP_DIR"
 # ── 1. Python dependencies ────────────────────────────────────────────────────
 log "Installing Python dependencies..."
 cd "$WORKSPACE_ROOT"
-uv sync --all-packages --extra google-drive --extra embeddings
+uv sync --all-packages
 
 # uv omits the INSTALLER file from dist-info (it's optional per PEP 376), but
 # PyInstaller's --collect-all requires it. Create missing ones before freezing.

@@ -10,7 +10,6 @@ Run from the `codex` workspace root (`/home/stephan/Code/codex/`):
 
 ```bash
 uv sync --all-packages                     # install all workspace members
-uv sync --all-packages --extra google-drive  # + Google Drive sync support
 ```
 
 ## Usage

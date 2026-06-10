@@ -4,14 +4,13 @@
 """Integration tests for the Google Drive storage adapter.
 
 These tests hit the real Google Drive API and are skipped automatically
-when credentials or the google-drive extra are not present.
+when credentials are not present.
 Run them explicitly with:
 
     uv run pytest -m integration
 
 Prerequisites:
   - ~/.note_taker/credentials.json  (OAuth client secrets from Google Cloud Console)
-  - The google-drive extra installed: uv pip install 'codex-core[google-drive]'
 """
 
 from collections.abc import Generator
@@ -19,17 +18,14 @@ from pathlib import Path
 
 import pytest
 
+from codex_core.sync.google_drive import GoogleDriveAdapter
+
 _CREDS = Path.home() / ".note_taker" / "credentials.json"
 _TOKEN = Path.home() / ".note_taker" / "token.json"
 _TEST_DEVICE = "__integration_test__"
 
 if not _CREDS.exists():
     pytest.skip("Google Drive credentials not found", allow_module_level=True)
-
-try:
-    from codex_core.sync.google_drive import GoogleDriveAdapter
-except ImportError:
-    pytest.skip("google-drive extra not installed", allow_module_level=True)
 
 pytestmark = pytest.mark.integration
 
