@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.1.10] — 2026-06-10
+
+- Add checks for existence of instance properties tables before deletion
+- Refactor Google Drive authentication and configuration handling
+
 ## [1.1.9] — 2026-06-10
 
 - Refactor Google Drive integration: streamline dependencies and update installation instructions
