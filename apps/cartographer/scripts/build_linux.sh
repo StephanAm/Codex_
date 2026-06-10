@@ -22,6 +22,12 @@ log "Installing Python dependencies..."
 cd "$WORKSPACE_ROOT"
 uv sync --all-packages --extra google-drive --extra embeddings
 
+# uv omits the INSTALLER file from dist-info (it's optional per PEP 376), but
+# PyInstaller's --collect-all requires it. Create missing ones before freezing.
+find "$WORKSPACE_ROOT/.venv/lib" -name "*.dist-info" -type d | while read -r d; do
+    [[ -f "$d/INSTALLER" ]] || printf 'uv\n' > "$d/INSTALLER"
+done
+
 # ── 2. Freeze with PyInstaller ────────────────────────────────────────────────
 log "Freezing with PyInstaller..."
 
