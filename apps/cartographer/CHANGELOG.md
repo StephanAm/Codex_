@@ -2,6 +2,16 @@
 
 ## [1.1.8] — 2026-06-10
 
+- Add version verification for built binaries in build scripts
+- Add missing INSTALLER file creation for PyInstaller compatibility
+- Add instance property management commands to CLI
+- Add codex-core dependency and update documentation for Cartographer DB interactions
+- Add instance properties management with CRUD operations and merge support
+- Add type ignore comment for Credentials instantiation in GoogleDriveAdapter
+- Implement sync push functionality and add device ID retrieval in config
+
+## [1.1.8] — 2026-06-10
+
 - Add instance property management commands to CLI
 - Add codex-core dependency and update documentation for Cartographer DB interactions
 - Add instance properties management with CRUD operations and merge support
