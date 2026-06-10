@@ -2,6 +2,10 @@
 
 ## [1.1.8] — 2026-06-10
 
+- Refactor Google Drive integration: streamline dependencies and update installation instructions
+
+## [1.1.8] — 2026-06-10
+
 - Add version verification for built binaries in build scripts
 - Add missing INSTALLER file creation for PyInstaller compatibility
 - Add instance property management commands to CLI
