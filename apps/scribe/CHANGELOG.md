@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.2.11] — 2026-06-10
+
+- Add version verification for built binaries in build scripts
+
 ## [1.2.9] — 2026-06-09
 
 - Capitalize kind directory names in registry and cli functions
