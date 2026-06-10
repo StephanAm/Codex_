@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.1.9] — 2026-06-10
+
+- Refactor Google Drive integration: streamline dependencies and update installation instructions
+
 ## [1.1.8] — 2026-06-10
 
 - Refactor Google Drive integration: streamline dependencies and update installation instructions
