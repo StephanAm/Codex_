@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.2.12] — 2026-06-10
+
+- Refactor Google Drive integration: streamline dependencies and update installation instructions
+
 ## [1.2.11] — 2026-06-10
 
 - Add version verification for built binaries in build scripts
