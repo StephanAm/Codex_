@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.8] — 2026-06-10
+
+- Add instance property management commands to CLI
+- Add codex-core dependency and update documentation for Cartographer DB interactions
+- Add instance properties management with CRUD operations and merge support
+- Add type ignore comment for Credentials instantiation in GoogleDriveAdapter
+- Implement sync push functionality and add device ID retrieval in config
+
 ## [1.1.7] — 2026-06-09
 
 - Refactor optional dependencies in pyproject.toml and uv.lock, removing google-drive support
