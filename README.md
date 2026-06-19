@@ -28,6 +28,32 @@ A CLI that generates AI-written markdown documents from notes. Reads the Cartogr
 
 ---
 
+## Build tools
+
+| Tool | Purpose | Install |
+|---|---|---|
+| [uv](https://docs.astral.sh/uv/) | Python package and workspace manager (replaces pip/venv) | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
+| [pnpm](https://pnpm.io/) | Node package manager for the JS/TS workspace | `npm install -g pnpm` |
+| **Python ≥ 3.11** | Required by all workspace members; uv manages the interpreter | via uv: `uv python install 3.11` |
+| **Node.js** | Required for the Mnemo_ frontend (React + Vite) | [nodejs.org](https://nodejs.org/) |
+| **Rust** (+ Cargo) | Required to build the Tauri desktop shell | `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \| sh` |
+
+The following system libraries are also required **on Linux** to build the Tauri GUI:
+
+```bash
+sudo apt install libwebkit2gtk-4.1-dev librsvg2-dev
+```
+
+Python, Rust, and the system libraries are only needed if you are building the desktop GUI. The CLI, TUI, Cartographer_, and Scribe_ require only `uv`.
+
+On Debian / Ubuntu / Mint, `setup-dev.sh` installs everything and is safe to re-run:
+
+```bash
+./setup-dev.sh
+```
+
+---
+
 ## Setup
 
 Requires [uv](https://docs.astral.sh/uv/) and [pnpm](https://pnpm.io/).
